@@ -222,13 +222,20 @@ function createRevisionRequestForm() {
     ]);
 
     // Clear the "required" flag on every question so the preview is friction-free.
+    // NOTE: form.getItems() returns base Item objects — cast each to its concrete
+    // type before calling setRequired().
     var ItemType = FormApp.ItemType;
-    var requiredTypes = [ItemType.TEXT, ItemType.PARAGRAPH_TEXT, ItemType.MULTIPLE_CHOICE,
-                         ItemType.LIST, ItemType.CHECKBOX, ItemType.DATE];
     var items = form.getItems();
     for (var k = 0; k < items.length; k++) {
-      if (requiredTypes.indexOf(items[k].getType()) !== -1) {
-        items[k].setRequired(false);
+      var it = items[k];
+      switch (it.getType()) {
+        case ItemType.TEXT:               it.asTextItem().setRequired(false);              break;
+        case ItemType.PARAGRAPH_TEXT:     it.asParagraphTextItem().setRequired(false);      break;
+        case ItemType.MULTIPLE_CHOICE:    it.asMultipleChoiceItem().setRequired(false);     break;
+        case ItemType.LIST:               it.asListItem().setRequired(false);              break;
+        case ItemType.CHECKBOX:           it.asCheckboxItem().setRequired(false);          break;
+        case ItemType.DATE:               it.asDateItem().setRequired(false);              break;
+        default: break;
       }
     }
   } else {
