@@ -62,7 +62,7 @@ to browser `localStorage` so you can still demo it offline.
 |---|---|
 | **Office reads responses** | Password-protected `/admin.html` dashboard with **Export all CSV** (opens in Sheets). The in-app **Office view** shows same-browser submissions for demos. |
 | **Client can't see others** | Every submission gets a secret 256-bit token. `/api/get` returns only the submission matching that token, and unknown tokens get a plain 404. There is **no public endpoint that lists submissions**. |
-| **Save progress until submit** | Autosave in the browser, plus **Save & continue later** → a resume code stored server-side that works on any device via `/?resume=CODE`. |
+| **Save progress until submit** | Autosave in the browser, plus **Save & continue later** → a resume code stored server-side that works on any device via `/?resume=CODE`. Saved drafts **expire after 30 days**. |
 | **Office can see and share drafts** | Saved drafts appear in the office dashboard with a **View** read-only link (`/view.html?draft=CODE`) and a **Copy client link** button to send the client back to finish. |
 | **Client copy for records** | Private read-only page with **Print / Save as PDF** and **Download JSON**. |
 | **Read-only online view** | `/view.html?token=…` — no edit fields. |
@@ -71,7 +71,8 @@ to browser `localStorage` so you can still demo it offline.
 - URL: `/admin.html` on the live site.
 - Shows **submitted requests** and **saved drafts**. For each draft you can
   **View** it read-only (`/view.html?draft=CODE`), **Copy client link** (the
-  resume link to send back to the client), or **Delete** it.
+  resume link to send back to the client), or **Delete** it. Drafts expire
+  automatically after 30 days (a daily scheduled job purges them).
 - Password: stored as the `ADMIN_PASSWORD` environment variable in Netlify.
 - To change it:
   ```bash
@@ -121,6 +122,8 @@ Every push to `main` auto-deploys to Netlify via
    e-signature, and date.
 4. **Submit** — success screen with a JSON/CSV download of exactly what the
    office receives.
+5. **Read-only copy** — the private link renders every reference URL as a
+   **clickable link**, and **Print / Save as PDF** preserves those links.
 
 **Draft autosave:** everything the client types is saved as they go, so a
 closed tab doesn't lose a long list of revisions. They can also click

@@ -20,6 +20,8 @@ function openStore(name) {
   return getStore(name);
 }
 
+const TTL_MS = 30 * 24 * 60 * 60 * 1000; // drafts expire 30 days after saving
+
 
 function json(statusCode, body) {
   return {
@@ -113,11 +115,24 @@ exports.handler = async (event) => {
       if (rec) records.push(rec);
     }
 
-    // Drafts that clients have saved but not yet submitted.
+    // Drafts that clients have saved but not yet submitted. Expired drafts are
+    // filtered out (and pruned from the index) on read.
     let drafts = [];
     try {
       const draftStore = openStore('revision-drafts');
-      drafts = (await draftStore.get('__draft_index__', { type: 'json' })) || [];
+      const raw = (await draftStore.get('__draft_index__', { type: 'json' })) || [];
+      const now = Date.now();
+      const kept = [];
+      let changed = false;
+      for (const d of raw) {
+        if (!d) { changed = true; continue; }
+        const exp = d.expiresAt || (d.savedAt ? new Date(Date.parse(d.savedAt) + TTL_MS).toISOString() : null);
+        if (exp && now > Date.parse(exp)) { changed = true; continue; }
+        if (!d.expiresAt && exp) d.expiresAt = exp;
+        kept.push(d);
+      }
+      drafts = kept;
+      if (changed) await draftStore.setJSON('__draft_index__', kept);
     } catch (e) { drafts = []; }
 
     if (qs.format === 'csv') {

@@ -6,6 +6,10 @@
 [functions]
   directory = "netlify/functions"
 
+# Purge saved drafts after their 30-day lifetime.
+[functions."cleanup-drafts"]
+  schedule = "@daily"
+
 # Clean API paths: /api/submit -> /.netlify/functions/submit
 [[redirects]]
   from = "/api/*"

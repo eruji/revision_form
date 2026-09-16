@@ -42,7 +42,10 @@ window.REVISION_FORM_CONFIG = {
     '$225/hour, in accordance with your Letter of Agreement.\n\n' +
     'We also understand that design is nuanced and communication is not always ' +
     'perfect. If a change stems from a misunderstanding, we will review it with care ' +
-    'and find the most appropriate path forward.',
+    'and find the most appropriate path forward.\n\n' +
+    'Filling this out may take a while. You can click “Save & continue later” at ' +
+    'any point to get a link and code to come back to it, even on another device. ' +
+    'Saved drafts are kept for 30 days.',
 
   // ── Questions asked once, before the revision items ──────────────────────
   aboutFields: [

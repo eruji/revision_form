@@ -23,6 +23,7 @@ function openStore(name) {
 }
 
 const MAX_BYTES = 200 * 1024;
+const TTL_MS = 30 * 24 * 60 * 60 * 1000; // drafts expire 30 days after saving
 const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no ambiguous chars
 const CODE_RE = /^[A-Z0-9]{4}-[A-Z0-9]{4}$/;
 const INDEX_KEY = '__draft_index__';
@@ -46,15 +47,22 @@ function draftKey(code) {
   return 'draft_' + crypto.createHash('sha256').update(code).digest('hex');
 }
 
-function summaryFrom(code, data, savedAt) {
+function summaryFrom(code, data, savedAt, expiresAt) {
   const about = data.about || {};
   return {
     code: code,
     savedAt: savedAt,
+    expiresAt: expiresAt,
     clientName: about.clientName || '',
     projectName: about.projectName || '',
     itemCount: Array.isArray(data.items) ? data.items.length : 0
   };
+}
+
+function expiryFor(record) {
+  if (record.expiresAt) return record.expiresAt;
+  if (record.savedAt) return new Date(Date.parse(record.savedAt) + TTL_MS).toISOString();
+  return null;
 }
 
 async function updateIndex(store, entry, remove) {
@@ -83,10 +91,11 @@ exports.handler = async (event) => {
     if (!code) code = newCode();
 
     const savedAt = new Date().toISOString();
-    await store.setJSON(draftKey(code), { code: code, data: data, savedAt: savedAt });
-    await updateIndex(store, summaryFrom(code, data, savedAt), false);
+    const expiresAt = new Date(Date.now() + TTL_MS).toISOString();
+    await store.setJSON(draftKey(code), { code: code, data: data, savedAt: savedAt, expiresAt: expiresAt });
+    await updateIndex(store, summaryFrom(code, data, savedAt, expiresAt), false);
 
-    return json(200, { ok: true, code: code, resumeUrl: '/?resume=' + encodeURIComponent(code) });
+    return json(200, { ok: true, code: code, resumeUrl: '/?resume=' + encodeURIComponent(code), expiresAt: expiresAt });
   }
 
   if (event.httpMethod === 'GET') {
@@ -94,7 +103,15 @@ exports.handler = async (event) => {
     if (!code) return json(400, { ok: false, error: 'Missing code' });
     const record = await store.get(draftKey(code), { type: 'json' });
     if (!record) return json(404, { ok: false, error: 'Draft not found' });
-    return json(200, { ok: true, code: code, data: record.data, savedAt: record.savedAt });
+
+    const expiresAt = expiryFor(record);
+    if (expiresAt && Date.now() > Date.parse(expiresAt)) {
+      await store.delete(draftKey(code));
+      await updateIndex(store, { code: code }, true);
+      return json(404, { ok: false, error: 'Draft expired' });
+    }
+
+    return json(200, { ok: true, code: code, data: record.data, savedAt: record.savedAt, expiresAt: expiresAt });
   }
 
   if (event.httpMethod === 'DELETE') {

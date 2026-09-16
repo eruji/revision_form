@@ -718,3 +718,23 @@ input::placeholder, textarea::placeholder { color: #b3b0a4; }
 @media print {
   .draft-banner { border-color: #d9a441; }
 }
+
+/* ── Clickable reference links in the read-only view (carried into PDFs) ── */
+.view-page .kv dd a,
+.view-page .view-item__value a,
+.view-page .ack-row__value a {
+  color: var(--olive-700);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+.view-page .kv dd a:hover,
+.view-page .view-item__value a:hover,
+.view-page .ack-row__value a:hover { color: var(--olive-900); }
+
+@media print {
+  .view-page .kv dd a,
+  .view-page .view-item__value a,
+  .view-page .ack-row__value a { color: #14508f; }
+}

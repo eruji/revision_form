@@ -73,6 +73,32 @@
     return rows;
   }
 
+  // Turn http(s) URLs inside a value into real, clickable links. Chrome's
+  // "Save as PDF" carries these anchors through as clickable PDF links.
+  const URL_RE = /(https?:\/\/[^\s<>"']+)/g;
+
+  function appendTextWithLinks(parent, text) {
+    const s = text == null ? '' : String(text);
+    let last = 0;
+    let m;
+    URL_RE.lastIndex = 0;
+    while ((m = URL_RE.exec(s)) !== null) {
+      if (m.index > last) parent.append(document.createTextNode(s.slice(last, m.index)));
+      const url = m[0].replace(/[.,;:)\]]+$/, '');
+      const trailing = m[0].slice(url.length);
+      parent.append(h('a', { href: url, target: '_blank', rel: 'noopener noreferrer', text: url }));
+      if (trailing) parent.append(document.createTextNode(trailing));
+      last = m.index + m[0].length;
+    }
+    if (last < s.length) parent.append(document.createTextNode(s.slice(last)));
+  }
+
+  function linkified(tag, cls, text) {
+    const el = h(tag, cls ? { class: cls } : {});
+    appendTextWithLinks(el, text);
+    return el;
+  }
+
   function cfgLabels() {
     const map = (fields) => {
       const m = {};
@@ -93,7 +119,7 @@
     labelValueRows(labels, sub.about).forEach((row) => {
       wrap.append(h('div', { class: 'kv__row' },
         h('dt', { text: row.label }),
-        h('dd', { text: row.value })
+        linkified('dd', null, row.value)
       ));
     });
   }
@@ -119,7 +145,7 @@
         if (row.label === labels.category && row.value === heading) return;
         card.append(h('div', { class: 'view-item__field' },
           h('span', { class: 'view-item__label', text: row.label }),
-          h('p', { class: 'view-item__value', text: row.value })
+          linkified('p', 'view-item__value', row.value)
         ));
       });
       wrap.append(card);
@@ -145,7 +171,7 @@
         isAck ? h('span', { class: 'ack-row__mark', text: row.checked ? '✓' : '✕' }) : null,
         h('div', {},
           h('p', { class: 'ack-row__label', text: row.label }),
-          isAck ? null : h('p', { class: 'ack-row__value', text: row.value })
+          isAck ? null : linkified('p', 'ack-row__value', row.value)
         )
       ));
     });
@@ -165,7 +191,8 @@
       $('#draftBanner').hidden = false;
       $('#draftBannerText').textContent =
         'This is a saved draft' + (opts.code ? ' (code ' + opts.code + ')' : '') +
-        '. Nothing has been submitted yet — the client can continue editing with the resume link.';
+        '. Nothing has been submitted yet — the client can continue editing with the resume link. ' +
+        'Drafts are kept for 30 days.';
     }
 
     const aboutLabels = (sub._labels && sub._labels.about) || {};

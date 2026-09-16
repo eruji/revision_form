@@ -188,6 +188,7 @@
         ),
         h('div', { class: 'draft-card__meta' },
           h('span', { text: 'Saved ' + fmtDate(d.savedAt) }),
+          d.expiresAt ? h('span', { text: '· expires ' + fmtDate(d.expiresAt) }) : null,
           h('code', { class: 'code-chip', text: d.code })
         ),
         h('div', { class: 'draft-card__actions' },

@@ -564,7 +564,7 @@
       $('#draftUrl').value = new URL(out.data.resumeUrl, location.href).href;
       $('#draftBody').textContent =
         'Your progress is saved. Keep this code (or link) to pick up where you left off — ' +
-        'even on another device. It stays available until you submit.';
+        'even on another device. Drafts are kept for 30 days, or until you submit.';
       $('#draftOverlay').hidden = false;
     } catch (e) {
       download('revision-draft.json', JSON.stringify({
