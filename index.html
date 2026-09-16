@@ -49,10 +49,15 @@
       <p class="eyebrow" id="heroEyebrow">Pepper &amp; Olive Interiors</p>
       <h1 id="heroTitle">Design Revision Request</h1>
       <p class="hero__sub" id="heroSub"></p>
-      <details class="policy" id="policyBox">
-        <summary>Please read: how revision rounds work</summary>
+      <!-- Revision instructions are ALWAYS visible (not collapsible) and are
+           acknowledged in section 03 before the client can submit. -->
+      <section class="policy" aria-labelledby="policyHeading">
+        <h2 class="policy__title" id="policyHeading">
+          <span class="policy__mark" aria-hidden="true">§</span>
+          How your revision round works
+        </h2>
         <div class="policy__body" id="policyBody"></div>
-      </details>
+      </section>
     </section>
 
     <form id="revisionForm" novalidate>
@@ -97,7 +102,7 @@
           <span class="step">03</span>
           <div>
             <h2>Acknowledgment</h2>
-            <p>Before submitting, please confirm the statements below.</p>
+            <p>Please confirm you have read the revision instructions above and agree to the statements below.</p>
           </div>
         </div>
         <div id="ackFields"></div>

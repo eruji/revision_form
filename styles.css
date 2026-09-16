@@ -129,32 +129,33 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; letter-spac
   box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
-.policy summary {
-  cursor: pointer;
+.policy__title {
+  margin: 0;
   padding: 14px 18px;
-  font-weight: 600;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
   color: var(--olive-700);
-  list-style: none;
   display: flex;
   align-items: center;
   gap: 10px;
+  background: var(--olive-100);
+  border-bottom: 1px solid var(--line);
 }
-.policy summary::-webkit-details-marker { display: none; }
-.policy summary::before {
-  content: '§';
+.policy__mark {
   display: grid; place-items: center;
   width: 24px; height: 24px;
   border-radius: 50%;
-  background: var(--olive-100);
+  background: #fff;
   color: var(--olive-700);
+  font-family: var(--serif);
   font-size: 13px;
 }
 .policy__body {
-  padding: 0 18px 18px;
+  padding: 16px 18px 18px;
   color: var(--ink-soft);
   white-space: pre-line;
-  border-top: 1px solid var(--line);
-  padding-top: 16px;
 }
 
 /* ───────────────────────────── Cards ───────────────────────────── */

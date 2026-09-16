@@ -65,14 +65,18 @@ Every push to `main` auto-deploys to Netlify via
 
 ## What the client experiences
 
+0. **Revision instructions (always visible)** — the one-round policy and billing
+   terms are shown in full at the top of the page, never collapsed, and must be
+   acknowledged before the form can be submitted.
 1. **About the round** — client, project, design phase, date.
 2. **Revision items** — each item captures Type, Location/Room, What to change,
    Why, and an inspiration link.
    - Big **“＋ Add another revision”** button. No cap.
    - Each card can be **duplicated, reordered, or removed**.
    - Live item counter (“8 items”).
-3. **Acknowledgment** — the one-round and hourly-rate confirmations plus typed
-   e-signature and date.
+3. **Acknowledgment** — the client must confirm they have read and agree to the
+   instructions, plus the one-round and hourly-rate confirmations, typed
+   e-signature, and date.
 4. **Submit** — success screen with a JSON/CSV download of exactly what the
    office receives.
 

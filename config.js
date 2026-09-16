@@ -162,8 +162,9 @@ window.REVISION_FORM_CONFIG = {
     {
       id: 'ackRound',
       label:
-        'I have reviewed the design in its entirety and understand that this ' +
-        'submission represents my one (1) included round of revisions for this design phase.',
+        'I have read and agree to the revision instructions above, have reviewed ' +
+        'the design in its entirety, and understand that this submission represents ' +
+        'my one (1) included round of revisions for this design phase.',
       type: 'checkbox',
       required: true,
       enabled: true
@@ -173,7 +174,8 @@ window.REVISION_FORM_CONFIG = {
       label:
         'I understand that revisions, additions, or changes requested after ' +
         'submission may be considered additional design services and billed at our ' +
-        'current hourly rate, as outlined in my Letter of Agreement.',
+        'current hourly rate, as outlined in the instructions above and my Letter of ' +
+        'Agreement.',
       type: 'checkbox',
       required: true,
       enabled: true
