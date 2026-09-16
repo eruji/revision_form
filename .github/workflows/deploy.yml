@@ -25,12 +25,15 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Install dependencies
+        run: npm ci
+
       # The app is plain HTML/CSS/JS, so we stage just the web files to deploy.
       # This keeps .git, README, and the legacy .gs script off the live site.
       - name: Stage static site
         run: |
           mkdir -p dist
-          cp index.html styles.css config.js app.js netlify.toml dist/
+          cp index.html view.html admin.html styles.css config.js app.js view.js admin.js netlify.toml dist/
 
       - name: Deploy to Netlify (production)
         run: npx --yes netlify-cli@latest deploy --prod --dir=dist

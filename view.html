@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Revision Request — Read-only Copy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="view-page">
+  <header class="topbar no-print">
+    <div class="topbar__brand">
+      <span class="topbar__mark" aria-hidden="true">P&amp;O</span>
+      <div>
+        <strong id="brandName">Pepper &amp; Olive Interiors</strong>
+        <span class="topbar__sub">Read-only copy</span>
+      </div>
+    </div>
+    <div class="topbar__actions">
+      <button type="button" class="btn btn--ghost" id="printBtn">Print / Save as PDF</button>
+      <button type="button" class="btn btn--ghost" id="downloadBtn">Download JSON</button>
+    </div>
+  </header>
+
+  <main class="page">
+    <div id="status" class="view-status">Loading your revision request…</div>
+
+    <article id="view" hidden>
+      <header class="view-head">
+        <p class="eyebrow" id="viewBusiness">Pepper &amp; Olive Interiors</p>
+        <h1 id="viewTitle">Design Revision Request</h1>
+        <p class="view-head__meta" id="viewMeta"></p>
+        <p class="view-head__notice">
+          This is a read-only record of the revision request you submitted. Keep
+          this link to view it again at any time.
+        </p>
+      </header>
+
+      <section class="card">
+        <div class="card__head">
+          <div>
+            <h2>About this round</h2>
+          </div>
+        </div>
+        <dl class="kv" id="viewAbout"></dl>
+      </section>
+
+      <section class="card">
+        <div class="card__head">
+          <div>
+            <h2>Revision items</h2>
+            <p id="viewItemCount"></p>
+          </div>
+        </div>
+        <div id="viewItems"></div>
+      </section>
+
+      <section class="card" id="viewAckCard">
+        <div class="card__head">
+          <div>
+            <h2>Acknowledgment</h2>
+          </div>
+        </div>
+        <div id="viewAck"></div>
+      </section>
+    </article>
+  </main>
+
+  <footer class="foot no-print">
+    <p id="footBusiness">Pepper &amp; Olive Interiors</p>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="view.js"></script>
+</body>
+</html>

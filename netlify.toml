@@ -1,7 +1,16 @@
-# Netlify configuration — static site, no build step required.
-# The form is plain HTML/CSS/JS, so Netlify just publishes the repo root.
+# Netlify configuration — static site + serverless functions, no build step.
+# The form is plain HTML/CSS/JS; the functions handle saving/reading responses.
 [build]
-  publish = "."
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+
+# Clean API paths: /api/submit -> /.netlify/functions/submit
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
 
 # Sensible headers for a public review prototype.
 [[headers]]
@@ -20,3 +29,14 @@
   for = "/*.js"
   [headers.values]
     Cache-Control = "public, max-age=3600"
+
+# Never cache anything that could contain client data.
+[[headers]]
+  for = "/view.html"
+  [headers.values]
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/admin.html"
+  [headers.values]
+    Cache-Control = "no-store"

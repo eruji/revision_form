@@ -1,0 +1,10 @@
+{
+  "name": "pepper-olive-revision-form",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pepper & Olive Interiors — unlimited-item design revision request form (proof of concept)",
+  "type": "commonjs",
+  "dependencies": {
+    "@netlify/blobs": "^11.1.0"
+  }
+}

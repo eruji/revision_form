@@ -21,6 +21,8 @@
     items: []                          // [{ uid, values: { fieldId: value } }]
   };
   let lastSubmission = null;
+  let activeResumeCode = '';   // set when the client resumed a server-side draft
+  let booted = false;
 
   // ── Tiny DOM helper ──────────────────────────────────────────────────────
   function h(tag, attrs, ...children) {
@@ -75,6 +77,46 @@
     t.hidden = false;
     clearTimeout(toast._t);
     toast._t = setTimeout(() => { t.hidden = true; }, 2400);
+  }
+
+  // ── Backend API (Netlify Functions) ──────────────────────────────────────
+  const API = {
+    submit: '/api/submit',
+    get: '/api/get',
+    draft: '/api/draft',
+    admin: '/api/admin'
+  };
+
+  async function apiFetch(url, options) {
+    const res = await fetch(url, Object.assign({ cache: 'no-store' }, options || {}));
+    let data = null;
+    try { data = await res.json(); } catch (e) { data = null; }
+    return { res: res, data: data };
+  }
+
+  function copyText(text, btn) {
+    const done = () => {
+      if (!btn) return;
+      const original = btn.textContent;
+      btn.textContent = 'Copied';
+      setTimeout(() => { btn.textContent = original; }, 1200);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else {
+      fallbackCopy(text, done);
+    }
+  }
+
+  function fallbackCopy(text, done) {
+    const ta = h('textarea', {});
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.append(ta);
+    ta.select();
+    try { document.execCommand('copy'); if (done) done(); } catch (e) {}
+    ta.remove();
   }
 
   // ── Configuration load / save ────────────────────────────────────────────
@@ -502,18 +544,127 @@
   }
 
   // ── Submit ───────────────────────────────────────────────────────────────
-  function handleSubmit(e) {
+  async function saveDraftToServer() {
+    const data = {
+      about: state.about,
+      items: state.items,
+      acknowledgment: state.acknowledgment
+    };
+    const btn = $('#saveDraftBtn');
+    btn.disabled = true;
+    try {
+      const out = await apiFetch(API.draft, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: activeResumeCode || undefined, data: data })
+      });
+      if (!out.res.ok || !out.data || !out.data.ok) throw new Error('save failed');
+      activeResumeCode = out.data.code;
+      $('#draftCode').value = out.data.code;
+      $('#draftUrl').value = new URL(out.data.resumeUrl, location.href).href;
+      $('#draftBody').textContent =
+        'Your progress is saved. Keep this code (or link) to pick up where you left off — ' +
+        'even on another device. It stays available until you submit.';
+      $('#draftOverlay').hidden = false;
+    } catch (e) {
+      download('revision-draft.json', JSON.stringify({
+        savedAt: new Date().toISOString(),
+        about: state.about,
+        items: state.items,
+        acknowledgment: state.acknowledgment
+      }, null, 2), 'application/json');
+      toast('Server unavailable — downloaded a draft file instead');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function applyDraft(data) {
+    state.about = data.about || {};
+    state.acknowledgment = data.acknowledgment || {};
+    state.items = (data.items && data.items.length) ? data.items : [newItem({})];
+    renderAbout();
+    renderItems();
+    renderAck();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function resumeDraft(code) {
+    code = String(code || '').trim().toUpperCase();
+    if (!code) return;
+    try {
+      const out = await apiFetch(API.draft + '?code=' + encodeURIComponent(code));
+      if (out.res.ok && out.data && out.data.ok && out.data.data) {
+        applyDraft(out.data.data);
+        activeResumeCode = code;
+        saveDraftLocally();
+        toast('Draft restored');
+      } else {
+        toast('No draft found for that code');
+      }
+    } catch (e) {
+      toast('Could not reach the server to load that draft');
+    }
+  }
+
+  function saveDraftLocally() {
+    try {
+      localStorage.setItem(KEY_DRAFT, JSON.stringify({
+        about: state.about,
+        acknowledgment: state.acknowledgment,
+        items: state.items,
+        savedAt: new Date().toISOString()
+      }));
+    } catch (e) {}
+  }
+
+  async function handleSubmit(e) {
     e.preventDefault();
     if (!validate()) return;
 
     const sub = collectSubmission();
+    const btn = $('#submitBtn');
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+
+    let viewUrl = '';
+    let offline = false;
+    try {
+      const out = await apiFetch(API.submit, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submission: sub })
+      });
+      if (out.res.ok && out.data && out.data.ok && out.data.token) {
+        sub._token = out.data.token;
+        sub._viewUrl = out.data.viewUrl;
+        viewUrl = out.data.viewUrl;
+      } else {
+        offline = true;
+      }
+    } catch (err) {
+      offline = true;
+    }
+
+    btn.disabled = false;
+    btn.textContent = original;
+
+    sub._localId = sub.id;
     addSubmission(sub);
     lastSubmission = sub;
+
+    // The round is now submitted, so its server-side draft is no longer needed.
+    if (activeResumeCode) {
+      try { await apiFetch(API.draft + '?code=' + encodeURIComponent(activeResumeCode), { method: 'DELETE' }); } catch (err) {}
+      activeResumeCode = '';
+    }
+
     clearDraft();
-    showSuccess(sub);
+    showSuccess(sub, viewUrl, offline);
   }
 
-  function showSuccess(sub) {
+  function showSuccess(sub, viewUrl, offline) {
     const about = sub._labels.about;
     const nameId = Object.keys(about).find((id) => /client name/i.test(about[id]));
     const name = nameId ? sub.about[nameId] : '';
@@ -522,6 +673,16 @@
       'We received ' + sub.revisions.length +
       (sub.revisions.length === 1 ? ' revision item' : ' revision items') +
       ' for this design phase. Our team will review and follow up shortly.';
+
+    const link = viewUrl
+      ? new URL(viewUrl, location.href).href
+      : new URL('view.html?local=' + encodeURIComponent(sub.id), location.href).href;
+    $('#readonlyUrl').value = link;
+    $('#openViewBtn').setAttribute('href', link);
+    $('#readonlyHint').textContent = offline
+      ? 'The shared server was unavailable, so this copy is stored in this browser only. Download it for your records.'
+      : 'Anyone with this link can view a read-only copy — keep it private.';
+
     $('#payloadPreview').textContent = JSON.stringify(sub, null, 2);
     $('#successOverlay').hidden = false;
   }
@@ -534,6 +695,7 @@
     state.about = {};
     state.acknowledgment = {};
     state.items = [newItem({})];
+    activeResumeCode = '';
     clearDraft();
     hydrateState();
     renderHero();
@@ -825,6 +987,12 @@
           h('strong', { text: author + (project ? ' · ' + project : '') }),
           h('span', { text: when }),
           h('span', { class: 'badge', text: sub.revisions.length + (sub.revisions.length === 1 ? ' item' : ' items') }),
+          h('a', {
+            class: 'linkbtn', text: 'Open', target: '_blank', rel: 'noopener',
+            href: sub._viewUrl
+              ? new URL(sub._viewUrl, location.href).href
+              : new URL('view.html?local=' + encodeURIComponent(sub.id), location.href).href
+          }),
           h('button', {
             type: 'button', class: 'linkbtn', text: 'JSON',
             onclick: () => download('revision-' + author.replace(/\W+/g, '-').toLowerCase() + '.json', JSON.stringify(sub, null, 2), 'application/json')
@@ -864,6 +1032,17 @@
       $('#reviewBanner').hidden = true;
       try { sessionStorage.setItem('po_review_dismissed', '1'); } catch (e) {}
     });
+
+    // Save / resume long-form progress
+    $('#saveDraftBtn').addEventListener('click', saveDraftToServer);
+    $('#resumeDraftBtn').addEventListener('click', () => {
+      const code = window.prompt('Enter your resume code (for example ABCD-2345):', activeResumeCode || '');
+      if (code) resumeDraft(code);
+    });
+    $('#closeDraftBtn').addEventListener('click', () => { $('#draftOverlay').hidden = true; });
+    $('#copyLinkBtn').addEventListener('click', (e) => copyText($('#readonlyUrl').value, e.currentTarget));
+    $('#copyDraftCodeBtn').addEventListener('click', (e) => copyText($('#draftCode').value, e.currentTarget));
+    $('#copyDraftUrlBtn').addEventListener('click', (e) => copyText($('#draftUrl').value, e.currentTarget));
 
     $('#clearDraftBtn').addEventListener('click', () => {
       clearDraft();
@@ -909,11 +1088,14 @@
       if (!$('#setupDrawer').hidden) closeSetup();
       if (!$('#officeDrawer').hidden) closeOffice();
       if (!$('#successOverlay').hidden) hideSuccess();
+      if (!$('#draftOverlay').hidden) $('#draftOverlay').hidden = true;
     });
   }
 
   // ── Boot ─────────────────────────────────────────────────────────────────
   function init() {
+    if (booted) return;
+    booted = true;
     hydrateState();
     renderHero();
     renderAbout();
@@ -921,6 +1103,10 @@
     renderAck();
     bind();
     initReviewBanner();
+    try {
+      const resume = new URLSearchParams(location.search).get('resume');
+      if (resume) resumeDraft(resume);
+    } catch (e) {}
     if (localStorage.getItem(KEY_DRAFT)) {
       $('#draftStatus').textContent = 'Draft restored ✓';
       $('#draftStatus').classList.add('is-saved');

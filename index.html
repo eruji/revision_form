@@ -112,8 +112,14 @@
       <div class="submitbar">
         <div class="submitbar__meta">
           <span id="draftStatus" class="draft-status">Draft saved locally</span>
-          <button type="button" class="linkbtn" id="clearDraftBtn">Clear draft</button>
+          <span class="submitbar__links">
+            <button type="button" class="linkbtn" id="resumeDraftBtn">Resume a saved draft</button>
+            <button type="button" class="linkbtn" id="clearDraftBtn">Clear draft</button>
+          </span>
         </div>
+        <button type="button" class="btn btn--ghost btn--lg" id="saveDraftBtn">
+          Save &amp; continue later
+        </button>
         <button type="submit" class="btn btn--primary btn--lg" id="submitBtn">
           Submit revision request
         </button>
@@ -134,8 +140,17 @@
       <div class="modal__check" aria-hidden="true">✓</div>
       <h2 id="successTitle">Revision request received</h2>
       <p id="successBody"></p>
+      <div class="readonly-box" id="readonlyBox">
+        <p class="readonly-box__label">Your private read-only link</p>
+        <div class="readonly-box__row">
+          <input type="text" id="readonlyUrl" readonly />
+          <button type="button" class="btn btn--ghost" id="copyLinkBtn">Copy</button>
+        </div>
+        <p class="readonly-box__hint" id="readonlyHint"></p>
+      </div>
       <div class="modal__actions">
-        <button class="btn btn--primary" id="downloadJsonBtn">Download JSON</button>
+        <a class="btn btn--primary" id="openViewBtn" href="#" target="_blank" rel="noopener">Open read-only copy</a>
+        <button class="btn btn--ghost" id="downloadJsonBtn">Download JSON</button>
         <button class="btn btn--ghost" id="downloadCsvBtn">Download CSV</button>
         <button class="btn btn--ghost" id="startOverBtn">Start a new round</button>
       </div>
@@ -181,6 +196,29 @@
     <div class="drawer__body" id="officeBody"></div>
   </aside>
   <div class="scrim" id="officeScrim" hidden></div>
+
+  <!-- ═══════════════════════════ DRAFT MODAL ═══════════════════════════ -->
+  <div class="overlay" id="draftOverlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="draftTitle">
+      <h2 id="draftTitle">Draft saved</h2>
+      <p id="draftBody"></p>
+      <div class="readonly-box">
+        <p class="readonly-box__label">Resume code</p>
+        <div class="readonly-box__row">
+          <input type="text" id="draftCode" readonly />
+          <button type="button" class="btn btn--ghost" id="copyDraftCodeBtn">Copy</button>
+        </div>
+        <p class="readonly-box__label" style="margin-top:12px">Resume link</p>
+        <div class="readonly-box__row">
+          <input type="text" id="draftUrl" readonly />
+          <button type="button" class="btn btn--ghost" id="copyDraftUrlBtn">Copy link</button>
+        </div>
+      </div>
+      <div class="modal__actions">
+        <button class="btn btn--primary" id="closeDraftBtn" type="button">Done</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ═══════════════════════════ TOAST ═══════════════════════════ -->
   <div class="toast" id="toast" hidden></div>

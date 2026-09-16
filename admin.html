@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Revision Requests — Office View</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__brand">
+      <span class="topbar__mark" aria-hidden="true">P&amp;O</span>
+      <div>
+        <strong>Pepper &amp; Olive Interiors</strong>
+        <span class="topbar__sub">Revision requests — office view</span>
+      </div>
+    </div>
+    <div class="topbar__actions">
+      <button type="button" class="btn btn--ghost" id="refreshBtn" hidden>Refresh</button>
+      <button type="button" class="btn btn--primary" id="exportCsvBtn" hidden>Export all CSV</button>
+      <button type="button" class="btn btn--ghost" id="signOutBtn" hidden>Sign out</button>
+    </div>
+  </header>
+
+  <main class="page">
+    <!-- Password gate -->
+    <section class="card gate" id="gateCard">
+      <div class="card__head">
+        <span class="step">🔒</span>
+        <div>
+          <h2>Office access</h2>
+          <p>Enter the team password to read submitted revision requests.</p>
+        </div>
+      </div>
+      <form id="gateForm">
+        <div class="field">
+          <label for="adminKey">Team password</label>
+          <input type="password" id="adminKey" autocomplete="current-password" placeholder="••••••••" />
+          <p class="field__error" id="gateError" hidden>Incorrect password. Please try again.</p>
+        </div>
+        <button type="submit" class="btn btn--primary btn--lg">Unlock</button>
+      </form>
+    </section>
+
+    <!-- List -->
+    <section id="listWrap" hidden>
+      <div class="admin-summary" id="adminSummary"></div>
+      <div id="adminList"></div>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
