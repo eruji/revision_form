@@ -96,6 +96,6 @@ exports.handler = async (event) => {
       viewUrl: '/view.html?token=' + encodeURIComponent(token)
     });
   } catch (e) {
-    return json(500, { ok: false, error: 'Could not save submission', detail: String(e && e.message || e) });
+    return json(500, { ok: false, error: 'Could not save submission' });
   }
 };

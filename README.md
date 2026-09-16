@@ -27,13 +27,19 @@ A real form needs to grow with the client. That's what this POC does.
 
 | File | Purpose |
 |---|---|
-| `index.html` | The app shell (form + Team setup + Office view) |
+| `index.html` | Client form shell (form + Team setup + in-browser Office view) |
+| `view.html` / `view.js` | Private read-only copy (`?token=…`) with print/PDF + JSON |
+| `admin.html` / `admin.js` | Password-protected office dashboard with CSV export |
 | `styles.css` | Styling — olive/cream brand palette, responsive |
 | `config.js` | **The questions and policy copy your team will iterate on** |
-| `app.js` | Unlimited items, validation, draft autosave, exports |
+| `app.js` | Unlimited items, validation, draft autosave, backend calls |
+| `netlify/functions/*` | Serverless API — `submit`, `get`, `draft`, `admin` (Netlify Blobs) |
+| `netlify.toml` | Publish dir, functions dir, `/api/*` routing, headers |
+| `.github/workflows/deploy.yml` | CI: install deps → stage files → deploy on push |
 | `revision_request_form.gs` | Legacy Google Forms builder (alternative path) |
 
-No build step, no dependencies, no server required.
+No build step for the front end; Netlify hosts the static app and runs the
+functions.
 
 ## Run it (10 seconds)
 
@@ -46,9 +52,41 @@ python -m http.server 8080      # or: npx serve .
 ```
 Then open <http://localhost:8080>.
 
-> Submissions and drafts are stored in the browser's `localStorage`, so this is
-> a demo data store — perfect for evaluating the experience before wiring it to
-> a real backend.
+> The app saves to the shared backend when it is reachable. If it isn't (for
+example opening `index.html` directly, or on a plain static host), it falls back
+to browser `localStorage` so you can still demo it offline.
+
+## Reading responses, privacy & saving progress
+
+| Requirement | How it works |
+|---|---|
+| **Office reads responses** | Password-protected `/admin.html` dashboard with **Export all CSV** (opens in Sheets). The in-app **Office view** shows same-browser submissions for demos. |
+| **Client can't see others** | Every submission gets a secret 256-bit token. `/api/get` returns only the submission matching that token, and unknown tokens get a plain 404. There is **no public endpoint that lists submissions**. |
+| **Save progress until submit** | Autosave in the browser, plus **Save & continue later** → a resume code stored server-side that works on any device via `/?resume=CODE`. |
+| **Client copy for records** | Private read-only page with **Print / Save as PDF** and **Download JSON**. |
+| **Read-only online view** | `/view.html?token=…` — no edit fields. |
+
+### Office dashboard
+- URL: `/admin.html` on the live site.
+- Password: stored as the `ADMIN_PASSWORD` environment variable in Netlify.
+- To change it:
+  ```bash
+  npx netlify-cli env:set ADMIN_PASSWORD "your-new-password" --context production
+  ```
+  then redeploy.
+
+### Backend at a glance
+- **Netlify Functions + Netlify Blobs** — no extra account, data stays in this
+  Netlify site.
+- Endpoints: `/api/submit`, `/api/get`, `/api/draft`, `/api/admin`.
+- Env vars on the Netlify site: `ADMIN_PASSWORD` (secret), `BLOBS_SITE_ID`,
+  `BLOBS_TOKEN` (secret).
+
+> **Privacy notes:** submissions contain client PII. Tokens are stored hashed,
+> drafts are deleted when a round is submitted, and responses are marked
+> `no-store`. Before a real rollout, add a data-retention policy, rotate the
+> Blobs token, and consider connecting the site to GitHub in Netlify (which
+> injects the Blobs context and removes the need for `BLOBS_TOKEN`).
 
 ## Share for review
 
@@ -80,9 +118,10 @@ Every push to `main` auto-deploys to Netlify via
 4. **Submit** — success screen with a JSON/CSV download of exactly what the
    office receives.
 
-**Draft autosave:** everything the client types is saved locally as they go, so
-a closed tab doesn't lose a long list of revisions. There's a *Clear draft*
-button too.
+**Draft autosave:** everything the client types is saved as they go, so a
+closed tab doesn't lose a long list of revisions. They can also click
+**Save & continue later** to get a resume code that works on any device. There's
+a *Clear draft* button too.
 
 ---
 
@@ -106,9 +145,10 @@ Changes apply instantly and persist in your browser. This makes it cheap to
 prototype three or four question sets, screenshot them, and pick one as a team.
 
 ### 🗂 Office view (top-right button)
-Lists every submission captured in the browser, with a per-submission JSON
-download and a combined **Export all CSV** (one row per revision item, with
-client/project/phase repeated) that drops straight into a spreadsheet.
+For live submissions, the office uses the password-protected **`/admin.html`**
+dashboard (see “Reading responses” above), which lists all clients and exports
+CSV. The in-app **Office view** button shows submissions stored in the current
+browser — handy for demos when the backend isn't running.
 
 ---
 
@@ -130,9 +170,9 @@ client/project/phase repeated) that drops straight into a spreadsheet.
 
 ## Turning it into a production form
 
-The POC deliberately keeps the payment/back-end out of scope. When you're ready,
-the **submission payload is already the contract** — the shape stored by
-`collectSubmission()` in `app.js`:
+A working backend is now included (Netlify Functions + Blobs). If your team
+would rather store responses in a tool you already use, the **submission payload
+is the contract** — the shape stored by `collectSubmission()` in `app.js`:
 
 ```json
 {
@@ -149,8 +189,9 @@ Options, roughly in order of effort:
 
 | Option | Unlimited items | Notes |
 |---|---|---|
-| **Keep this app, add a backend** | ✅ | POST the payload to Apps Script → Google Sheet, Airtable, or your CRM. Full control, no per-response fees. |
-| **Google Apps Script Web App** | ✅ | Same UI logic, hosted by Google, writes to a Sheet. Good if the team lives in Sheets. |
+| **Current build: Netlify Functions + Blobs** | ✅ | Works today; office reads via `/admin.html` + CSV. |
+| **Apps Script → Google Sheet** | ✅ | Swap the storage layer if the team prefers reading in Sheets. |
+| **Airtable / Supabase** | ✅ | Managed DB with nicer admin tooling; modest setup. |
 | **Jotform** | ✅ | Native *Configurable List* widget does repeatable rows; also has drawn signatures. Paid for volume. |
 | **Typeform / Tally** | ⚠️ | Tally has repeating sections on higher tiers; verify before committing. |
 

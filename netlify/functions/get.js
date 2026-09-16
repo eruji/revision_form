@@ -44,6 +44,6 @@ exports.handler = async (event) => {
       submission: record.submission
     });
   } catch (e) {
-    return json(500, { ok: false, error: 'Could not load submission', detail: String(e && e.message || e) });
+    return json(500, { ok: false, error: 'Could not load submission' });
   }
 };

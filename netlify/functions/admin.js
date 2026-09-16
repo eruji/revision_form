@@ -110,6 +110,6 @@ exports.handler = async (event) => {
 
     return json(200, { ok: true, count: records.length, records: records });
   } catch (e) {
-    return json(500, { ok: false, error: 'Could not load submissions', detail: String(e && e.message || e) });
+    return json(500, { ok: false, error: 'Could not load submissions' });
   }
 };
