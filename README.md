@@ -69,10 +69,13 @@ to browser `localStorage` so you can still demo it offline.
 
 ### Office dashboard
 - URL: `/admin.html` on the live site.
-- Shows **submitted requests** and **saved drafts**. For each draft you can
-  **View** it read-only (`/view.html?draft=CODE`), **Copy client link** (the
-  resume link to send back to the client), or **Delete** it. Drafts expire
-  automatically after 30 days (a daily scheduled job purges them).
+- Shows **submitted requests** and **saved drafts**.
+  - Each **submitted request** has **View** (full read-only detail), **JSON**,
+    and **CSV** export, plus **Print / Save as PDF** from the detail view.
+  - For each **draft** you can **View** it read-only (`/view.html?draft=CODE`),
+    **Copy client link** (the resume link to send back to the client), or
+    **Delete** it. Drafts expire automatically after 30 days (a daily scheduled
+    job purges them).
 - Password: stored as the `ADMIN_PASSWORD` environment variable in Netlify.
 - To change it:
   ```bash

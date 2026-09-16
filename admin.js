@@ -201,6 +201,133 @@
       ));
     });
   }
+  // ── Full submission detail (view + export) ──────────────────────────────
+  const URL_RE = /(https?:\/\/[^\s<>"']+)/g;
+
+  function appendTextWithLinks(parent, text) {
+    const s = text == null ? '' : String(text);
+    let last = 0, m;
+    URL_RE.lastIndex = 0;
+    while ((m = URL_RE.exec(s)) !== null) {
+      if (m.index > last) parent.append(document.createTextNode(s.slice(last, m.index)));
+      const url = m[0].replace(/[.,;:)\]]+$/, '');
+      parent.append(h('a', { href: url, target: '_blank', rel: 'noopener noreferrer', text: url }));
+      last = m.index + m[0].length;
+    }
+    if (last < s.length) parent.append(document.createTextNode(s.slice(last)));
+  }
+
+  function linkified(tag, cls, text) {
+    const el = h(tag, cls ? { class: cls } : {});
+    appendTextWithLinks(el, text);
+    return el;
+  }
+
+  function valueRows(labels, values) {
+    const rows = [];
+    Object.keys(labels || {}).forEach((id) => {
+      const v = values ? values[id] : '';
+      const isCheckbox = typeof v === 'boolean' || v === 'true' || v === 'false';
+      let display;
+      if (isCheckbox) display = (v === true || v === 'true') ? 'Agreed' : 'Not agreed';
+      else display = v == null || v === '' ? '—' : String(v);
+      rows.push({ label: labels[id], value: display, checked: isCheckbox ? (v === true || v === 'true') : null });
+    });
+    return rows;
+  }
+
+  function buildDetail(rec) {
+    const sub = rec.submission || {};
+    const L = sub._labels || { about: {}, revision: {}, ack: {} };
+    const about = sub.about || {};
+    const wrap = h('article', { class: 'detail' });
+
+    const nameId = Object.keys(L.about || {}).find((id) => /client name/i.test(L.about[id]));
+    const projId = Object.keys(L.about || {}).find((id) => /project/i.test(L.about[id]));
+    const name = nameId ? about[nameId] : 'Revision request';
+    const project = projId ? about[projId] : '';
+    wrap.append(h('header', { class: 'view-head' },
+      h('p', { class: 'eyebrow', text: sub.business || 'Pepper & Olive Interiors' }),
+      h('h1', { text: 'Design Revision Request' }),
+      h('p', { class: 'view-head__meta', text: [name, project, 'Submitted ' + fmtDate(rec.submittedAt)].filter(Boolean).join(' · ') })
+    ));
+
+    const aboutCard = h('section', { class: 'card' },
+      h('div', { class: 'card__head' }, h('div', {}, h('h2', { text: 'About this round' }))));
+    const dl = h('dl', { class: 'kv' });
+    valueRows(L.about, about).forEach((r) => dl.append(h('div', { class: 'kv__row' },
+      h('dt', { text: r.label }), linkified('dd', null, r.value))));
+    aboutCard.append(dl);
+    wrap.append(aboutCard);
+
+    const itemCard = h('section', { class: 'card' },
+      h('div', { class: 'card__head' }, h('div', {}, h('h2', { text: 'Revision items' }))));
+    (sub.revisions || []).forEach((rev, i) => {
+      const item = h('div', { class: 'view-item' });
+      item.append(h('div', { class: 'view-item__head' },
+        h('span', { class: 'item__badge', text: '#' + (i + 1) }),
+        h('strong', { text: rev.category || rev.location || ('Revision ' + (i + 1)) })));
+      valueRows(L.revision, rev).forEach((r) => {
+        if (r.value === '—') return;
+        if (r.label === (L.revision || {}).category && r.value === (rev.category || '')) return;
+        item.append(h('div', { class: 'view-item__field' },
+          h('span', { class: 'view-item__label', text: r.label }),
+          linkified('p', 'view-item__value', r.value)));
+      });
+      itemCard.append(item);
+    });
+    wrap.append(itemCard);
+
+    const ackRows = valueRows(L.ack, sub.acknowledgment || {});
+    if (ackRows.length) {
+      const ackCard = h('section', { class: 'card' },
+        h('div', { class: 'card__head' }, h('div', {}, h('h2', { text: 'Acknowledgment' }))));
+      ackRows.forEach((r) => {
+        const isAck = r.checked !== null;
+        ackCard.append(h('div', { class: 'ack-row' + (isAck && r.checked ? ' ack-row--ok' : '') },
+          isAck ? h('span', { class: 'ack-row__mark', text: r.checked ? '✓' : '✕' }) : null,
+          h('div', {},
+            h('p', { class: 'ack-row__label', text: r.label }),
+            isAck ? null : linkified('p', 'ack-row__value', r.value))
+        ));
+      });
+      wrap.append(ackCard);
+    }
+    return wrap;
+  }
+
+  let detailRecord = null;
+
+  function openDetail(rec) {
+    detailRecord = rec;
+    const body = document.querySelector('#detailBody');
+    body.innerHTML = '';
+    body.append(buildDetail(rec));
+    document.querySelector('#detailOverlay').hidden = false;
+    document.body.classList.add('detail-open');
+  }
+
+  function closeDetail() {
+    document.querySelector('#detailOverlay').hidden = true;
+    document.body.classList.remove('detail-open');
+    detailRecord = null;
+  }
+
+  function recordName(rec) {
+    const sub = rec.submission || {};
+    const L = (sub._labels && sub._labels.about) || {};
+    const id = Object.keys(L).find((k) => /client name/i.test(L[k]));
+    return String((id && sub.about[id]) || 'revision-request').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+  }
+
+  function exportRecordJson(rec) {
+    download(recordName(rec) + '.json', JSON.stringify(rec.submission || {}, null, 2), 'application/json');
+  }
+
+  function exportRecordCsv(rec) {
+    download(recordName(rec) + '.csv', buildCsv([rec]), 'text/csv;charset=utf-8');
+  }
+
   function renderRecords(records) {
     const list = $('#adminList');
     list.innerHTML = '';
@@ -238,9 +365,14 @@
         h('div', { class: 'sub__head' },
           h('strong', { text: name + (project ? ' · ' + project : '') }),
           h('span', { text: fmtDate(rec.submittedAt) }),
-          h('span', { class: 'badge', text: (sub.revisions || []).length + ' items' })
+          h('span', { class: 'badge', text: (sub.revisions || []).length + (sub.revisions.length === 1 ? ' item' : ' items') })
         ),
-        items
+        items,
+        h('div', { class: 'sub__actions' },
+          h('button', { type: 'button', class: 'btn btn--ghost', text: 'View', onclick: () => openDetail(rec) }),
+          h('button', { type: 'button', class: 'btn btn--ghost', text: 'JSON', onclick: () => exportRecordJson(rec) }),
+          h('button', { type: 'button', class: 'btn btn--ghost', text: 'CSV', onclick: () => exportRecordCsv(rec) })
+        )
       ));
     });
   }
@@ -285,6 +417,16 @@
     $('#refreshBtn').addEventListener('click', () => load(getKey(), false));
     $('#exportCsvBtn').addEventListener('click', exportCsv);
     $('#signOutBtn').addEventListener('click', () => { setKey(''); $('#adminKey').value = ''; showGate(false); });
+
+    // Submission detail overlay
+    $('#detailCloseBtn').addEventListener('click', closeDetail);
+    $('#detailOverlay').addEventListener('click', (e) => { if (e.target && e.target.id === 'detailOverlay') closeDetail(); });
+    $('#detailPrintBtn').addEventListener('click', () => window.print());
+    $('#detailJsonBtn').addEventListener('click', () => { if (detailRecord) exportRecordJson(detailRecord); });
+    $('#detailCsvBtn').addEventListener('click', () => { if (detailRecord) exportRecordCsv(detailRecord); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !$('#detailOverlay').hidden) closeDetail();
+    });
   }
 
   function init() {
