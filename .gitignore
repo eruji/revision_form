@@ -1,0 +1,10 @@
+# Dependencies (none required for the static app)
+node_modules/
+
+# Netlify CLI local state
+.netlify/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.log

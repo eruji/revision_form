@@ -1,0 +1,22 @@
+# Netlify configuration — static site, no build step required.
+# The form is plain HTML/CSS/JS, so Netlify just publishes the repo root.
+[build]
+  publish = "."
+
+# Sensible headers for a public review prototype.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Long-cache static assets; keep HTML fresh so reviewers always get the latest.
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"

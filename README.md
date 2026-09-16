@@ -1,112 +1,177 @@
-# Design Revision Request Form — Google Forms Build
+# Design Revision Request — Unlimited-Item Proof of Concept
 
-Implements the revision-request workflow from the shared ChatGPT conversation
-("Create revision form") as a **Google Form** for **Pepper & Olive Interiors**.
+**Pepper & Olive Interiors**
 
-Policy encoded in the form (from the firm's Letter of Agreement):
+This repo now contains a **working web proof of concept** where clients can add
+**as many revision items as they need** — the thing Google Forms could not do.
 
-- **One (1) consolidated round of revisions** per design phase.
-- Anything requested **after** this form = additional design services at **$225/hr**.
-- Empathetic language: requests arising from a misunderstanding will be reviewed with care.
+The original Google Forms builder script (`revision_request_form.gs`) is kept
+below as an alternative, but the web app is the recommended direction to
+evaluate with your team.
 
 ---
 
-## Two build modes — controlled by one flag
+## Why the Google Form was hitting a wall
 
-At the top of `revision_request_form.gs`:
+Google Forms has **no "＋ Add another item" / repeatable block** pattern. To work
+around that, the script shipped a fixed number of numbered blocks (4 per
+section) and told clients to cram anything extra into a free-text "Anything
+else" box. That breaks down the moment a client has 9 changes — you lose
+structure, the "why," and the reference links for items 5–9.
 
-```js
-var PREVIEW_MODE = true;
+A real form needs to grow with the client. That's what this POC does.
+
+---
+
+## What's in the box
+
+| File | Purpose |
+|---|---|
+| `index.html` | The app shell (form + Team setup + Office view) |
+| `styles.css` | Styling — olive/cream brand palette, responsive |
+| `config.js` | **The questions and policy copy your team will iterate on** |
+| `app.js` | Unlimited items, validation, draft autosave, exports |
+| `revision_request_form.gs` | Legacy Google Forms builder (alternative path) |
+
+No build step, no dependencies, no server required.
+
+## Run it (10 seconds)
+
+**Option A — just open it:** double-click `index.html`.
+
+**Option B — local server (best for sharing on your network):**
+```bash
+cd revision_form
+python -m http.server 8080      # or: npx serve .
+```
+Then open <http://localhost:8080>.
+
+> Submissions and drafts are stored in the browser's `localStorage`, so this is
+> a demo data store — perfect for evaluating the experience before wiring it to
+> a real backend.
+
+---
+
+## What the client experiences
+
+1. **About the round** — client, project, design phase, date.
+2. **Revision items** — each item captures Type, Location/Room, What to change,
+   Why, and an inspiration link.
+   - Big **“＋ Add another revision”** button. No cap.
+   - Each card can be **duplicated, reordered, or removed**.
+   - Live item counter (“8 items”).
+3. **Acknowledgment** — the one-round and hourly-rate confirmations plus typed
+   e-signature and date.
+4. **Submit** — success screen with a JSON/CSV download of exactly what the
+   office receives.
+
+**Draft autosave:** everything the client types is saved locally as they go, so
+a closed tab doesn't lose a long list of revisions. There's a *Clear draft*
+button too.
+
+---
+
+## The two tools for your team
+
+These are the parts that directly answer *“what should we ask?”*
+
+### 🔧 Team setup (top-right button)
+A live admin panel over the form:
+- Turn any question **on/off** and mark it **required**.
+- **Rename** question labels inline.
+- **Reorder** the fields that appear on every revision item.
+- **Add custom questions** (text, long text, dropdown, link) — e.g. *Budget
+  impact*, *Deadline sensitivity*, *Already purchased?*.
+- Edit the business name, hourly rate, and the full policy/intro copy.
+- **Export config** to a JSON file to share with the team, and **Import config**
+  to try someone else's version.
+- **Reset to defaults** at any time.
+
+Changes apply instantly and persist in your browser. This makes it cheap to
+prototype three or four question sets, screenshot them, and pick one as a team.
+
+### 🗂 Office view (top-right button)
+Lists every submission captured in the browser, with a per-submission JSON
+download and a combined **Export all CSV** (one row per revision item, with
+client/project/phase repeated) that drops straight into a spreadsheet.
+
+---
+
+## Suggested team exercise
+
+1. Open **Team setup** and try toggling `Priority` on, adding a custom question,
+   and rewording the intro. Save.
+2. Submit a fake round with **10 items** to feel the unlimited flow.
+3. Open **Office view** → *Export all CSV*. Is that the shape your team wants to
+   triage from?
+4. Decide together:
+   - Which fields are **required vs. nice-to-have**?
+   - Do we want a **priority** or **deadline** field?
+   - Should “Why” be required? (It's optional today.)
+   - Do we need **photos**? (See production notes below.)
+5. **Export config** and attach it to your decision notes.
+
+---
+
+## Turning it into a production form
+
+The POC deliberately keeps the payment/back-end out of scope. When you're ready,
+the **submission payload is already the contract** — the shape stored by
+`collectSubmission()` in `app.js`:
+
+```json
+{
+  "id": "…",
+  "submittedAt": "2025-…",
+  "about":     { "clientName": "…", "projectName": "…", "designPhase": "…" },
+  "revisions": [ { "category": "…", "location": "…", "description": "…",
+                   "reason": "…", "reference": "…" } ],
+  "acknowledgment": { "ackRound": true, "signature": "…" }
+}
 ```
 
-| | `PREVIEW_MODE = true` (current) | `PREVIEW_MODE = false` |
+Options, roughly in order of effort:
+
+| Option | Unlimited items | Notes |
 |---|---|---|
-| Layout | **One single page** — every question top-to-bottom | Multi-section pages |
-| Grouping | Section headings on the same page | Separate form sections |
-| Required fields | **None** — preview freely | Key fields required |
-| Type selector | Plain choices | Conditional routing (Architectural → Material → …) |
+| **Keep this app, add a backend** | ✅ | POST the payload to Apps Script → Google Sheet, Airtable, or your CRM. Full control, no per-response fees. |
+| **Google Apps Script Web App** | ✅ | Same UI logic, hosted by Google, writes to a Sheet. Good if the team lives in Sheets. |
+| **Jotform** | ✅ | Native *Configurable List* widget does repeatable rows; also has drawn signatures. Paid for volume. |
+| **Typeform / Tally** | ⚠️ | Tally has repeating sections on higher tiers; verify before committing. |
 
-> Use `true` to review the structure, then flip to `false` and re-run to build the
-> production form. Each run creates a **fresh form**, so you can iterate safely.
+Two POC gaps to decide on before production:
+- **File/photo uploads** — not included here. Uploads need storage (Drive/S3) and
+  were the reason the Google version used reference *links* instead.
+- **Drawn signature** — this POC uses a typed e-signature. A canvas signature
+  widget or Jotform is needed if you want a drawn one.
 
-## 1. How to create the form (one time, ~3 minutes)
+---
 
-> You do **not** build the form by hand — a script assembles every question for you.
+## Editing the questions directly (optional)
+
+All defaults live in `config.js`. Example — make “Why” required and turn on
+“Priority”:
+
+```js
+{ id: 'reason',  label: 'Why would you like this changed?', type: 'textarea',
+  required: true,  enabled: true },
+{ id: 'priority', label: 'Priority', type: 'select',
+  required: false, enabled: true, options: ['Nice to have','Important','Critical'] }
+```
+
+Reopen the app and it renders from the new config. (If you've saved overrides in
+Team setup, click **Reset to defaults** to pick up file changes.)
+
+---
+
+## Legacy: the Google Forms builder
+
+The original script and its full instructions are still here for reference:
 
 1. Open <https://script.google.com> → **New project**.
-2. Delete the placeholder `function myFunction(){}`.
-3. Copy the entire contents of [`revision_request_form.gs`](./revision_request_form.gs) into the editor and **save** (💾 or `Ctrl+S`).
-4. Make sure the function `createRevisionRequestForm` is selected in the dropdown, then press **Run ▶**.
-5. Google will ask for authorization — click **Review permissions** → choose your Google account → **Allow**. (The script only creates a Google Form and a Google Sheet in your Drive.)
-6. When it finishes, click **View → Logs** (or **Execution log**) to see:
-   - **Edit URL** — opens the form builder so you can review it
-   - **Share URL** — the link you send to clients
-   - **Responses SS** — the Google Sheet where responses are recorded (already linked)
+2. Paste `revision_request_form.gs`, set `PREVIEW_MODE`, run
+   `createRevisionRequestForm()`, and authorize.
+3. View → Logs for the Edit URL, Share URL, and responses Sheet.
 
-## 2. What the form contains
-
-Structure (headings shown even in single-page preview):
-
-1. **About Your Revision Round** — Client Name, Project Name, Design Phase
-   (dropdown), Date Submitted
-2. **Type of revision(s)** — Architectural / Space Planning · Material & Finish · Both
-3. **01 | Architectural + Space Planning Revisions** — 4 numbered blocks ×
-   (Location/Room, Requested Edit, Why, Reference link)
-4. **02 | Material + Finish Revisions** — 4 numbered blocks × (Location/Room,
-   Material/Item, Requested Edit, Why, Reference link)
-5. **03 | Anything Else We Should Know?** — open notes
-6. **Revision Round Acknowledgment** — two confirm statements, typed Client Name
-   (electronic signature), Signature Date
-
-In **production mode**, blocks #1 are the only required fields (blocks 2–4 optional),
-plus Client Name / Project / Phase / Date and the acknowledgment items.
-
-## 3. Recommended manual settings (form editor → Settings ⚙️)
-
-| Setting | Recommendation | Why |
-|---|---|---|
-| Collect email addresses | **On** | Gives you a dated record of who submitted each revision round |
-| Restrict to one response | Off (leave as-is) | A client may legitimately have multiple phases; see "Per-phase copies" below |
-| Edit after submit | Your choice | Off keeps a cleaner contractual record |
-| See summary charts | Off | N/A for clients |
-| Confirmation message | Already set by script | Customize wording if desired |
-
-## 4. Known Google Forms limitations & how this build handles them
-
-1. **No native signature capture.** Google Forms can't collect a drawn signature.
-   This build uses a **typed client name** as the electronic signature (per a note on
-   the question itself). For a real drawn signature, Jotform (the chat's #1 pick) is
-   the better platform.
-2. **No "＋ Add another revision" pattern.** Google Forms has no repeatable blocks,
-   so each section ships with **4 numbered blocks**. Block 1 is required (production);
-   the rest are optional. Clients with more items can continue in *Anything Else*.
-3. **File/image upload requires Google sign-in.** If you add a file-upload question,
-   every client must sign in to a Google account to submit. This build therefore uses
-   **reference links** (Pinterest/Houzz/Instagram) instead — zero sign-in friction.
-4. **Section routing is one-way per question.** In production, "Both" routes clients
-   through the Architectural section, where a binder question asks *"Do you also have
-   material & finish revisions?"* — Yes → material section; No → skips ahead.
-
-## 5. Using it as a per-phase template
-
-Each design phase is entitled to its own round, so use **one form link per phase**:
-
-- **Option A (separate links):** In the form editor, ⋮ menu → **Make a copy** for each
-  phase (e.g., "— Concept Phase", "— Design Development"). Send each client the link
-  for the current phase only. Responses stay in separate sheets.
-- **Option B (single link, filter later):** Keep one form; the **Design Phase**
-  dropdown records the phase per submission. Filter the responses sheet by phase when
-  tracking each round.
-
-## 6. Editing the template for another client / rate
-
-All variables live at the top of `revision_request_form.gs`:
-
-```js
-var BUSINESS      = 'Pepper & Olive Interiors';
-var HOURLY_RATE   = 225;
-var BLOCKS_PER_SECTION = 4;   // numbered revision rows per section
-var PREVIEW_MODE  = true;     // flip to false for the production build
-```
-
-Change them, re-run the script, and a fresh form is generated.
+It remains a valid no-backend option — it just can't do unlimited revision
+items, which is why this POC exists.

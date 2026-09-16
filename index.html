@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Design Revision Request — Proof of Concept</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ═══════════════════════════ TOP BAR ═══════════════════════════ -->
+  <header class="topbar">
+    <div class="topbar__brand">
+      <span class="topbar__mark" aria-hidden="true">P&amp;O</span>
+      <div>
+        <strong id="brandName">Pepper &amp; Olive Interiors</strong>
+        <span class="topbar__sub">Revision Request Form</span>
+      </div>
+    </div>
+    <div class="topbar__actions">
+      <button type="button" class="btn btn--ghost" id="officeBtn">Office view</button>
+      <button type="button" class="btn btn--ghost" id="setupBtn">Team setup</button>
+    </div>
+  </header>
+
+  <main class="page">
+    <!-- ═══════════════════════════ INTRO ═══════════════════════════ -->
+    <section class="hero">
+      <p class="eyebrow" id="heroEyebrow">Pepper &amp; Olive Interiors</p>
+      <h1 id="heroTitle">Design Revision Request</h1>
+      <p class="hero__sub" id="heroSub"></p>
+      <details class="policy" id="policyBox">
+        <summary>Please read: how revision rounds work</summary>
+        <div class="policy__body" id="policyBody"></div>
+      </details>
+    </section>
+
+    <form id="revisionForm" novalidate>
+      <!-- ── ABOUT THE ROUND ── -->
+      <section class="card" id="aboutCard">
+        <div class="card__head">
+          <span class="step">01</span>
+          <div>
+            <h2>About your revision round</h2>
+            <p>Tell us who you are and which design phase this applies to.</p>
+          </div>
+        </div>
+        <div class="grid" id="aboutFields"></div>
+      </section>
+
+      <!-- ── REPEATABLE REVISION ITEMS ── -->
+      <section class="card" id="itemsCard">
+        <div class="card__head">
+          <span class="step">02</span>
+          <div>
+            <h2>Your revision items</h2>
+            <p>
+              Add one item per change. There is <strong>no limit</strong> — add as
+              many as you need.
+            </p>
+          </div>
+          <span class="counter" id="itemCounter">1 item</span>
+        </div>
+
+        <div class="items" id="items"></div>
+
+        <button type="button" class="add-btn" id="addItemBtn">
+          <span class="add-btn__plus" aria-hidden="true">＋</span>
+          Add another revision
+        </button>
+        <p class="items__hint" id="itemsHint"></p>
+      </section>
+
+      <!-- ── ACKNOWLEDGMENT ── -->
+      <section class="card" id="ackCard">
+        <div class="card__head">
+          <span class="step">03</span>
+          <div>
+            <h2>Acknowledgment</h2>
+            <p>Before submitting, please confirm the statements below.</p>
+          </div>
+        </div>
+        <div id="ackFields"></div>
+      </section>
+
+      <!-- ── SUBMIT ── -->
+      <div class="submitbar">
+        <div class="submitbar__meta">
+          <span id="draftStatus" class="draft-status">Draft saved locally</span>
+          <button type="button" class="linkbtn" id="clearDraftBtn">Clear draft</button>
+        </div>
+        <button type="submit" class="btn btn--primary btn--lg" id="submitBtn">
+          Submit revision request
+        </button>
+      </div>
+    </form>
+
+    <footer class="foot">
+      <p>
+        Proof of concept · unlimited revision items · nothing is sent to a server —
+        submissions are stored in this browser for demonstration.
+      </p>
+    </footer>
+  </main>
+
+  <!-- ═══════════════════════════ SUCCESS MODAL ═══════════════════════════ -->
+  <div class="overlay" id="successOverlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="successTitle">
+      <div class="modal__check" aria-hidden="true">✓</div>
+      <h2 id="successTitle">Revision request received</h2>
+      <p id="successBody"></p>
+      <div class="modal__actions">
+        <button class="btn btn--primary" id="downloadJsonBtn">Download JSON</button>
+        <button class="btn btn--ghost" id="downloadCsvBtn">Download CSV</button>
+        <button class="btn btn--ghost" id="startOverBtn">Start a new round</button>
+      </div>
+      <details class="payload">
+        <summary>What our team would receive</summary>
+        <pre id="payloadPreview"></pre>
+      </details>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ TEAM SETUP DRAWER ═══════════════════════════ -->
+  <aside class="drawer" id="setupDrawer" hidden aria-labelledby="setupTitle">
+    <div class="drawer__head">
+      <div>
+        <h2 id="setupTitle">Team setup</h2>
+        <p>Decide what to ask. Changes apply live and are saved in this browser.</p>
+      </div>
+      <button type="button" class="iconbtn" id="closeSetupBtn" aria-label="Close">✕</button>
+    </div>
+    <div class="drawer__body" id="setupBody"></div>
+    <div class="drawer__foot">
+      <button type="button" class="btn btn--primary" id="saveConfigBtn">Save &amp; apply</button>
+      <button type="button" class="btn btn--ghost" id="exportConfigBtn">Export config</button>
+      <button type="button" class="btn btn--ghost" id="importConfigBtn">Import config</button>
+      <input type="file" id="importConfigFile" accept="application/json" hidden />
+      <button type="button" class="btn btn--danger" id="resetConfigBtn">Reset to defaults</button>
+    </div>
+  </aside>
+  <div class="scrim" id="setupScrim" hidden></div>
+
+  <!-- ═══════════════════════════ OFFICE VIEW DRAWER ═══════════════════════════ -->
+  <aside class="drawer" id="officeDrawer" hidden aria-labelledby="officeTitle">
+    <div class="drawer__head">
+      <div>
+        <h2 id="officeTitle">Office view</h2>
+        <p>Submissions captured in this browser (demo data store).</p>
+      </div>
+      <div class="drawer__head-actions">
+        <button type="button" class="btn btn--ghost" id="exportAllCsvBtn">Export all CSV</button>
+        <button type="button" class="iconbtn" id="closeOfficeBtn" aria-label="Close">✕</button>
+      </div>
+    </div>
+    <div class="drawer__body" id="officeBody"></div>
+  </aside>
+  <div class="scrim" id="officeScrim" hidden></div>
+
+  <!-- ═══════════════════════════ TOAST ═══════════════════════════ -->
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
