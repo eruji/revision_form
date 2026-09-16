@@ -86,6 +86,26 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; letter-spac
   padding: clamp(24px, 4vw, 48px) clamp(16px, 4vw, 24px) 80px;
 }
 
+/* ───────────────────────────── Review banner ───────────────────────────── */
+.review-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 14px 16px;
+  background: #fff8e6;
+  border: 1px solid #ecd9a6;
+  border-left: 4px solid #d9a441;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.review-banner__icon { font-size: 20px; line-height: 1.4; }
+.review-banner__text { flex: 1; font-size: 13px; line-height: 1.55; color: #5c4a1e; }
+.review-banner__text strong { display: block; font-size: 13.5px; color: #7a5c12; }
+.review-banner__text b { color: #4a3a10; }
+.review-banner .iconbtn { color: #a08540; flex: 0 0 auto; }
+.review-banner .iconbtn:hover { background: #f6e7bd; color: #5c4a1e; }
+
 /* ───────────────────────────── Hero ───────────────────────────── */
 .hero { text-align: center; margin-bottom: 28px; }
 .eyebrow {

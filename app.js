@@ -184,6 +184,18 @@
     });
   }
 
+  // ── Review banner (only relevant when the page is opened with ?review) ────
+  function initReviewBanner() {
+    let wanted = false;
+    try { wanted = new URLSearchParams(location.search).has('review'); } catch (e) {}
+    if (!wanted) return;
+    try {
+      if (sessionStorage.getItem('po_review_dismissed') === '1') return;
+    } catch (e) {}
+    $('#reviewBanner').hidden = false;
+    document.body.classList.add('is-review');
+  }
+
   // ── Revision items (unlimited) ───────────────────────────────────────────
   function newItem(values) {
     return { uid: uid(), values: values || {} };
@@ -848,6 +860,11 @@
     $('#addItemBtn').addEventListener('click', addItem);
     $('#revisionForm').addEventListener('submit', handleSubmit);
 
+    $('#dismissReview').addEventListener('click', () => {
+      $('#reviewBanner').hidden = true;
+      try { sessionStorage.setItem('po_review_dismissed', '1'); } catch (e) {}
+    });
+
     $('#clearDraftBtn').addEventListener('click', () => {
       clearDraft();
       resetForm();
@@ -903,6 +920,7 @@
     renderItems();
     renderAck();
     bind();
+    initReviewBanner();
     if (localStorage.getItem(KEY_DRAFT)) {
       $('#draftStatus').textContent = 'Draft restored ✓';
       $('#draftStatus').classList.add('is-saved');

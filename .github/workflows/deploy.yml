@@ -1,0 +1,39 @@
+name: Deploy to Netlify
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Only one production deploy at a time; newer pushes cancel in-flight runs.
+concurrency:
+  group: netlify-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # The app is plain HTML/CSS/JS, so we stage just the web files to deploy.
+      # This keeps .git, README, and the legacy .gs script off the live site.
+      - name: Stage static site
+        run: |
+          mkdir -p dist
+          cp index.html styles.css config.js app.js netlify.toml dist/
+
+      - name: Deploy to Netlify (production)
+        run: npx --yes netlify-cli@latest deploy --prod --dir=dist
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}

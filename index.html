@@ -29,6 +29,21 @@
   </header>
 
   <main class="page">
+    <!-- ═══════════ REVIEW BANNER (only shown with ?review=1) ═══════════ -->
+    <div class="review-banner" id="reviewBanner" hidden>
+      <span class="review-banner__icon" aria-hidden="true">👋</span>
+      <div class="review-banner__text">
+        <strong>Review mode</strong>
+        <span>
+          This is a proof of concept. Click <b>＋ Add another revision</b> as many
+          times as you like. Use <b>Team setup</b> (top right) to change what we ask,
+          and <b>Office view</b> to see what our team would receive after you submit.
+          Nothing leaves your browser.
+        </span>
+      </div>
+      <button type="button" class="iconbtn" id="dismissReview" aria-label="Dismiss review banner">✕</button>
+    </div>
+
     <!-- ═══════════════════════════ INTRO ═══════════════════════════ -->
     <section class="hero">
       <p class="eyebrow" id="heroEyebrow">Pepper &amp; Olive Interiors</p>
