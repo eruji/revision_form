@@ -52,9 +52,16 @@
     <!-- List -->
     <section id="listWrap" hidden>
       <div class="admin-summary" id="adminSummary"></div>
+      <h2 class="admin-heading">Submitted revision requests</h2>
       <div id="adminList"></div>
+      <h2 class="admin-heading">Saved drafts <span class="admin-heading__note" id="draftCount"></span></h2>
+      <p class="admin-hint">Drafts are still in progress. Use <b>View</b> to read one, or
+        <b>Copy client link</b> to send the client back to continue editing.</p>
+      <div id="draftList"></div>
     </section>
   </main>
+
+  <div class="toast" id="toast" hidden></div>
 
   <script src="config.js"></script>
   <script src="admin.js"></script>

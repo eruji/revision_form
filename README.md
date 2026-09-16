@@ -63,11 +63,15 @@ to browser `localStorage` so you can still demo it offline.
 | **Office reads responses** | Password-protected `/admin.html` dashboard with **Export all CSV** (opens in Sheets). The in-app **Office view** shows same-browser submissions for demos. |
 | **Client can't see others** | Every submission gets a secret 256-bit token. `/api/get` returns only the submission matching that token, and unknown tokens get a plain 404. There is **no public endpoint that lists submissions**. |
 | **Save progress until submit** | Autosave in the browser, plus **Save & continue later** → a resume code stored server-side that works on any device via `/?resume=CODE`. |
+| **Office can see and share drafts** | Saved drafts appear in the office dashboard with a **View** read-only link (`/view.html?draft=CODE`) and a **Copy client link** button to send the client back to finish. |
 | **Client copy for records** | Private read-only page with **Print / Save as PDF** and **Download JSON**. |
 | **Read-only online view** | `/view.html?token=…` — no edit fields. |
 
 ### Office dashboard
 - URL: `/admin.html` on the live site.
+- Shows **submitted requests** and **saved drafts**. For each draft you can
+  **View** it read-only (`/view.html?draft=CODE`), **Copy client link** (the
+  resume link to send back to the client), or **Delete** it.
 - Password: stored as the `ADMIN_PASSWORD` environment variable in Netlify.
 - To change it:
   ```bash

@@ -59,8 +59,7 @@
     status.textContent = message;
   }
 
-  function labelValueRows(labels, values, opts) {
-    opts = opts || {};
+  function labelValueRows(labels, values, opts) {    opts = opts || {};
     const rows = [];
     Object.keys(labels || {}).forEach((id) => {
       const v = values ? values[id] : '';
@@ -72,6 +71,19 @@
       rows.push({ label: labels[id], value: display, checked: isCheckbox ? (v === true || v === 'true') : null });
     });
     return rows;
+  }
+
+  function cfgLabels() {
+    const map = (fields) => {
+      const m = {};
+      (fields || []).forEach((f) => { if (f.enabled !== false) m[f.id] = f.label; });
+      return m;
+    };
+    return {
+      about: map(CFG.aboutFields),
+      revision: map(CFG.revisionFields),
+      ack: map(CFG.ackFields)
+    };
   }
 
   function renderAbout(sub) {
@@ -118,7 +130,11 @@
     const wrap = $('#viewAck');
     wrap.innerHTML = '';
     const labels = (sub._labels && sub._labels.ack) || {};
-    const rows = labelValueRows(labels, sub.acknowledgment);
+    const values = sub.acknowledgment || {};
+    // Hide the section entirely for an untouched draft.
+    const anyValue = Object.keys(values).some((k) => values[k] === true || values[k] === 'true' || (values[k] != null && values[k] !== ''));
+    if (!anyValue) { $('#viewAckCard').hidden = true; return; }
+    const rows = labelValueRows(labels, values);
     if (!rows.length) {
       $('#viewAckCard').hidden = true;
       return;
@@ -135,12 +151,22 @@
     });
   }
 
-  function render(sub, submittedAt) {
+  function render(sub, submittedAt, opts) {
+    opts = opts || {};
+    const isDraft = !!opts.draft;
     $('#brandName').textContent = sub.business || CFG.business || 'Revision Request';
     $('#viewBusiness').textContent = sub.business || CFG.business || '';
-    $('#viewTitle').textContent = CFG.formTitle || 'Design Revision Request';
+    $('#viewTitle').textContent = (isDraft ? 'Draft ' : '') + (CFG.formTitle || 'Design Revision Request');
     $('#footBusiness').textContent = sub.business || CFG.business || '';
-    document.title = 'Revision Request — ' + (sub.business || 'Read-only copy');
+    document.title = (isDraft ? 'Draft — ' : 'Revision Request — ') + (sub.business || 'Read-only copy');
+
+    // Draft banner
+    if (isDraft) {
+      $('#draftBanner').hidden = false;
+      $('#draftBannerText').textContent =
+        'This is a saved draft' + (opts.code ? ' (code ' + opts.code + ')' : '') +
+        '. Nothing has been submitted yet — the client can continue editing with the resume link.';
+    }
 
     const aboutLabels = (sub._labels && sub._labels.about) || {};
     const nameId = Object.keys(aboutLabels).find((id) => /client name/i.test(aboutLabels[id]));
@@ -150,7 +176,7 @@
     const metaParts = [];
     if (name) metaParts.push(name);
     if (project) metaParts.push(project);
-    metaParts.push('Submitted ' + fmtDate(submittedAt || sub.submittedAt));
+    metaParts.push((isDraft ? 'Saved ' : 'Submitted ') + fmtDate(submittedAt || sub.submittedAt));
     $('#viewMeta').textContent = metaParts.join(' · ');
 
     renderAbout(sub);
@@ -160,7 +186,7 @@
     $('#status').hidden = true;
     $('#view').hidden = false;
 
-    const safeName = (name || 'revision-request').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+    const safeName = ((name || 'revision-request') + (isDraft ? '-draft' : '')).replace(/[^a-z0-9]+/gi, '-').toLowerCase();
     $('#downloadBtn').addEventListener('click', () =>
       download(safeName + '.json', JSON.stringify(sub, null, 2))
     );
@@ -172,6 +198,30 @@
     const p = params();
     const token = p.get('token');
     const localId = p.get('local');
+    const draftCode = p.get('draft');
+
+    if (draftCode) {
+      try {
+        const res = await fetch('/api/draft?code=' + encodeURIComponent(draftCode), { cache: 'no-store' });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data && data.ok && data.data) {
+          const d = data.data;
+          render({
+            business: CFG.business,
+            about: d.about || {},
+            revisions: (d.items || []).map((i) => i.values || {}),
+            acknowledgment: d.acknowledgment || {},
+            _labels: cfgLabels()
+          }, data.savedAt, { draft: true, code: data.code });
+          return;
+        }
+        showError('We could not find this draft. Please check that the full link was copied.');
+        return;
+      } catch (e) {
+        showError('We could not load this draft right now. Please try again later.');
+        return;
+      }
+    }
 
     if (token) {
       try {

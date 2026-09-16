@@ -84,6 +84,24 @@ exports.handler = async (event) => {
   if (!expected) return json(500, { ok: false, error: 'ADMIN_PASSWORD is not configured' });
   if (provided !== expected) return json(401, { ok: false, error: 'Unauthorized' });
 
+  const qs = event.queryStringParameters || {};
+
+  // Delete a saved draft (office cleanup).
+  if (event.httpMethod === 'DELETE' && qs.draft) {
+    const code = String(qs.draft).trim().toUpperCase();
+    if (!/^[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code)) return json(400, { ok: false, error: 'Invalid code' });
+    try {
+      const draftStore = openStore('revision-drafts');
+      await draftStore.delete('draft_' + require('crypto').createHash('sha256').update(code).digest('hex'));
+      let index = [];
+      try { index = (await draftStore.get('__draft_index__', { type: 'json' })) || []; } catch (e) { index = []; }
+      await draftStore.setJSON('__draft_index__', index.filter((e) => e && e.code !== code));
+      return json(200, { ok: true });
+    } catch (e) {
+      return json(500, { ok: false, error: 'Could not delete draft' });
+    }
+  }
+
   try {
     const store = openStore('revision-submissions');
     let index = [];
@@ -95,8 +113,14 @@ exports.handler = async (event) => {
       if (rec) records.push(rec);
     }
 
-    const format = (event.queryStringParameters || {}).format;
-    if (format === 'csv') {
+    // Drafts that clients have saved but not yet submitted.
+    let drafts = [];
+    try {
+      const draftStore = openStore('revision-drafts');
+      drafts = (await draftStore.get('__draft_index__', { type: 'json' })) || [];
+    } catch (e) { drafts = []; }
+
+    if (qs.format === 'csv') {
       return {
         statusCode: 200,
         headers: {
@@ -108,7 +132,7 @@ exports.handler = async (event) => {
       };
     }
 
-    return json(200, { ok: true, count: records.length, records: records });
+    return json(200, { ok: true, count: records.length, records: records, drafts: drafts });
   } catch (e) {
     return json(500, { ok: false, error: 'Could not load submissions' });
   }

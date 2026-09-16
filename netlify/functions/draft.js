@@ -6,6 +6,8 @@
  *
  * Lets a client stop halfway through a long form and resume on any device
  * with a short, human-friendly code. Drafts are keyed by the hash of the code.
+ * The raw code + a small summary are kept in an index so the office dashboard
+ * can list drafts and hand the link back to the client.
  */
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
@@ -20,10 +22,10 @@ function openStore(name) {
   return getStore(name);
 }
 
-
 const MAX_BYTES = 200 * 1024;
 const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no ambiguous chars
 const CODE_RE = /^[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+const INDEX_KEY = '__draft_index__';
 
 function json(statusCode, body) {
   return {
@@ -44,6 +46,25 @@ function draftKey(code) {
   return 'draft_' + crypto.createHash('sha256').update(code).digest('hex');
 }
 
+function summaryFrom(code, data, savedAt) {
+  const about = data.about || {};
+  return {
+    code: code,
+    savedAt: savedAt,
+    clientName: about.clientName || '',
+    projectName: about.projectName || '',
+    itemCount: Array.isArray(data.items) ? data.items.length : 0
+  };
+}
+
+async function updateIndex(store, entry, remove) {
+  let index = [];
+  try { index = (await store.get(INDEX_KEY, { type: 'json' })) || []; } catch (e) { index = []; }
+  index = index.filter((e) => e && e.code !== entry.code);
+  if (!remove) index.unshift(entry);
+  await store.setJSON(INDEX_KEY, index);
+}
+
 exports.handler = async (event) => {
   const store = openStore('revision-drafts');
   const qs = event.queryStringParameters || {};
@@ -61,7 +82,10 @@ exports.handler = async (event) => {
     if (code && !CODE_RE.test(code)) return json(400, { ok: false, error: 'Invalid code' });
     if (!code) code = newCode();
 
-    await store.setJSON(draftKey(code), { data: data, savedAt: new Date().toISOString() });
+    const savedAt = new Date().toISOString();
+    await store.setJSON(draftKey(code), { code: code, data: data, savedAt: savedAt });
+    await updateIndex(store, summaryFrom(code, data, savedAt), false);
+
     return json(200, { ok: true, code: code, resumeUrl: '/?resume=' + encodeURIComponent(code) });
   }
 
@@ -77,6 +101,7 @@ exports.handler = async (event) => {
     const code = String(qs.code || '').trim().toUpperCase();
     if (!CODE_RE.test(code)) return json(400, { ok: false, error: 'Invalid code' });
     await store.delete(draftKey(code));
+    await updateIndex(store, { code: code }, true);
     return json(200, { ok: true });
   }
 

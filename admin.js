@@ -115,6 +115,91 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  function copyText(text, btn) {
+    const done = () => {
+      if (!btn) return;
+      const original = btn.textContent;
+      btn.textContent = 'Copied';
+      setTimeout(() => { btn.textContent = original; }, 1200);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else {
+      fallbackCopy(text, done);
+    }
+  }
+
+  function fallbackCopy(text, done) {
+    const ta = h('textarea', {});
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.append(ta);
+    ta.select();
+    try { document.execCommand('copy'); if (done) done(); } catch (e) {}
+    ta.remove();
+  }
+
+  function toast(msg) {
+    const t = document.querySelector('#toast');
+    if (!t) return;
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => { t.hidden = true; }, 2400);
+  }
+
+  function clientLink(code) { return location.origin + '/?resume=' + encodeURIComponent(code); }
+  function draftViewLink(code) { return location.origin + '/view.html?draft=' + encodeURIComponent(code); }
+
+  async function deleteDraft(code, name) {
+    if (!window.confirm('Delete the saved draft for ' + (name || 'this client') + '? This cannot be undone.')) return;
+    try {
+      const res = await fetch('/api/admin?draft=' + encodeURIComponent(code), {
+        method: 'DELETE', headers: { 'x-admin-key': getKey() }, cache: 'no-store'
+      });
+      if (!res.ok) throw new Error('delete failed');
+      toast('Draft deleted');
+      load(getKey(), false);
+    } catch (e) {
+      toast('Could not delete draft');
+    }
+  }
+
+  function renderDrafts(drafts) {
+    const list = document.querySelector('#draftList');
+    const count = document.querySelector('#draftCount');
+    if (!list) return;
+    list.innerHTML = '';
+    if (count) count.textContent = drafts.length ? '(' + drafts.length + ')' : '';
+
+    if (!drafts.length) {
+      list.append(h('p', { class: 'admin-empty', text: 'No saved drafts right now.' }));
+      return;
+    }
+
+    drafts.forEach((d) => {
+      const name = d.clientName || 'Unnamed client';
+      const project = d.projectName ? ' · ' + d.projectName : '';
+      list.append(h('div', { class: 'draft-card' },
+        h('div', { class: 'draft-card__head' },
+          h('strong', { text: name + project }),
+          h('span', { class: 'badge', text: (d.itemCount || 0) + (d.itemCount === 1 ? ' item' : ' items') })
+        ),
+        h('div', { class: 'draft-card__meta' },
+          h('span', { text: 'Saved ' + fmtDate(d.savedAt) }),
+          h('code', { class: 'code-chip', text: d.code })
+        ),
+        h('div', { class: 'draft-card__actions' },
+          h('a', { class: 'btn btn--ghost', href: draftViewLink(d.code), target: '_blank', rel: 'noopener', text: 'View' }),
+          h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy client link',
+            onclick: (e) => copyText(clientLink(d.code), e.currentTarget) }),
+          h('button', { type: 'button', class: 'btn btn--danger', text: 'Delete',
+            onclick: () => deleteDraft(d.code, name) })
+        )
+      ));
+    });
+  }
   function renderRecords(records) {
     const list = $('#adminList');
     list.innerHTML = '';
@@ -166,6 +251,7 @@
       setKey(key);
       showList();
       renderRecords(data.records || []);
+      renderDrafts(data.drafts || []);
       return true;
     } catch (e) {
       showGate(false);
