@@ -50,6 +50,17 @@ Then open <http://localhost:8080>.
 > a demo data store — perfect for evaluating the experience before wiring it to
 > a real backend.
 
+## Share for review
+
+| Link | Use |
+|---|---|
+| **https://pepper-olive-revision-form.netlify.app/?review=1** | **Send this to reviewers** — shows a dismissible "Review mode" banner explaining what to click |
+| https://pepper-olive-revision-form.netlify.app | The clean, client-facing version (no banner) |
+
+Every push to `main` auto-deploys to Netlify via
+`.github/workflows/deploy.yml`, using the `NETLIFY_AUTH_TOKEN` and
+`NETLIFY_SITE_ID` repository secrets.
+
 ---
 
 ## What the client experiences
