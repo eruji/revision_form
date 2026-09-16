@@ -13,6 +13,17 @@
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 
+// Blobs needs an explicit siteID + token when functions are deployed outside
+// Netlify's own build (e.g. via `netlify deploy` from CI). When Netlify injects
+// the context automatically, the fallback below is used.
+function openStore(name) {
+  const siteID = process.env.BLOBS_SITE_ID || process.env.NETLIFY_SITE_ID;
+  const token = process.env.BLOBS_TOKEN;
+  if (siteID && token) return getStore({ name: name, siteID: siteID, token: token });
+  return getStore(name);
+}
+
+
 const MAX_BYTES = 200 * 1024; // 200 KB per submission
 
 function json(statusCode, body) {
@@ -59,7 +70,7 @@ exports.handler = async (event) => {
   };
 
   try {
-    const store = getStore('revision-submissions');
+    const store = openStore('revision-submissions');
     await store.setJSON(key, record);
 
     // Maintain a lightweight index so the office dashboard doesn't need to
@@ -85,6 +96,6 @@ exports.handler = async (event) => {
       viewUrl: '/view.html?token=' + encodeURIComponent(token)
     });
   } catch (e) {
-    return json(500, { ok: false, error: 'Could not save submission' });
+    return json(500, { ok: false, error: 'Could not save submission', detail: String(e && e.message || e) });
   }
 };

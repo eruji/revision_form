@@ -10,6 +10,17 @@
  */
 const { getStore } = require('@netlify/blobs');
 
+// Blobs needs an explicit siteID + token when functions are deployed outside
+// Netlify's own build (e.g. via `netlify deploy` from CI). When Netlify injects
+// the context automatically, the fallback below is used.
+function openStore(name) {
+  const siteID = process.env.BLOBS_SITE_ID || process.env.NETLIFY_SITE_ID;
+  const token = process.env.BLOBS_TOKEN;
+  if (siteID && token) return getStore({ name: name, siteID: siteID, token: token });
+  return getStore(name);
+}
+
+
 function json(statusCode, body) {
   return {
     statusCode,
@@ -74,7 +85,7 @@ exports.handler = async (event) => {
   if (provided !== expected) return json(401, { ok: false, error: 'Unauthorized' });
 
   try {
-    const store = getStore('revision-submissions');
+    const store = openStore('revision-submissions');
     let index = [];
     try { index = (await store.get('__index__', { type: 'json' })) || []; } catch (e) { index = []; }
 
@@ -99,6 +110,6 @@ exports.handler = async (event) => {
 
     return json(200, { ok: true, count: records.length, records: records });
   } catch (e) {
-    return json(500, { ok: false, error: 'Could not load submissions' });
+    return json(500, { ok: false, error: 'Could not load submissions', detail: String(e && e.message || e) });
   }
 };
