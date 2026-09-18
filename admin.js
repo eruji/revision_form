@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Office view — password-protected list of submitted revision requests.
+   Office dashboard — password-protected list of submitted revision requests.
    Talks to /api/admin, sending the team password in the x-admin-key header.
    The password is kept in sessionStorage for the tab only.
    ═══════════════════════════════════════════════════════════════════════════ */

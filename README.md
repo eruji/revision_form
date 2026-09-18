@@ -27,7 +27,7 @@ A real form needs to grow with the client. That's what this POC does.
 
 | File | Purpose |
 |---|---|
-| `index.html` | Client form shell (form + Team setup + in-browser Office view) |
+| `index.html` | Client form shell (form + hidden Team setup panel) |
 | `view.html` / `view.js` | Private read-only copy (`?token=…`) with print/PDF + JSON |
 | `admin.html` / `admin.js` | Password-protected office dashboard with CSV export |
 | `styles.css` | Styling — olive/cream brand palette, responsive |
@@ -61,7 +61,7 @@ to browser `localStorage` so you can still demo it offline.
 
 | Requirement | How it works |
 |---|---|
-| **Office reads responses** | Password-protected `/admin.html` dashboard with **Export all CSV** (opens in Sheets). The in-app **Office view** shows same-browser submissions for demos. |
+| **Office reads responses** | Password-protected `/admin.html` dashboard lists every submission with **Export all CSV** (opens in Sheets). |
 | **Client can't see others** | Every submission gets a secret 256-bit token. `/api/get` returns only the submission matching that token, and unknown tokens get a plain 404. There is **no public endpoint that lists submissions**. |
 | **Save progress until submit** | Autosave in the browser, plus **Save & continue later** → a resume code stored server-side that works on any device via `/?resume=CODE`. Saved drafts **expire after 30 days**. |
 | **Office can see and share drafts** | Saved drafts appear in the office dashboard with a **View** read-only link (`/view.html?draft=CODE`) and a **Copy client link** button to send the client back to finish. |
@@ -221,13 +221,15 @@ a *Clear draft* button too.
 
 ---
 
-## The two tools for your team
+## The tools for your team
 
 These are the parts that directly answer *“what should we ask?”*
 
 ### 🔧 Team setup (internal — hidden from clients)
-Reachable from the office dashboard's **Team setup** button (or `/?manage=1`).
-Clients never see it. A live panel over the form:
+Reachable from the office dashboard's **Team setup** button, which opens
+`/?manage=1&setup=1` and drops you straight into the panel (or use
+`/?manage=1` and click the button). Clients never see it. A live panel over the
+form:
 - Turn any question **on/off** and mark it **required**.
 - **Rename** question labels inline.
 - **Reorder** the fields that appear on every revision item.
@@ -241,15 +243,14 @@ Clients never see it. A live panel over the form:
 Changes apply instantly and persist in your browser. This makes it cheap to
 prototype three or four question sets, screenshot them, and pick one as a team.
 
-### 🗂 Office view (internal — mostly superseded by the dashboard)
-For live submissions, the office uses the password-protected **`/admin.html`**
-dashboard (see “Reading responses” above), which lists all clients, exports CSV,
-and manages request links. The in-app **Office view** button (available under
-`/?manage=1`) only shows submissions stored in the current browser — handy for
-demos when the backend isn't running.
+### 🗂 Office dashboard (internal — the one place the team reads submissions)
+The password-protected **`/admin.html`** dashboard (see “Reading responses”
+above) lists every client, exports CSV, manages request links, and archives or
+deletes requests. It links to **Team setup**; there is no separate in-app office
+view.
 
-Both the **Office view** and **Team setup** buttons are **hidden from clients**;
-they appear only when the URL includes `?manage=1`.
+The **Team setup** button is **hidden from clients**; it appears only when the
+URL includes `?manage=1`.
 
 ---
 
@@ -258,8 +259,8 @@ they appear only when the URL includes `?manage=1`.
 1. Open **Team setup** and try toggling `Priority` on, adding a custom question,
    and rewording the intro. Save.
 2. Submit a fake round with **10 items** to feel the unlimited flow.
-3. Open **Office view** → *Export all CSV*. Is that the shape your team wants to
-   triage from?
+3. Open the office dashboard (`/admin.html`) → *Export all CSV*. Is that the
+   shape your team wants to triage from?
 4. Decide together:
    - Which fields are **required vs. nice-to-have**?
    - Do we want a **priority** or **deadline** field?

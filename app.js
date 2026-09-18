@@ -504,18 +504,22 @@
     document.body.classList.add('is-review');
   }
 
-  // Team Setup / Office view are internal tools. They are hidden from clients
-  // and revealed only for the team via ?manage=1 (the admin panel links to it).
+  // Team Setup is an internal tool. It is hidden from clients and revealed
+  // only for the team via ?manage=1 (the admin panel links straight to it with
+  // ?manage=1&setup=1, which also opens the drawer).
   function initManageTools() {
     let manage = false;
+    let openOnLoad = false;
     try {
       const p = new URLSearchParams(location.search);
       manage = p.has('manage') || p.has('setup');
+      openOnLoad = p.has('setup');
     } catch (e) {}
     if (manage) {
       const el = $('#topbarActions');
       if (el) el.hidden = false;
     }
+    if (openOnLoad) openSetup();
   }
 
   // ── Revision items (unlimited) ───────────────────────────────────────────
@@ -1240,85 +1244,6 @@
     reader.readAsText(file);
   }
 
-  // ── Office view ──────────────────────────────────────────────────────────
-  function openOffice() {
-    renderOffice();
-    $('#officeDrawer').hidden = false;
-    $('#officeScrim').hidden = false;
-  }
-
-  function closeOffice() {
-    $('#officeDrawer').hidden = true;
-    $('#officeScrim').hidden = true;
-  }
-
-  function renderOffice() {
-    const body = $('#officeBody');
-    body.innerHTML = '';
-    const subs = getSubmissions();
-
-    if (!subs.length) {
-      body.append(h('div', { class: 'empty-state' },
-        h('div', { text: '🗂' }),
-        h('p', { text: 'No submissions yet.' }),
-        h('p', { text: 'Submit the form to see how the office would receive and export the data.' })
-      ));
-      return;
-    }
-
-    subs.forEach((sub) => {
-      const aboutId = Object.keys(sub._labels.about).find((id) => /client name/i.test(sub._labels.about[id]));
-      const projId = Object.keys(sub._labels.about).find((id) => /project/i.test(sub._labels.about[id]));
-      const author = aboutId ? sub.about[aboutId] : 'Client';
-      const project = projId ? sub.about[projId] : '';
-      const when = new Date(sub.submittedAt).toLocaleString();
-
-      const itemsWrap = h('div', { class: 'sub__body' });
-      sub.revisions.forEach((rev, i) => {
-        const cat = rev.category || 'Revision';
-        const loc = rev.location ? ' — ' + rev.location : '';
-        const desc = rev.description || rev.reason || '';
-        itemsWrap.append(h('div', { class: 'sub__item' },
-          h('b', { text: '#' + (i + 1) + ' ' + cat + loc }),
-          desc ? h('small', { text: desc }) : null
-        ));
-      });
-
-      body.append(h('div', { class: 'sub' },
-        h('div', { class: 'sub__head' },
-          h('strong', { text: author + (project ? ' · ' + project : '') }),
-          h('span', { text: when }),
-          h('span', { class: 'badge', text: sub.revisions.length + (sub.revisions.length === 1 ? ' item' : ' items') }),
-          h('a', {
-            class: 'linkbtn', text: 'Open', target: '_blank', rel: 'noopener',
-            href: sub._viewUrl
-              ? new URL(sub._viewUrl, location.href).href
-              : new URL('view.html?local=' + encodeURIComponent(sub.id), location.href).href
-          }),
-          h('button', {
-            type: 'button', class: 'linkbtn', text: 'JSON',
-            onclick: () => download('revision-' + author.replace(/\W+/g, '-').toLowerCase() + '.json', JSON.stringify(sub, null, 2), 'application/json')
-          })
-        ),
-        itemsWrap
-      ));
-    });
-  }
-
-  function exportAllCsv() {
-    const subs = getSubmissions();
-    if (!subs.length) { toast('No submissions to export'); return; }
-    let header = null;
-    const rows = [];
-    subs.forEach((sub) => {
-      const r = submissionRows(sub);
-      if (!header) header = r.header;
-      r.rows.forEach((row) => rows.push(row));
-    });
-    download('revision-requests.csv', toCsv([header, ...rows]), 'text/csv');
-    toast('CSV exported');
-  }
-
   // ── Office-issued request context (replaces section 01) ──────────────────
   async function loadRoundContext() {
     let id = '';
@@ -1455,15 +1380,9 @@
       toast('Defaults restored — click Save & apply');
     });
 
-    $('#officeBtn').addEventListener('click', openOffice);
-    $('#closeOfficeBtn').addEventListener('click', closeOffice);
-    $('#officeScrim').addEventListener('click', closeOffice);
-    $('#exportAllCsvBtn').addEventListener('click', exportAllCsv);
-
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
       if (!$('#setupDrawer').hidden) closeSetup();
-      if (!$('#officeDrawer').hidden) closeOffice();
       if (!$('#successOverlay').hidden) hideSuccess();
       if (!$('#draftOverlay').hidden) $('#draftOverlay').hidden = true;
     });

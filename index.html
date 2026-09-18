@@ -23,7 +23,6 @@
       </div>
     </div>
     <div class="topbar__actions" id="topbarActions" hidden>
-      <button type="button" class="btn btn--ghost" id="officeBtn">Office view</button>
       <button type="button" class="btn btn--ghost" id="setupBtn">Team setup</button>
     </div>
   </header>
@@ -36,8 +35,7 @@
         <strong>Review mode</strong>
         <span>
           This is a proof of concept. Click <b>＋ Add another revision</b> as many
-          times as you like. Use <b>Team setup</b> (top right) to change what we ask,
-          and <b>Office view</b> to see what our team would receive after you submit.
+          times as you like. Use <b>Team setup</b> (top right) to change what we ask.
           Nothing leaves your browser.
         </span>
       </div>
@@ -199,22 +197,6 @@
     </div>
   </aside>
   <div class="scrim" id="setupScrim" hidden></div>
-
-  <!-- ═══════════════════════════ OFFICE VIEW DRAWER ═══════════════════════════ -->
-  <aside class="drawer" id="officeDrawer" hidden aria-labelledby="officeTitle">
-    <div class="drawer__head">
-      <div>
-        <h2 id="officeTitle">Office view</h2>
-        <p>Submissions captured in this browser (demo data store).</p>
-      </div>
-      <div class="drawer__head-actions">
-        <button type="button" class="btn btn--ghost" id="exportAllCsvBtn">Export all CSV</button>
-        <button type="button" class="iconbtn" id="closeOfficeBtn" aria-label="Close">✕</button>
-      </div>
-    </div>
-    <div class="drawer__body" id="officeBody"></div>
-  </aside>
-  <div class="scrim" id="officeScrim" hidden></div>
 
   <!-- ═══════════════════════════ DRAFT MODAL ═══════════════════════════ -->
   <div class="overlay" id="draftOverlay" hidden>

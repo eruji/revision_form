@@ -455,9 +455,7 @@ input::placeholder, textarea::placeholder { color: #b3b0a4; }
 }
 .drawer__head h2 { font-size: 24px; color: var(--olive-900); }
 .drawer__head p { margin: 3px 0 0; font-size: 13px; color: var(--ink-soft); }
-.drawer__head-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
 .drawer__head .iconbtn { margin-left: auto; }
-.drawer__head-actions ~ .iconbtn { margin-left: 0; }
 .drawer__body { flex: 1; overflow: auto; padding: 20px 22px 40px; }
 .drawer__foot {
   border-top: 1px solid var(--line);
@@ -517,7 +515,7 @@ input::placeholder, textarea::placeholder { color: #b3b0a4; }
 .setup-inline { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .setup-inline .field { margin-bottom: 0; }
 
-/* ───────────────────────────── Office view ───────────────────────────── */
+/* ───────────────────────────── Submission cards (office dashboard) ───────────────────────────── */
 .sub { border: 1px solid var(--line); border-radius: var(--radius-sm); margin-bottom: 14px; overflow: hidden; }
 .sub__head {
   display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
@@ -531,8 +529,6 @@ input::placeholder, textarea::placeholder { color: #b3b0a4; }
 .sub__item:last-child { margin-bottom: 0; }
 .sub__item b { font-size: 13px; }
 .sub__item small { color: var(--ink-soft); display: block; margin-top: 2px; white-space: pre-line; }
-.empty-state { text-align: center; color: var(--ink-soft); padding: 50px 20px; }
-.empty-state div { font-size: 34px; margin-bottom: 8px; }
 
 /* ───────────────────────────── Toast ───────────────────────────── */
 .toast {
