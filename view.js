@@ -234,7 +234,8 @@
   function render(sub, submittedAt, opts) {
     opts = opts || {};
     const isDraft = !!opts.draft;
-    $('#brandName').textContent = sub.business || CFG.business || 'Revision Request';
+    const brandName = $('#brandName');
+    if (brandName) brandName.textContent = sub.business || CFG.business || 'Revision Request';
     $('#viewBusiness').textContent = sub.business || CFG.business || '';
     $('#viewTitle').textContent = (isDraft ? 'Draft ' : '') + (CFG.formTitle || 'Design Revision Request');
     $('#footBusiness').textContent = sub.business || CFG.business || '';

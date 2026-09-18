@@ -31,7 +31,8 @@ A real form needs to grow with the client. That's what this POC does.
 | `clients/form.html` / `app.js` | Client revision form — opened via a generated link (`?r=…`, `?resume=…`) |
 | `clients/view.html` / `view.js` | Private read-only copy (`?token=…`) with print/PDF + JSON |
 | `setup.js` | Team setup panel (configurable wording), opened from the dashboard |
-| `styles.css` | Styling — olive/cream brand palette, responsive |
+| `styles.css` | Styling — brand palette + fonts matched to pepperandolive.com |
+| `clients/logo-*.svg`, `clients/favicon.ico` | Brand assets from the main site (served under public `/clients/`) |
 | `config.js` | **The questions and policy copy your team will iterate on** |
 | `netlify/functions/*` | API — office (`admin`, `rounds`) + public client (`submit`, `get`, `draft`, `round`, `upload`, `file`), with `lib/access.js` for Cloudflare Access verification |
 | `google_apps_script.gs` | Apps Script bridge: Google Sheet work queue + email notification |

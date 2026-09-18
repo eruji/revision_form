@@ -424,7 +424,8 @@
 
   // ── Hero + sections ──────────────────────────────────────────────────────
   function renderHero() {
-    $('#brandName').textContent = CFG.business;
+    const brandName = $('#brandName');
+    if (brandName) brandName.textContent = CFG.business;
     $('#heroEyebrow').textContent = CFG.business;
     $('#heroTitle').textContent = CFG.formTitle;
     $('#heroSub').textContent = CFG.subtitle;
