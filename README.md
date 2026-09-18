@@ -155,6 +155,21 @@ One-time setup:
 Until `NOTIFY_WEBHOOK` is set, submissions are still saved and visible in the
 office dashboard — notifications are simply skipped.
 
+### Email via Netlify Forms (no third party)
+Netlify can email on form submissions. Since the revision form is a custom app,
+the backend **relays each saved submission to a hidden, registered Netlify
+Form** so Netlify's own notification fires.
+
+1. The hidden form (`revision-notification`) is already in the page, and form
+   detection is enabled on the site.
+2. In Netlify: **Forms → revision-notification → Notifications → Add
+   notification → Email**, and enter your address.
+3. `NETLIFY_FORM_NAME=revision-notification` must be set (it is).
+
+Tradeoffs: the email is a plain field list (project, client, phase, item count,
+summary, read-only link) rather than a styled message, and Netlify Forms has a
+monthly submission allowance on lower plans.
+
 ### Email-only (no Google Sheet)
 **Option A — direct from the form backend, via [Resend](https://resend.com):**
 1. Create a Resend account and add a verified sending domain (their test sender
