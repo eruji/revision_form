@@ -94,11 +94,15 @@ async function relayToNetlifyForm(payload, host) {
   body.set('view_url', payload.viewUrl || '');
 
   try {
-    await fetch('https://' + host + '/', {
+    // The site root sits behind Cloudflare Access, so post to the public
+    // /clients/ path (which holds the hidden form) instead of '/'. Posting to
+    // a protected path just returns the Access login and never reaches Netlify.
+    const res = await fetch('https://' + host + '/clients/form.html', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString()
     });
+    if (!res.ok) console.error('netlify form relay returned', res.status);
   } catch (e) {
     console.error('netlify form relay failed:', e && e.message);
   }
