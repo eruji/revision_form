@@ -45,13 +45,10 @@ exports.handler = async () => {
     }
   }
 
-  // Remove any draft blobs with no index entry (e.g. from an interrupted save).
-  try {
-    const listed = await store.list({ prefix: 'draft_' });
-    for (const b of listed.blobs || []) {
-      if (!keptKeys.has(b.key)) { await store.delete(b.key); removed++; }
-    }
-  } catch (e) { /* listing is best-effort */ }
+  // NOTE: We deliberately do NOT delete draft blobs that are missing from the
+  // index. A draft blob is only reachable with its code, and an index write can
+  // fail independently of the blob write — deleting "orphans" could destroy a
+  // client's in-progress work. Expiry is driven strictly by expiresAt above.
 
   await store.setJSON(INDEX_KEY, kept);
 
