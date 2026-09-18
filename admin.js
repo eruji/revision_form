@@ -50,7 +50,6 @@
     $('#gateCard').hidden = false;
     $('#listWrap').hidden = true;
     $('#refreshBtn').hidden = true;
-    $('#exportCsvBtn').hidden = true;
     $('#signOutBtn').hidden = true;
     $('#gateError').hidden = !showError;
     if (showError) $('#adminKey').focus();
@@ -60,7 +59,6 @@
     $('#gateCard').hidden = true;
     $('#listWrap').hidden = false;
     $('#refreshBtn').hidden = false;
-    $('#exportCsvBtn').hidden = false;
     $('#signOutBtn').hidden = false;
   }
 
@@ -606,20 +604,6 @@
     }
   }
 
-  async function exportCsv() {
-    const key = getKey();
-    try {
-      const res = await fetch('/api/admin?format=csv', { headers: { 'x-admin-key': key }, cache: 'no-store' });
-      if (!res.ok) throw new Error('export failed');
-      const csv = await res.text();
-      download('revision-requests.csv', csv, 'text/csv;charset=utf-8');
-    } catch (e) {
-      // Fall back to building CSV from the currently loaded records.
-      const res = await fetchRecords(key);
-      if (res && res.records) download('revision-requests.csv', buildCsv(res.records), 'text/csv;charset=utf-8');
-    }
-  }
-
   function bind() {
     $('#gateForm').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -628,7 +612,6 @@
       load(key, true);
     });
     $('#refreshBtn').addEventListener('click', () => load(getKey(), false));
-    $('#exportCsvBtn').addEventListener('click', exportCsv);
     $('#signOutBtn').addEventListener('click', () => { setKey(''); $('#adminKey').value = ''; showGate(false); });
 
     // Submission detail overlay

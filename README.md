@@ -27,7 +27,7 @@ A real form needs to grow with the client. That's what this POC does.
 
 | File | Purpose |
 |---|---|
-| `index.html` / `admin.js` | Password-protected office dashboard at the site root (`/`), with CSV export |
+| `index.html` / `admin.js` | Password-protected office dashboard at the site root (`/`), with per-request JSON/CSV export |
 | `form.html` / `app.js` | Client revision form — opened via a generated link (`?r=…`, `?resume=…`) |
 | `view.html` / `view.js` | Private read-only copy (`?token=…`) with print/PDF + JSON |
 | `styles.css` | Styling — olive/cream brand palette, responsive |
@@ -75,7 +75,7 @@ itself requires the backend.
 
 | Requirement | How it works |
 |---|---|
-| **Office reads responses** | Password-protected dashboard at the site root (`/`) lists every submission with **Export all CSV** (opens in Sheets). |
+| **Office reads responses** | Password-protected dashboard at the site root (`/`) lists every submission; open one for **Print / PDF**, **JSON**, or **CSV**. |
 | **Client can't see others** | Every submission gets a secret 256-bit token. `/api/get` returns only the submission matching that token, and unknown tokens get a plain 404. There is **no public endpoint that lists submissions**. |
 | **Save progress until submit** | Autosave in the browser, plus **Save & continue later** → a resume code stored server-side that works on any device via `/form.html?resume=CODE`. Saved drafts **expire after 30 days**. |
 | **Office can see and share drafts** | Saved drafts appear in the office dashboard with a **View** read-only link (`/view.html?draft=CODE`) and a **Copy client link** button to send the client back to finish. |
@@ -95,7 +95,7 @@ itself requires the backend.
   - Submitted requests can be **Archived** (hidden from the main list but kept in
     full) and restored with **Unarchive**, or permanently **Delete**d (with a
     confirmation prompt). Archived requests live in their own
-    **Archived requests** section and are still included in **Export all CSV**.
+    **Archived requests** section and are still available in a per-request CSV/JSON export.
   - For each **draft** you can **View** it read-only (`/view.html?draft=CODE`),
     **Copy client link** (the resume link to send back to the client), or
     **Delete** it. Drafts expire automatically after 30 days (a daily scheduled
@@ -259,7 +259,8 @@ prototype three or four question sets, screenshot them, and pick one as a team.
 
 ### 🗂 Office dashboard (internal — the one place the team reads submissions)
 The password-protected dashboard at **`/`** (see “Reading responses”
-above) lists every client, exports CSV, manages request links, and archives or
+above) lists every client, exports each request to JSON/CSV, manages request
+links, and archives or
 deletes requests. It links to **Team setup**; there is no separate in-app office
 view.
 
@@ -273,7 +274,8 @@ URL includes `?manage=1`.
 1. Open **Team setup** and try toggling `Priority` on, adding a custom question,
    and rewording the intro. Save.
 2. Submit a fake round with **10 items** to feel the unlimited flow.
-3. Open the office dashboard (`/`) → *Export all CSV*. Is that the
+3. Open the office dashboard (`/`), open a submission, and click *Download CSV*.
+   Is that the
    shape your team wants to triage from?
 4. Decide together:
    - Which fields are **required vs. nice-to-have**?
@@ -305,7 +307,7 @@ Options, roughly in order of effort:
 
 | Option | Unlimited items | Notes |
 |---|---|---|
-| **Current build: Netlify Functions + Blobs** | ✅ | Works today; office reads via the `/` dashboard + CSV. |
+| **Current build: Netlify Functions + Blobs** | ✅ | Works today; office reads via the `/` dashboard (per-request JSON/CSV). |
 | **Apps Script → Google Sheet** | ✅ | Swap the storage layer if the team prefers reading in Sheets. |
 | **Airtable / Supabase** | ✅ | Managed DB with nicer admin tooling; modest setup. |
 | **Jotform** | ✅ | Native *Configurable List* widget does repeatable rows; also offers drawn signatures and uploads. Paid for volume. |

@@ -463,7 +463,7 @@ input::placeholder, textarea::placeholder { color: #b3b0a4; }
   display: flex; flex-wrap: wrap; gap: 8px;
   background: #fdfbf5;
 }
-.scrim { position: fixed; inset: 0; z-index: 50; background: rgba(42,42,36,0.4); animation: fade 0.18s ease; }
+.scrim { position: fixed; inset: 0; z-index: 50; background: rgba(42,42,36,0.16); animation: fade 0.18s ease; }
 
 /* ───────────────────────────── Setup panel bits ───────────────────────────── */
 .setup-group { margin-bottom: 28px; }

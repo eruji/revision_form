@@ -30,16 +30,17 @@
     X-Frame-Options = "SAMEORIGIN"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
-# Long-cache static assets; keep HTML fresh so reviewers always get the latest.
+# Static assets revalidate on every load so a deploy is picked up immediately
+# (the HTML itself is no-store).
 [[headers]]
   for = "/*.css"
   [headers.values]
-    Cache-Control = "public, max-age=3600"
+    Cache-Control = "no-cache"
 
 [[headers]]
   for = "/*.js"
   [headers.values]
-    Cache-Control = "public, max-age=3600"
+    Cache-Control = "no-cache"
 
 # Never cache anything that could contain client data.
 [[headers]]
