@@ -127,8 +127,13 @@ separately, and the Sheet receives the new rows.
 
 ## Notifications + Google Sheet work queue
 
-Set the `NOTIFY_WEBHOOK` environment variable to a Google Apps Script Web App
-and every submission produces:
+Email notification can be standalone — the Google Sheet is optional. Turn on
+whichever fits:
+
+- **Email only (no Google):** set `RESEND_API_KEY` + `NOTIFY_EMAIL` (see below).
+- **Email + Sheet:** also deploy the Apps Script and set `NOTIFY_WEBHOOK`.
+
+With the Apps Script configured, every submission produces:
 
 - an **email** to your studio address, and
 - one **row per revision item** in a Google Sheet with
@@ -149,6 +154,25 @@ One-time setup:
 
 Until `NOTIFY_WEBHOOK` is set, submissions are still saved and visible in the
 office dashboard — notifications are simply skipped.
+
+### Email-only (no Google Sheet)
+**Option A — direct from the form backend, via [Resend](https://resend.com):**
+1. Create a Resend account and add a verified sending domain (their test sender
+   works for initial testing to your own address).
+2. Create an API key.
+3. Set the Netlify env vars and redeploy:
+   ```bash
+   npx netlify-cli env:set RESEND_API_KEY "re_..." --context production
+   npx netlify-cli env:set NOTIFY_EMAIL "studio@pepperandolive.com" --context production
+   npx netlify-cli env:set NOTIFY_FROM "Revision Request <notifications@pepperandolive.com>" --context production
+   ```
+
+**Option B — via the Apps Script, email only:**
+Set `WRITE_TO_SHEET: false` in `google_apps_script.gs` before deploying. It then
+emails from your Google Workspace and creates no Sheet.
+
+If neither `RESEND_API_KEY` nor `NOTIFY_WEBHOOK` is set, submissions still save
+to the dashboard — no email is sent.
 
 ---
 

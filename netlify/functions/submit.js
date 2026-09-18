@@ -65,6 +65,68 @@ async function notify(payload) {
   }
 }
 
+function pickLabel(obj, pattern) {
+  const keys = Object.keys(obj || {});
+  for (let i = 0; i < keys.length; i++) { if (pattern.test(keys[i])) return obj[keys[i]]; }
+  return '';
+}
+
+/**
+ * Email the office directly (no Google required) when RESEND_API_KEY and
+ * NOTIFY_EMAIL are configured. Provider: https://resend.com
+ */
+async function sendEmail(payload) {
+  const key = process.env.RESEND_API_KEY;
+  const to = process.env.NOTIFY_EMAIL;
+  if (!key || !to) return;
+
+  const from = process.env.NOTIFY_FROM || 'Revision Request <onboarding@resend.dev>';
+  const about = payload.about || {};
+  const items = payload.items || [];
+  const project = pickLabel(about, /project/i) || 'a project';
+  const client = pickLabel(about, /client name/i);
+  const phase = pickLabel(about, /phase/i);
+
+  const lines = items.map(function (it, i) {
+    const cat = pickLabel(it, /type of revision|category/i);
+    const loc = pickLabel(it, /location|room/i);
+    const desc = pickLabel(it, /what would you like changed|change/i);
+    const ref = pickLabel(it, /reference|inspiration|link/i);
+    return (i + 1) + '. ' + [cat, loc].filter(String).join(' — ') + '\n   ' + desc + (ref ? '\n   Ref: ' + ref : '');
+  });
+
+  const who = client ? client + ' submitted a revision request for ' : 'A revision request was submitted for ';
+  const subject = 'New revision request — ' + project + ' (' + items.length + ' item' + (items.length === 1 ? '' : 's') + ')';
+  const text = [
+    who + project + (phase ? ' (' + phase + ')' : '') + '.',
+    '',
+    items.length + ' item' + (items.length === 1 ? '' : 's') + ':',
+    '',
+    lines.join('\n\n'),
+    '',
+    payload.viewUrl ? 'Read-only copy: ' + payload.viewUrl : ''
+  ].join('\n');
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: from,
+        to: to.split(',').map(function (s) { return s.trim(); }).filter(Boolean),
+        subject: subject,
+        text: text
+      })
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(function () { return ''; });
+      console.error('email send failed', res.status, body);
+    }
+  } catch (e) {
+    console.error('email send failed:', e && e.message);
+  }
+}
+
 /** Build a flattened, label-keyed payload for the Sheets/email integration. */
 function notificationPayload(submission, viewUrl, round) {
   const L = submission._labels || {};
@@ -196,7 +258,7 @@ exports.handler = async (event) => {
       } catch (e) { /* non-fatal */ }
     }
 
-    // Notify the office (email + Google Sheet work queue).
+    // Notify the office: email (Resend) and/or webhook (e.g. Google Sheet).
     try {
       let absView = viewUrl;
       try {
@@ -204,7 +266,9 @@ exports.handler = async (event) => {
         const proto = (event.headers && (event.headers['x-forwarded-proto'] || event.headers['X-Forwarded-Proto'])) || 'https';
         if (host) absView = proto + '://' + host + viewUrl;
       } catch (e) {}
-      await notify(notificationPayload(submission, absView, round));
+      const payload = notificationPayload(submission, absView, round);
+      await sendEmail(payload);
+      await notify(payload);
     } catch (e) { /* never break the submission */ }
 
     return json(200, {

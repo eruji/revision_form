@@ -29,6 +29,8 @@
 var CONFIG = {
   // Where new-request notifications are emailed. Comma-separate for several.
   NOTIFY_EMAIL: 'studio@pepperandolive.com',
+  // Set false to send email only and skip the Google Sheet entirely.
+  WRITE_TO_SHEET: true,
   // A new spreadsheet is created with this name if none is configured yet.
   SPREADSHEET_NAME: 'Revision Requests — Work Queue',
   SHEET_TAB: 'Work Queue',
@@ -106,7 +108,7 @@ function doPost(e) {
 
   try {
     if (data.event === 'revision.submitted') {
-      appendSubmission_(data);
+      if (CONFIG.WRITE_TO_SHEET) appendSubmission_(data);
       emailOffice_(data);
     }
     return ContentService.createTextOutput(JSON.stringify({ ok: true }))
@@ -156,7 +158,7 @@ function emailOffice_(data) {
   var project = pick(about, MATCH.project) || 'a project';
   var phase = pick(about, MATCH.phase) || '';
   var viewUrl = data.viewUrl || '';
-  var ss = getSpreadsheet_();
+  var ss = CONFIG.WRITE_TO_SHEET ? getSpreadsheet_() : null;
 
   var lines = items.map(function (item, i) {
     return (i + 1) + '. ' + [pick(item, MATCH.category), pick(item, MATCH.location)].filter(String).join(' — ') +
@@ -169,7 +171,7 @@ function emailOffice_(data) {
     client + ' submitted a revision request for ' + project + (phase ? ' (' + phase + ')' : '') + '.\n\n' +
     items.length + ' item(s):\n\n' + lines.join('\n\n') + '\n\n' +
     (viewUrl ? 'Read-only copy: ' + viewUrl + '\n' : '') +
-    'Work queue: ' + ss.getUrl() + '\n';
+    (ss ? 'Work queue: ' + ss.getUrl() + '\n' : '');
 
   MailApp.sendEmail(CONFIG.NOTIFY_EMAIL, subject, body);
 }
