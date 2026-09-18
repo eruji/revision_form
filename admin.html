@@ -23,6 +23,8 @@
       </div>
     </div>
     <div class="topbar__actions">
+      <a class="btn btn--ghost" id="sheetBtn" href="#" target="_blank" rel="noopener" hidden>Work queue sheet</a>
+      <a class="btn btn--ghost" href="/?manage=1" target="_blank" rel="noopener">Team setup</a>
       <button type="button" class="btn btn--ghost" id="refreshBtn" hidden>Refresh</button>
       <button type="button" class="btn btn--primary" id="exportCsvBtn" hidden>Export all CSV</button>
       <button type="button" class="btn btn--ghost" id="signOutBtn" hidden>Sign out</button>
@@ -51,6 +53,21 @@
 
     <!-- List -->
     <section id="listWrap" hidden>
+      <section class="card settings-card">
+        <div class="card__head">
+          <span class="step">📊</span>
+          <div>
+            <h2>Google Sheet work queue</h2>
+            <p>Paste the spreadsheet URL so your team can jump to it from each submitted request.</p>
+          </div>
+        </div>
+        <div class="settings-inline">
+          <input type="url" id="sheetUrlInput" placeholder="https://docs.google.com/spreadsheets/d/..." />
+          <button type="button" class="btn btn--primary" id="saveSheetUrlBtn">Save</button>
+          <a class="btn btn--ghost" id="openSheetBtn" href="#" target="_blank" rel="noopener" hidden>Open sheet</a>
+        </div>
+      </section>
+
       <section class="card new-round">
         <div class="card__head">
           <span class="step">🔗</span>

@@ -7,6 +7,8 @@
   'use strict';
 
   const SS_KEY = 'po_admin_key';
+  let workQueueSheetUrl = '';
+  let lastRecords = [];
 
   function $(sel) { return document.querySelector(sel); }
 
@@ -328,6 +330,36 @@
     download(recordName(rec) + '.csv', buildCsv([rec]), 'text/csv;charset=utf-8');
   }
 
+  // ── Office settings (Google Sheet work-queue URL) ────────────────────────
+  function applySettings(settings) {
+    workQueueSheetUrl = (settings && settings.sheetUrl) || '';
+    const input = document.querySelector('#sheetUrlInput');
+    if (input) input.value = workQueueSheetUrl;
+    ['openSheetBtn', 'sheetBtn'].forEach((id) => {
+      const el = document.querySelector('#' + id);
+      if (!el) return;
+      if (workQueueSheetUrl) { el.href = workQueueSheetUrl; el.hidden = false; }
+      else { el.hidden = true; }
+    });
+  }
+
+  async function saveSheetUrl() {
+    const input = document.querySelector('#sheetUrlInput');
+    const url = input ? input.value.trim() : '';
+    try {
+      const res = await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': getKey() },
+        body: JSON.stringify({ settings: { sheetUrl: url } })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error('save failed');
+      applySettings(data.settings || {});
+      renderRecords(lastRecords);
+      toast('Sheet link saved');
+    } catch (e) { toast('Could not save the sheet link'); }
+  }
+
   // ── Office-issued request links (rounds) ────────────────────────────────
   function roundLink(id) { return location.origin + '/?r=' + id; }
 
@@ -468,7 +500,8 @@
         h('div', { class: 'sub__actions' },
           h('button', { type: 'button', class: 'btn btn--ghost', text: 'View', onclick: () => openDetail(rec) }),
           h('button', { type: 'button', class: 'btn btn--ghost', text: 'JSON', onclick: () => exportRecordJson(rec) }),
-          h('button', { type: 'button', class: 'btn btn--ghost', text: 'CSV', onclick: () => exportRecordCsv(rec) })
+          h('button', { type: 'button', class: 'btn btn--ghost', text: 'CSV', onclick: () => exportRecordCsv(rec) }),
+          workQueueSheetUrl ? h('a', { class: 'btn btn--ghost', href: workQueueSheetUrl, target: '_blank', rel: 'noopener', text: 'Sheet' }) : null
         )
       ));
     });
@@ -480,7 +513,9 @@
       if (data.unauthorized) { setKey(''); showGate(!!showErrorOnFail); return false; }
       setKey(key);
       showList();
-      renderRecords(data.records || []);
+      applySettings(data.settings || {});
+      lastRecords = data.records || [];
+      renderRecords(lastRecords);
       renderDrafts(data.drafts || []);
       loadRounds(key);
       return true;
@@ -529,6 +564,7 @@
     // Office-issued request links
     $('#createRoundBtn').addEventListener('click', createRound);
     $('#copyNewRoundBtn').addEventListener('click', (e) => copyText($('#newRoundLink').value, e.currentTarget));
+    $('#saveSheetUrlBtn').addEventListener('click', saveSheetUrl);
   }
 
   function init() {

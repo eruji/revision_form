@@ -824,3 +824,7 @@ input::placeholder, textarea::placeholder { color: #b3b0a4; }
   .round-form { grid-template-columns: 1fr; }
   .new-round__result { flex-direction: column; }
 }
+
+/* ── Office: settings row (Google Sheet URL) ── */
+.settings-inline { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.settings-inline input { flex: 1 1 320px; }

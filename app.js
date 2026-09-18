@@ -254,8 +254,7 @@
   }
 
   // ── Review banner (only relevant when the page is opened with ?review) ────
-  function initReviewBanner() {
-    let wanted = false;
+  function initReviewBanner() {    let wanted = false;
     try { wanted = new URLSearchParams(location.search).has('review'); } catch (e) {}
     if (!wanted) return;
     try {
@@ -263,6 +262,20 @@
     } catch (e) {}
     $('#reviewBanner').hidden = false;
     document.body.classList.add('is-review');
+  }
+
+  // Team Setup / Office view are internal tools. They are hidden from clients
+  // and revealed only for the team via ?manage=1 (the admin panel links to it).
+  function initManageTools() {
+    let manage = false;
+    try {
+      const p = new URLSearchParams(location.search);
+      manage = p.has('manage') || p.has('setup');
+    } catch (e) {}
+    if (manage) {
+      const el = $('#topbarActions');
+      if (el) el.hidden = false;
+    }
   }
 
   // ── Revision items (unlimited) ───────────────────────────────────────────
@@ -1209,6 +1222,7 @@
     renderAck();
     bind();
     initReviewBanner();
+    initManageTools();
     loadRoundContext();   // async: applies office-issued context and hides section 01
     try {
       const resume = new URLSearchParams(location.search).get('resume');

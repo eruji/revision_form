@@ -70,6 +70,9 @@ to browser `localStorage` so you can still demo it offline.
 
 ### Office dashboard
 - URL: `/admin.html` on the live site.
+- **Google Sheet work queue:** paste the spreadsheet URL into the dashboard's
+  **Google Sheet work queue** card and Save. Each submitted request then gets a
+  **Sheet** button (and the header shows **Work queue sheet**).
 - Shows **submitted requests** and **saved drafts**.
   - Each **submitted request** has **View** (full read-only detail), **JSON**,
     and **CSV** export, plus **Print / Save as PDF** from the detail view.
@@ -206,8 +209,9 @@ a *Clear draft* button too.
 
 These are the parts that directly answer *“what should we ask?”*
 
-### 🔧 Team setup (top-right button)
-A live admin panel over the form:
+### 🔧 Team setup (internal — hidden from clients)
+Reachable from the office dashboard's **Team setup** button (or `/?manage=1`).
+Clients never see it. A live panel over the form:
 - Turn any question **on/off** and mark it **required**.
 - **Rename** question labels inline.
 - **Reorder** the fields that appear on every revision item.
@@ -221,11 +225,15 @@ A live admin panel over the form:
 Changes apply instantly and persist in your browser. This makes it cheap to
 prototype three or four question sets, screenshot them, and pick one as a team.
 
-### 🗂 Office view (top-right button)
+### 🗂 Office view (internal — mostly superseded by the dashboard)
 For live submissions, the office uses the password-protected **`/admin.html`**
-dashboard (see “Reading responses” above), which lists all clients and exports
-CSV. The in-app **Office view** button shows submissions stored in the current
-browser — handy for demos when the backend isn't running.
+dashboard (see “Reading responses” above), which lists all clients, exports CSV,
+and manages request links. The in-app **Office view** button (available under
+`/?manage=1`) only shows submissions stored in the current browser — handy for
+demos when the backend isn't running.
+
+Both the **Office view** and **Team setup** buttons are **hidden from clients**;
+they appear only when the URL includes `?manage=1`.
 
 ---
 

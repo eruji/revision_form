@@ -88,6 +88,22 @@ exports.handler = async (event) => {
 
   const qs = event.queryStringParameters || {};
 
+  // Save office settings (e.g. the Google Sheet work-queue URL).
+  if (event.httpMethod === 'POST') {
+    let body;
+    try { body = JSON.parse(event.body || '{}'); } catch (e) { return json(400, { ok: false, error: 'Invalid body' }); }
+    if (!body.settings || typeof body.settings !== 'object') return json(400, { ok: false, error: 'Nothing to update' });
+    try {
+      const settingsStore = openStore('revision-settings');
+      const current = (await settingsStore.get('config', { type: 'json' })) || {};
+      const next = Object.assign({}, current, { sheetUrl: String(body.settings.sheetUrl || '').trim() });
+      await settingsStore.setJSON('config', next);
+      return json(200, { ok: true, settings: next });
+    } catch (e) {
+      return json(500, { ok: false, error: 'Could not save settings' });
+    }
+  }
+
   // Delete a saved draft (office cleanup).
   if (event.httpMethod === 'DELETE' && qs.draft) {
     const code = String(qs.draft).trim().toUpperCase();
@@ -147,7 +163,13 @@ exports.handler = async (event) => {
       };
     }
 
-    return json(200, { ok: true, count: records.length, records: records, drafts: drafts });
+    let settings = { sheetUrl: '' };
+    try {
+      const settingsStore = openStore('revision-settings');
+      settings = (await settingsStore.get('config', { type: 'json' })) || settings;
+    } catch (e) { settings = { sheetUrl: '' }; }
+
+    return json(200, { ok: true, count: records.length, records: records, drafts: drafts, settings: settings });
   } catch (e) {
     return json(500, { ok: false, error: 'Could not load submissions' });
   }
