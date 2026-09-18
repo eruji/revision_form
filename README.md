@@ -70,9 +70,9 @@ to browser `localStorage` so you can still demo it offline.
 
 ### Office dashboard
 - URL: `/admin.html` on the live site.
-- **Google Sheet work queue:** paste the spreadsheet URL into the dashboard's
-  **Google Sheet work queue** card and Save. Each submitted request then gets a
-  **Sheet** button (and the header shows **Work queue sheet**).
+- **Google Sheet work queue (currently hidden):** the dashboard has a card to
+  paste the spreadsheet URL and Save, which adds **Sheet** links. It is hidden
+  for now; the code remains for when Sheet sync is enabled.
 - Shows **submitted requests** and **saved drafts**.
   - Each **submitted request** has **View** (full read-only detail), **JSON**,
     and **CSV** export, plus **Print / Save as PDF** from the detail view.
