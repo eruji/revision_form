@@ -127,23 +127,26 @@ separately, and the Sheet receives the new rows.
 
 ## Notifications + Google Sheet work queue
 
-Email notification can be standalone — the Google Sheet is optional. Turn on
-whichever fits:
+**Email (Netlify, no third party).** The backend relays each saved submission to
+a hidden, registered Netlify Form (`revision-notification`); Netlify's own form
+notification sends the email.
 
-- **Email only (no Google):** set `RESEND_API_KEY` + `NOTIFY_EMAIL` (see below).
-- **Email + Sheet:** also deploy the Apps Script and set `NOTIFY_WEBHOOK`.
+1. The hidden form is already in the page, and form detection is enabled.
+2. In Netlify: **Forms → revision-notification → Notifications → Add
+   notification → Email**, and enter the recipient.
+3. `NETLIFY_FORM_NAME=revision-notification` must be set (it is).
 
-With the Apps Script configured, every submission produces:
+The email is a plain field list (project, client, phase, item count, summary,
+read-only link). Netlify Forms has a monthly submission allowance on lower plans.
 
-- an **email** to your studio address, and
-- one **row per revision item** in a Google Sheet with
-  `Status / Assigned To / Completed / Notes` columns for staff to work through.
-
-One-time setup:
+**Google Sheet work queue (optional).** Deploy the Apps Script to also append one
+row per revision item to a Sheet with `Status / Assigned To / Completed / Notes`
+columns. One-time setup:
 
 1. Open <https://script.google.com> → **New project**, paste
    [`google_apps_script.gs`](./google_apps_script.gs).
-2. Edit `CONFIG.NOTIFY_EMAIL` (and the spreadsheet name if you like).
+2. Edit `CONFIG.NOTIFY_EMAIL` (and the spreadsheet name if you like). Set
+   `WRITE_TO_SHEET: false` for the script to email only and create no Sheet.
 3. Run **`setup()`** and authorize — it creates the Sheet and logs its URL.
 4. **Deploy → New deployment → Web app**; *Execute as: Me*,
    *Who has access: Anyone*. Copy the `/exec` URL.
@@ -152,42 +155,8 @@ One-time setup:
    npx netlify-cli env:set NOTIFY_WEBHOOK "https://script.google.com/macros/s/.../exec" --context production
    ```
 
-Until `NOTIFY_WEBHOOK` is set, submissions are still saved and visible in the
-office dashboard — notifications are simply skipped.
-
-### Email via Netlify Forms (no third party)
-Netlify can email on form submissions. Since the revision form is a custom app,
-the backend **relays each saved submission to a hidden, registered Netlify
-Form** so Netlify's own notification fires.
-
-1. The hidden form (`revision-notification`) is already in the page, and form
-   detection is enabled on the site.
-2. In Netlify: **Forms → revision-notification → Notifications → Add
-   notification → Email**, and enter your address.
-3. `NETLIFY_FORM_NAME=revision-notification` must be set (it is).
-
-Tradeoffs: the email is a plain field list (project, client, phase, item count,
-summary, read-only link) rather than a styled message, and Netlify Forms has a
-monthly submission allowance on lower plans.
-
-### Email-only (no Google Sheet)
-**Option A — direct from the form backend, via [Resend](https://resend.com):**
-1. Create a Resend account and add a verified sending domain (their test sender
-   works for initial testing to your own address).
-2. Create an API key.
-3. Set the Netlify env vars and redeploy:
-   ```bash
-   npx netlify-cli env:set RESEND_API_KEY "re_..." --context production
-   npx netlify-cli env:set NOTIFY_EMAIL "studio@pepperandolive.com" --context production
-   npx netlify-cli env:set NOTIFY_FROM "Revision Request <notifications@pepperandolive.com>" --context production
-   ```
-
-**Option B — via the Apps Script, email only:**
-Set `WRITE_TO_SHEET: false` in `google_apps_script.gs` before deploying. It then
-emails from your Google Workspace and creates no Sheet.
-
-If neither `RESEND_API_KEY` nor `NOTIFY_WEBHOOK` is set, submissions still save
-to the dashboard — no email is sent.
+Notifications are optional: without `NOTIFY_WEBHOOK`, submissions still save to
+the dashboard and the Netlify email still fires.
 
 ---
 
