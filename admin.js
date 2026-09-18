@@ -9,6 +9,7 @@
   const SS_KEY = 'po_admin_key';
   let workQueueSheetUrl = '';
   let lastRecords = [];
+  let roundsById = {};
 
   function $(sel) { return document.querySelector(sel); }
 
@@ -403,7 +404,14 @@
     try {
       const res = await fetch('/api/rounds', { headers: { 'x-admin-key': key }, cache: 'no-store' });
       const data = await res.json().catch(() => ({}));
-      if (res.ok && data.ok) renderRounds(data.rounds || []);
+      if (res.ok && data.ok) {
+        const rounds = data.rounds || [];
+        roundsById = {};
+        rounds.forEach((r) => { if (r && r.id) roundsById[r.id] = r; });
+        renderRounds(rounds);
+        // Re-render submissions so their Reopen button reflects round status.
+        renderRecords(lastRecords);
+      }
     } catch (e) { /* ignore */ }
   }
 
@@ -411,16 +419,18 @@
     const list = document.querySelector('#roundsList');
     if (!list) return;
     list.innerHTML = '';
-    if (!rounds.length) {
-      list.append(h('p', { class: 'admin-empty', text: 'No request links yet — create one above.' }));
+    // A round's link disappears from here once the client has submitted it;
+    // it comes back when the request is reopened from the submission card.
+    const open = rounds.filter((r) => r.status !== 'submitted');
+    if (!open.length) {
+      list.append(h('p', { class: 'admin-empty', text: 'No open request links. Create one above, or Reopen a submitted request.' }));
       return;
     }
-    rounds.forEach((r) => {
-      const status = r.status === 'submitted' ? 'Submitted' : (r.status === 'closed' ? 'Closed' : 'Open');
+    open.forEach((r) => {
+      const status = r.status === 'closed' ? 'Closed' : 'Open';
       const link = roundLink(r.id);
       const actions = h('div', { class: 'round-card__actions' },
         h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy link', onclick: (e) => copyText(link, e.currentTarget) }),
-        r.status !== 'open' ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Reopen', onclick: () => reopenRound(r.id) }) : null,
         h('a', { class: 'btn btn--ghost', href: link, target: '_blank', rel: 'noopener', text: 'Open' }),
         h('button', { type: 'button', class: 'btn btn--danger', text: 'Delete', onclick: () => deleteRound(r.id, r.clientName) })
       );
@@ -522,6 +532,11 @@
       const projId = Object.keys(aboutLabels).find((id) => /project/i.test(aboutLabels[id]));
       const name = nameId ? sub.about[nameId] : 'Client';
       const project = projId ? sub.about[projId] : '';
+      // If this submission came from an office-issued link, offer Reopen here
+      // (the round link returns to the Request links list when reopened).
+      const roundId = sub._roundId;
+      const round = roundId ? roundsById[roundId] : null;
+      const canReopen = round && round.status !== 'open';
 
       const items = h('div', { class: 'sub__body' });
       (sub.revisions || []).forEach((rev, i) => {
@@ -545,6 +560,7 @@
           h('button', { type: 'button', class: 'btn btn--ghost', text: 'View', onclick: () => openDetail(rec) }),
           h('button', { type: 'button', class: 'btn btn--ghost', text: 'JSON', onclick: () => exportRecordJson(rec) }),
           h('button', { type: 'button', class: 'btn btn--ghost', text: 'CSV', onclick: () => exportRecordCsv(rec) }),
+          canReopen ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Reopen', onclick: () => reopenRound(roundId) }) : null,
           workQueueSheetUrl ? h('a', { class: 'btn btn--ghost', href: workQueueSheetUrl, target: '_blank', rel: 'noopener', text: 'Sheet' }) : null,
           isArchived
             ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Unarchive', onclick: () => archiveSubmission(rec.id, false) })
