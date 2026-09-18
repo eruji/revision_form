@@ -95,7 +95,7 @@ exports.handler = async (event) => {
     await store.setJSON(draftKey(code), { code: code, data: data, savedAt: savedAt, expiresAt: expiresAt });
     await updateIndex(store, summaryFrom(code, data, savedAt, expiresAt), false);
 
-    return json(200, { ok: true, code: code, resumeUrl: '/?resume=' + encodeURIComponent(code), expiresAt: expiresAt });
+    return json(200, { ok: true, code: code, resumeUrl: '/form.html?resume=' + encodeURIComponent(code), expiresAt: expiresAt });
   }
 
   if (event.httpMethod === 'GET') {

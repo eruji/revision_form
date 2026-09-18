@@ -27,12 +27,12 @@ A real form needs to grow with the client. That's what this POC does.
 
 | File | Purpose |
 |---|---|
-| `index.html` | Client form shell (form + hidden Team setup panel) |
+| `index.html` / `admin.js` | Password-protected office dashboard at the site root (`/`), with CSV export |
+| `form.html` / `app.js` | Client revision form — opened via a generated link (`?r=…`, `?resume=…`) |
 | `view.html` / `view.js` | Private read-only copy (`?token=…`) with print/PDF + JSON |
-| `admin.html` / `admin.js` | Password-protected office dashboard with CSV export |
 | `styles.css` | Styling — olive/cream brand palette, responsive |
 | `config.js` | **The questions and policy copy your team will iterate on** |
-| `app.js` | Unlimited items, validation, draft autosave, backend calls |
+| `app.js` | Client form: unlimited items, validation, draft autosave, backend calls |
 | `netlify/functions/*` | Serverless API — `submit`, `get`, `draft`, `admin`, `rounds`, `upload`, `file` (Netlify Blobs) |
 | `google_apps_script.gs` | Apps Script bridge: Google Sheet work queue + email notification |
 | `netlify.toml` | Publish dir, functions dir, `/api/*` routing, headers |
@@ -42,28 +42,42 @@ A real form needs to grow with the client. That's what this POC does.
 No build step for the front end; Netlify hosts the static app and runs the
 functions.
 
+**URL map**
+
+| URL | What it is |
+|---|---|
+| `/` | Password-protected office dashboard (the homepage) |
+| `/form.html?r=…` | Client revision form, opened from a generated request link |
+| `/form.html?resume=…` | Client form restored from a saved draft code |
+| `/view.html?token=…` | Private read-only copy of a submission |
+
+Clients only ever reach `form.html` through a link the dashboard generates; the
+root is the team's dashboard.
+
 ## Run it (10 seconds)
 
-**Option A — just open it:** double-click `index.html`.
+**Option A — just open the client form:** double-click `form.html`.
 
-**Option B — local server (best for sharing on your network):**
+**Option B — local server (needed for the dashboard, best for sharing):**
 ```bash
 cd revision_form
 python -m http.server 8080      # or: npx serve .
 ```
-Then open <http://localhost:8080>.
+Then open <http://localhost:8080> for the dashboard (it needs the API, so use the
+full site or `netlify dev`), or <http://localhost:8080/form.html> for the form.
 
 > The app saves to the shared backend when it is reachable. If it isn't (for
-example opening `index.html` directly, or on a plain static host), it falls back
-to browser `localStorage` so you can still demo it offline.
+example opening `form.html` directly, or on a plain static host), it falls back
+to browser `localStorage` so you can still demo the form offline. The dashboard
+itself requires the backend.
 
 ## Reading responses, privacy & saving progress
 
 | Requirement | How it works |
 |---|---|
-| **Office reads responses** | Password-protected `/admin.html` dashboard lists every submission with **Export all CSV** (opens in Sheets). |
+| **Office reads responses** | Password-protected dashboard at the site root (`/`) lists every submission with **Export all CSV** (opens in Sheets). |
 | **Client can't see others** | Every submission gets a secret 256-bit token. `/api/get` returns only the submission matching that token, and unknown tokens get a plain 404. There is **no public endpoint that lists submissions**. |
-| **Save progress until submit** | Autosave in the browser, plus **Save & continue later** → a resume code stored server-side that works on any device via `/?resume=CODE`. Saved drafts **expire after 30 days**. |
+| **Save progress until submit** | Autosave in the browser, plus **Save & continue later** → a resume code stored server-side that works on any device via `/form.html?resume=CODE`. Saved drafts **expire after 30 days**. |
 | **Office can see and share drafts** | Saved drafts appear in the office dashboard with a **View** read-only link (`/view.html?draft=CODE`) and a **Copy client link** button to send the client back to finish. |
 | **Client copy for records** | Private read-only page with **Print / Save as PDF** and **Download JSON**. |
 | **Photos & attachments** | Each revision item can attach up to 5 photos or PDFs (4 MB each; large images are resized in the browser first). Files live in Netlify Blobs and are reachable only by their random id — the read-only view and office dashboard show thumbnails, and CSV export lists the URLs. |
@@ -71,7 +85,7 @@ to browser `localStorage` so you can still demo it offline.
 | **Read-only online view** | `/view.html?token=…` — no edit fields. |
 
 ### Office dashboard
-- URL: `/admin.html` on the live site.
+- URL: `/` (the site root) on the live site.
 - **Google Sheet work queue (currently hidden):** the dashboard has a card to
   paste the spreadsheet URL and Save, which adds **Sheet** links. It is hidden
   for now; the code remains for when Sheet sync is enabled.
@@ -114,11 +128,11 @@ to browser `localStorage` so you can still demo it offline.
 
 The office no longer asks the client to type the project and phase. Instead:
 
-1. Open `/admin.html` and use **New revision request link**.
+1. Open the dashboard at `/` and use **New revision request link**.
 2. Enter client, project, and design phase (a note to the client is optional),
    then **Create link**.
 3. Copy the link and send it. It looks like
-   `https://revision.pepperandolive.com/?r=AbC123xyz`.
+   `https://revision.pepperandolive.com/form.html?r=AbC123xyz`.
 
 When the client opens it, the form shows a context banner (*“Revision request
 for Maple Residence — Design Development”*) and **section 01 is hidden** — the
@@ -184,7 +198,7 @@ is live the generated links automatically use
 
 | Link | Use |
 |---|---|
-| **https://pepper-olive-revision-form.netlify.app/?review=1** | **Send this to reviewers** — shows a dismissible "Review mode" banner explaining what to click |
+| **https://pepper-olive-revision-form.netlify.app/form.html?review=1** | **Send this to reviewers** — shows a dismissible "Review mode" banner explaining what to click |
 | https://pepper-olive-revision-form.netlify.app | The clean, client-facing version (no banner) |
 
 Every push to `main` auto-deploys to Netlify via
@@ -227,9 +241,9 @@ These are the parts that directly answer *“what should we ask?”*
 
 ### 🔧 Team setup (internal — hidden from clients)
 Reachable from the office dashboard's **Team setup** button, which opens
-`/?manage=1&setup=1` and drops you straight into the panel (or use
-`/?manage=1` and click the button). Clients never see it. A live panel over the
-form:
+`/form.html?manage=1&setup=1` and drops you straight into the panel (or use
+`/form.html?manage=1` and click the button). Clients never see it. A live panel
+over the form:
 - Turn any question **on/off** and mark it **required**.
 - **Rename** question labels inline.
 - **Reorder** the fields that appear on every revision item.
@@ -244,7 +258,7 @@ Changes apply instantly and persist in your browser. This makes it cheap to
 prototype three or four question sets, screenshot them, and pick one as a team.
 
 ### 🗂 Office dashboard (internal — the one place the team reads submissions)
-The password-protected **`/admin.html`** dashboard (see “Reading responses”
+The password-protected dashboard at **`/`** (see “Reading responses”
 above) lists every client, exports CSV, manages request links, and archives or
 deletes requests. It links to **Team setup**; there is no separate in-app office
 view.
@@ -259,7 +273,7 @@ URL includes `?manage=1`.
 1. Open **Team setup** and try toggling `Priority` on, adding a custom question,
    and rewording the intro. Save.
 2. Submit a fake round with **10 items** to feel the unlimited flow.
-3. Open the office dashboard (`/admin.html`) → *Export all CSV*. Is that the
+3. Open the office dashboard (`/`) → *Export all CSV*. Is that the
    shape your team wants to triage from?
 4. Decide together:
    - Which fields are **required vs. nice-to-have**?
@@ -291,7 +305,7 @@ Options, roughly in order of effort:
 
 | Option | Unlimited items | Notes |
 |---|---|---|
-| **Current build: Netlify Functions + Blobs** | ✅ | Works today; office reads via `/admin.html` + CSV. |
+| **Current build: Netlify Functions + Blobs** | ✅ | Works today; office reads via the `/` dashboard + CSV. |
 | **Apps Script → Google Sheet** | ✅ | Swap the storage layer if the team prefers reading in Sheets. |
 | **Airtable / Supabase** | ✅ | Managed DB with nicer admin tooling; modest setup. |
 | **Jotform** | ✅ | Native *Configurable List* widget does repeatable rows; also offers drawn signatures and uploads. Paid for volume. |

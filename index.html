@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Design Revision Request — Proof of Concept</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Revision Requests — Office Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -13,233 +14,122 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- ═══════════════════════════ TOP BAR ═══════════════════════════ -->
   <header class="topbar">
     <div class="topbar__brand">
       <span class="topbar__mark" aria-hidden="true">P&amp;O</span>
       <div>
-        <strong id="brandName">Pepper &amp; Olive Interiors</strong>
-        <span class="topbar__sub">Revision Request Form</span>
+        <strong>Pepper &amp; Olive Interiors</strong>
+        <span class="topbar__sub">Revision requests — office dashboard</span>
       </div>
     </div>
-    <div class="topbar__actions" id="topbarActions" hidden>
-      <button type="button" class="btn btn--ghost" id="setupBtn">Team setup</button>
+    <div class="topbar__actions">
+      <a class="btn btn--ghost" id="sheetBtn" href="#" target="_blank" rel="noopener" hidden>Work queue sheet</a>
+      <a class="btn btn--ghost" href="/form.html?manage=1&amp;setup=1" target="_blank" rel="noopener">Team setup</a>
+      <button type="button" class="btn btn--ghost" id="refreshBtn" hidden>Refresh</button>
+      <button type="button" class="btn btn--primary" id="exportCsvBtn" hidden>Export all CSV</button>
+      <button type="button" class="btn btn--ghost" id="signOutBtn" hidden>Sign out</button>
     </div>
   </header>
 
   <main class="page">
-    <!-- ═══════════ REVIEW BANNER (only shown with ?review=1) ═══════════ -->
-    <div class="review-banner" id="reviewBanner" hidden>
-      <span class="review-banner__icon" aria-hidden="true">👋</span>
-      <div class="review-banner__text">
-        <strong>Review mode</strong>
-        <span>
-          This is a proof of concept. Click <b>＋ Add another revision</b> as many
-          times as you like. Use <b>Team setup</b> (top right) to change what we ask.
-          Nothing leaves your browser.
-        </span>
+    <!-- Password gate -->
+    <section class="card gate" id="gateCard">
+      <div class="card__head">
+        <span class="step">🔒</span>
+        <div>
+          <h2>Office access</h2>
+          <p>Enter the team password to read submitted revision requests.</p>
+        </div>
       </div>
-      <button type="button" class="iconbtn" id="dismissReview" aria-label="Dismiss review banner">✕</button>
-    </div>
-
-    <!-- ═══════════════════════════ INTRO ═══════════════════════════ -->
-    <section class="hero">
-      <p class="eyebrow" id="heroEyebrow">Pepper &amp; Olive Interiors</p>
-      <h1 id="heroTitle">Design Revision Request</h1>
-      <p class="hero__sub" id="heroSub"></p>
-      <!-- Revision instructions are ALWAYS visible (not collapsible) and are
-           acknowledged in section 03 before the client can submit. -->
-      <section class="policy" aria-labelledby="policyHeading">
-        <h2 class="policy__title" id="policyHeading">
-          <span class="policy__mark" aria-hidden="true">§</span>
-          How your revision round works
-        </h2>
-        <div class="policy__body" id="policyBody"></div>
-      </section>
+      <form id="gateForm">
+        <div class="field">
+          <label for="adminKey">Team password</label>
+          <input type="password" id="adminKey" autocomplete="current-password" placeholder="••••••••" />
+          <p class="field__error" id="gateError" hidden>Incorrect password. Please try again.</p>
+        </div>
+        <button type="submit" class="btn btn--primary btn--lg">Unlock</button>
+      </form>
     </section>
 
-    <form id="revisionForm" novalidate>
-      <!-- ── OFFICE-ISSUED CONTEXT (replaces section 01) ── -->
-      <section class="context-banner" id="contextBanner" hidden>
-        <p class="context-banner__label">Revision request for</p>
-        <h2 class="context-banner__title" id="contextTitle"></h2>
-        <p class="context-banner__meta" id="contextMeta"></p>
-        <p class="context-banner__note" id="contextNote" hidden></p>
-      </section>
-
-      <section class="card previous-panel" id="previousPanel" hidden>
+    <!-- List -->
+    <section id="listWrap" hidden>
+      <section class="card settings-card" hidden>
         <div class="card__head">
+          <span class="step">📊</span>
           <div>
-            <h2>Previously submitted items</h2>
-            <p>These were already sent to our team. Add only the new items below.</p>
+            <h2>Google Sheet work queue</h2>
+            <p>Paste the spreadsheet URL so your team can jump to it from each submitted request.</p>
           </div>
         </div>
-        <div id="previousItems"></div>
+        <div class="settings-inline">
+          <input type="url" id="sheetUrlInput" placeholder="https://docs.google.com/spreadsheets/d/..." />
+          <button type="button" class="btn btn--primary" id="saveSheetUrlBtn">Save</button>
+          <a class="btn btn--ghost" id="openSheetBtn" href="#" target="_blank" rel="noopener" hidden>Open sheet</a>
+        </div>
       </section>
 
-      <!-- ── ABOUT THE ROUND (fallback when no request link is used) ── -->
-      <section class="card" id="aboutCard">
+      <section class="card new-round">
         <div class="card__head">
-          <span class="step" id="stepAbout">01</span>
+          <span class="step">🔗</span>
           <div>
-            <h2>About your revision round</h2>
-            <p>Tell us who you are and which design phase this applies to.</p>
+            <h2>New revision request link</h2>
+            <p>We already know the client, project and phase — generate a link to send them.</p>
           </div>
         </div>
-        <div class="grid" id="aboutFields"></div>
+        <div class="round-form">
+          <div class="field"><label for="nrClient">Client name</label>
+            <input id="nrClient" type="text" placeholder="e.g. Jane Doe" /></div>
+          <div class="field"><label for="nrProject">Project name *</label>
+            <input id="nrProject" type="text" placeholder="e.g. Maple Residence" /></div>
+          <div class="field"><label for="nrPhase">Design phase</label>
+            <input id="nrPhase" type="text" placeholder="e.g. Design Development" /></div>
+          <div class="field"><label for="nrNote">Note to the client (optional)</label>
+            <input id="nrNote" type="text" placeholder="e.g. Please send all changes for this phase" /></div>
+        </div>
+        <div class="new-round__actions">
+          <button type="button" class="btn btn--primary" id="createRoundBtn">Create link</button>
+          <span class="new-round__error" id="newRoundError" hidden></span>
+        </div>
+        <div class="new-round__result" id="newRoundResult" hidden>
+          <input type="text" id="newRoundLink" readonly />
+          <button type="button" class="btn btn--ghost" id="copyNewRoundBtn">Copy link</button>
+        </div>
       </section>
 
-      <!-- ── REPEATABLE REVISION ITEMS ── -->
-      <section class="card" id="itemsCard">
-        <div class="card__head">
-          <span class="step" id="stepItems">02</span>
-          <div>
-            <h2>Your revision items</h2>
-            <p>
-              Add one item per change. There is <strong>no limit</strong> — add as
-              many as you need.
-            </p>
-          </div>
-          <span class="counter" id="itemCounter">1 item</span>
-        </div>
+      <h2 class="admin-heading">Request links</h2>
+      <p class="admin-hint">Send a link to start a round. When a client wants to add one-off items later, hit <b>Reopen</b> and send them the same link again.</p>
+      <div id="roundsList"></div>
 
-        <div class="items" id="items"></div>
+      <div class="admin-summary" id="adminSummary"></div>
+      <h2 class="admin-heading">Submitted revision requests</h2>
+      <div id="adminList"></div>
+      <h2 class="admin-heading">Saved drafts <span class="admin-heading__note" id="draftCount"></span></h2>
+      <p class="admin-hint">Drafts are still in progress. Use <b>View</b> to read one, or
+        <b>Copy client link</b> to send the client back to continue editing.</p>
+      <div id="draftList"></div>
 
-        <button type="button" class="add-btn" id="addItemBtn">
-          <span class="add-btn__plus" aria-hidden="true">＋</span>
-          Add another revision
-        </button>
-        <p class="items__hint" id="itemsHint"></p>
-      </section>
-
-      <!-- ── ACKNOWLEDGMENT ── -->
-      <section class="card" id="ackCard">
-        <div class="card__head">
-          <span class="step" id="stepAck">03</span>
-          <div>
-            <h2>Acknowledgment</h2>
-            <p>Please confirm you have read the revision instructions above and agree to the statements below.</p>
-          </div>
-        </div>
-        <div id="ackFields"></div>
-      </section>
-
-      <!-- ── SUBMIT ── -->
-      <div class="submitbar">
-        <div class="submitbar__meta">
-          <span id="draftStatus" class="draft-status">Draft saved locally</span>
-          <span class="submitbar__links">
-            <button type="button" class="linkbtn" id="resumeDraftBtn">Resume a saved draft</button>
-            <button type="button" class="linkbtn" id="clearDraftBtn">Clear draft</button>
-          </span>
-        </div>
-        <button type="button" class="btn btn--ghost btn--lg" id="saveDraftBtn">
-          Save &amp; continue later
-        </button>
-        <button type="submit" class="btn btn--primary btn--lg" id="submitBtn">
-          Submit revision request
-        </button>
-      </div>
-    </form>
-
-    <footer class="foot">
-      <p>
-        Proof of concept · unlimited revision items · photos, PDFs, and a drawn
-        signature are supported. Submissions are saved to the secure backend and
-        appear in the office dashboard.
-      </p>
-    </footer>
+      <h2 class="admin-heading">Archived requests <span class="admin-heading__note" id="archivedCount"></span></h2>
+      <p class="admin-hint">Archived requests are hidden from the main list but kept in full. <b>Unarchive</b> to restore, or <b>Delete</b> to remove permanently.</p>
+      <div id="archivedList"></div>
+    </section>
   </main>
 
-  <!-- ═══════════════════════════ SUCCESS MODAL ═══════════════════════════ -->
-  <div class="overlay" id="successOverlay" hidden>
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="successTitle">
-      <div class="modal__check" aria-hidden="true">✓</div>
-      <h2 id="successTitle">Revision request received</h2>
-      <p id="successBody"></p>
-      <div class="readonly-box" id="readonlyBox">
-        <p class="readonly-box__label">Your private read-only link</p>
-        <div class="readonly-box__row">
-          <input type="text" id="readonlyUrl" readonly />
-          <button type="button" class="btn btn--ghost" id="copyLinkBtn">Copy</button>
-        </div>
-        <p class="readonly-box__hint" id="readonlyHint"></p>
-      </div>
-      <div class="modal__actions">
-        <a class="btn btn--primary" id="openViewBtn" href="#" target="_blank" rel="noopener">Open read-only copy</a>
-        <button class="btn btn--ghost" id="downloadJsonBtn">Download JSON</button>
-        <button class="btn btn--ghost" id="downloadCsvBtn">Download CSV</button>
-        <button class="btn btn--ghost" id="startOverBtn">Start a new round</button>
-      </div>
-      <details class="payload">
-        <summary>What our team would receive</summary>
-        <pre id="payloadPreview"></pre>
-      </details>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════ TEAM SETUP DRAWER ═══════════════════════════ -->
-  <aside class="drawer" id="setupDrawer" hidden aria-labelledby="setupTitle">
-    <div class="drawer__head">
-      <div>
-        <h2 id="setupTitle">Team setup</h2>
-        <p>Decide what to ask. Changes apply live and are saved in this browser.</p>
-      </div>
-      <button type="button" class="iconbtn" id="closeSetupBtn" aria-label="Close">✕</button>
-    </div>
-    <div class="drawer__body" id="setupBody"></div>
-    <div class="drawer__foot">
-      <button type="button" class="btn btn--primary" id="saveConfigBtn">Save &amp; apply</button>
-      <button type="button" class="btn btn--ghost" id="exportConfigBtn">Export config</button>
-      <button type="button" class="btn btn--ghost" id="importConfigBtn">Import config</button>
-      <input type="file" id="importConfigFile" accept="application/json" hidden />
-      <button type="button" class="btn btn--danger" id="resetConfigBtn">Reset to defaults</button>
-    </div>
-  </aside>
-  <div class="scrim" id="setupScrim" hidden></div>
-
-  <!-- ═══════════════════════════ DRAFT MODAL ═══════════════════════════ -->
-  <div class="overlay" id="draftOverlay" hidden>
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="draftTitle">
-      <h2 id="draftTitle">Draft saved</h2>
-      <p id="draftBody"></p>
-      <div class="readonly-box">
-        <p class="readonly-box__label">Resume code</p>
-        <div class="readonly-box__row">
-          <input type="text" id="draftCode" readonly />
-          <button type="button" class="btn btn--ghost" id="copyDraftCodeBtn">Copy</button>
-        </div>
-        <p class="readonly-box__label" style="margin-top:12px">Resume link</p>
-        <div class="readonly-box__row">
-          <input type="text" id="draftUrl" readonly />
-          <button type="button" class="btn btn--ghost" id="copyDraftUrlBtn">Copy link</button>
-        </div>
-      </div>
-      <div class="modal__actions">
-        <button class="btn btn--primary" id="closeDraftBtn" type="button">Done</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════ TOAST ═══════════════════════════ -->
   <div class="toast" id="toast" hidden></div>
 
-  <!-- Registered Netlify Form used only as a notification relay (see
-       netlify/functions/submit.js). Hidden from clients; after a revision is
-       saved the function posts a summary here so Netlify can send its built-in
-       form notifications, configured under Forms → Notifications in Netlify. -->
-  <form name="revision-notification" data-netlify="true" netlify-honeypot="bot-field" hidden>
-    <input type="hidden" name="form-name" value="revision-notification" />
-    <p><label>Don’t fill this out: <input name="bot-field" /></label></p>
-    <input type="text" name="project" />
-    <input type="text" name="client" />
-    <input type="text" name="phase" />
-    <input type="text" name="item_count" />
-    <textarea name="summary"></textarea>
-    <input type="text" name="view_url" />
-  </form>
+  <!-- Full read-only detail for one submission -->
+  <div class="overlay" id="detailOverlay" hidden>
+    <div class="modal detail-modal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+      <div class="detail-actions no-print">
+        <button type="button" class="btn btn--primary" id="detailPrintBtn">Print / Save as PDF</button>
+        <button type="button" class="btn btn--ghost" id="detailJsonBtn">Download JSON</button>
+        <button type="button" class="btn btn--ghost" id="detailCsvBtn">Download CSV</button>
+        <button type="button" class="iconbtn" id="detailCloseBtn" aria-label="Close">✕</button>
+      </div>
+      <div id="detailBody"></div>
+    </div>
+  </div>
 
   <script src="config.js"></script>
-  <script src="app.js"></script>
+  <script src="admin.js"></script>
 </body>
 </html>

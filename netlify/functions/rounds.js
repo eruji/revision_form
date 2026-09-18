@@ -114,7 +114,7 @@ exports.handler = async (event) => {
       round.reopenCount = (round.reopenCount || 0) + 1;
       await store.setJSON('round_' + round.id, round);
       await upsertIndex(store, round);
-      return json(200, { ok: true, round: summary(round), link: '/?r=' + round.id });
+      return json(200, { ok: true, round: summary(round), link: '/form.html?r=' + round.id });
     }
 
     const projectName = String(body.projectName || '').trim();
@@ -133,7 +133,7 @@ exports.handler = async (event) => {
     };
     await store.setJSON('round_' + round.id, round);
     await upsertIndex(store, round);
-    return json(200, { ok: true, round: summary(round), link: '/?r=' + round.id });
+    return json(200, { ok: true, round: summary(round), link: '/form.html?r=' + round.id });
   }
 
   if (event.httpMethod === 'DELETE') {

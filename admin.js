@@ -151,7 +151,7 @@
     toast._t = setTimeout(() => { t.hidden = true; }, 2400);
   }
 
-  function clientLink(code) { return location.origin + '/?resume=' + encodeURIComponent(code); }
+  function clientLink(code) { return location.origin + '/form.html?resume=' + encodeURIComponent(code); }
   function draftViewLink(code) { return location.origin + '/view.html?draft=' + encodeURIComponent(code); }
 
   async function deleteDraft(code, name) {
@@ -399,7 +399,7 @@
   }
 
   // ── Office-issued request links (rounds) ────────────────────────────────
-  function roundLink(id) { return location.origin + '/?r=' + id; }
+  function roundLink(id) { return location.origin + '/form.html?r=' + id; }
 
   async function loadRounds(key) {
     try {

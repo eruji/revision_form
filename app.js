@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Pepper & Olive Interiors — Revision Request (proof of concept)
-   Vanilla JS. No build step, no server. Open index.html directly.
+   Vanilla JS. No build step, no server. Open form.html directly.
    ═══════════════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';

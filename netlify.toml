@@ -16,6 +16,13 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
+# The dashboard moved to the site root; keep old bookmarks working.
+[[redirects]]
+  from = "/admin.html"
+  to = "/"
+  status = 301
+  force = true
+
 # Sensible headers for a public review prototype.
 [[headers]]
   for = "/*"
@@ -40,7 +47,18 @@
   [headers.values]
     Cache-Control = "no-store"
 
+# The dashboard is now the site root (password protected); always serve it fresh.
 [[headers]]
-  for = "/admin.html"
+  for = "/"
+  [headers.values]
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/form.html"
   [headers.values]
     Cache-Control = "no-store"
