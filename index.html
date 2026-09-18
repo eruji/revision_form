@@ -241,6 +241,21 @@
   <!-- ═══════════════════════════ TOAST ═══════════════════════════ -->
   <div class="toast" id="toast" hidden></div>
 
+  <!-- Registered Netlify Form used only as a notification relay (see
+       netlify/functions/submit.js). Hidden from clients; after a revision is
+       saved the function posts a summary here so Netlify can send its built-in
+       form notifications, configured under Forms → Notifications in Netlify. -->
+  <form name="revision-notification" data-netlify="true" netlify-honeypot="bot-field" hidden>
+    <input type="hidden" name="form-name" value="revision-notification" />
+    <p><label>Don’t fill this out: <input name="bot-field" /></label></p>
+    <input type="text" name="project" />
+    <input type="text" name="client" />
+    <input type="text" name="phase" />
+    <input type="text" name="item_count" />
+    <textarea name="summary"></textarea>
+    <input type="text" name="view_url" />
+  </form>
+
   <script src="config.js"></script>
   <script src="app.js"></script>
 </body>

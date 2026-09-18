@@ -65,6 +65,45 @@ async function notify(payload) {
   }
 }
 
+/**
+ * Optional: relay the submission to a hidden, registered Netlify Form so Netlify
+ * itself can send the notification email (Forms → Notifications in the UI).
+ * Enabled by setting NETLIFY_FORM_NAME (e.g. "revision-notification").
+ */
+async function relayToNetlifyForm(payload, host) {
+  const formName = process.env.NETLIFY_FORM_NAME;
+  if (!formName || !host) return;
+  const about = payload.about || {};
+  const items = payload.items || [];
+  const summary = items.map(function (it, i) {
+    const cat = pickLabel(it, /type of revision|category/i);
+    const loc = pickLabel(it, /location|room/i);
+    const desc = pickLabel(it, /what would you like changed|change/i);
+    const ref = pickLabel(it, /reference|inspiration|link/i);
+    return (i + 1) + '. ' + [cat, loc].filter(String).join(' — ') + ': ' + desc + (ref ? ' (' + ref + ')' : '');
+  }).join('\n');
+
+  const body = new URLSearchParams();
+  body.set('form-name', formName);
+  body.set('bot-field', '');
+  body.set('project', pickLabel(about, /project/i));
+  body.set('client', pickLabel(about, /client name/i));
+  body.set('phase', pickLabel(about, /phase/i));
+  body.set('item_count', String(items.length));
+  body.set('summary', summary);
+  body.set('view_url', payload.viewUrl || '');
+
+  try {
+    await fetch('https://' + host + '/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString()
+    });
+  } catch (e) {
+    console.error('netlify form relay failed:', e && e.message);
+  }
+}
+
 function pickLabel(obj, pattern) {
   const keys = Object.keys(obj || {});
   for (let i = 0; i < keys.length; i++) { if (pattern.test(keys[i])) return obj[keys[i]]; }
@@ -258,16 +297,19 @@ exports.handler = async (event) => {
       } catch (e) { /* non-fatal */ }
     }
 
-    // Notify the office: email (Resend) and/or webhook (e.g. Google Sheet).
+    // Notify the office: email (Resend) and/or webhook (e.g. Google Sheet),
+    // and/or a Netlify Form relay that lets Netlify send the email.
     try {
       let absView = viewUrl;
+      let host = '';
       try {
-        const host = event.headers && (event.headers.host || event.headers.Host);
+        host = (event.headers && (event.headers.host || event.headers.Host)) || '';
         const proto = (event.headers && (event.headers['x-forwarded-proto'] || event.headers['X-Forwarded-Proto'])) || 'https';
         if (host) absView = proto + '://' + host + viewUrl;
       } catch (e) {}
       const payload = notificationPayload(submission, absView, round);
       await sendEmail(payload);
+      await relayToNetlifyForm(payload, host);
       await notify(payload);
     } catch (e) { /* never break the submission */ }
 
