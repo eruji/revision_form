@@ -18,7 +18,6 @@
     items: [],                          // [{ uid, values: { fieldId: value } }]
     round: null                         // office-issued request context, if any
   };
-  let lastSubmission = null;
   let activeResumeCode = '';   // set when the client resumed a server-side draft
   let booted = false;
 
@@ -775,48 +774,14 @@
     try { localStorage.setItem(KEY_SUBMISSIONS, JSON.stringify(all)); } catch (e) {}
   }
 
-  // ── CSV ──────────────────────────────────────────────────────────────────
-  function csvCell(v) {
-    const s = v == null ? '' : String(v);
-    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-  }
-
-  // Flatten a stored value for a spreadsheet: attachment arrays become their
-  // URLs, and a drawn signature becomes a short label instead of a huge data
-  // URL (the image is still visible in the read-only view / dashboard).
+  // Flatten a stored value for display: attachment arrays become their URLs,
+  // and a drawn signature becomes a short label instead of a huge data URL.
   function cellText(v) {
     if (Array.isArray(v)) {
       return v.map((f) => (f && f.url) ? f.url : String(f)).filter(Boolean).join(' | ');
     }
     if (typeof v === 'string' && v.indexOf('data:image/') === 0) return 'Signed (drawn signature)';
     return v == null ? '' : String(v);
-  }
-
-  function toCsv(rows) {
-    return rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
-  }
-
-  function submissionRows(sub) {
-    const aboutIds = Object.keys(sub._labels.about);
-    const revIds = Object.keys(sub._labels.revision);
-    const ackIds = Object.keys(sub._labels.ack);
-
-    const header = [
-      'Submitted At',
-      ...aboutIds.map((id) => sub._labels.about[id]),
-      ...revIds.map((id) => sub._labels.revision[id]),
-      ...ackIds.map((id) => sub._labels.ack[id])
-    ];
-    const aboutVals = aboutIds.map((id) => cellText(sub.about[id]));
-    const ackVals = ackIds.map((id) => cellText(sub.acknowledgment[id]));
-
-    const rows = (sub.revisions || []).map((rev) => [
-      sub.submittedAt,
-      ...aboutVals,
-      ...revIds.map((id) => cellText(rev[id])),
-      ...ackVals
-    ]);
-    return { header: header, rows: rows.length ? rows : [header.map(() => '')] };
   }
 
   // ── Submit ───────────────────────────────────────────────────────────────
@@ -923,7 +888,6 @@
 
     sub._localId = sub.id;
     addSubmission(sub);
-    lastSubmission = sub;
 
     // The round is now submitted, so its server-side draft is no longer needed.
     if (activeResumeCode) {
@@ -949,12 +913,10 @@
       ? new URL(viewUrl, location.href).href
       : new URL('view.html?local=' + encodeURIComponent(sub.id), location.href).href;
     $('#readonlyUrl').value = link;
-    $('#openViewBtn').setAttribute('href', link);
     $('#readonlyHint').textContent = offline
-      ? 'The shared server was unavailable, so this copy is stored in this browser only. Download it for your records.'
+      ? 'The shared server was unavailable, so this copy is stored in this browser only — keep this link to view it.'
       : 'Anyone with this link can view a read-only copy — keep it private.';
 
-    $('#payloadPreview').textContent = JSON.stringify(sub, null, 2);
     $('#successOverlay').hidden = false;
   }
 
@@ -1087,16 +1049,10 @@
       toast('Draft cleared');
     });
 
-    // Success modal
-    $('#downloadJsonBtn').addEventListener('click', () => {
-      if (lastSubmission) download('revision-request.json', JSON.stringify(lastSubmission, null, 2), 'application/json');
+    // Success modal — dismiss by clicking the backdrop (or pressing Escape).
+    $('#successOverlay').addEventListener('click', (e) => {
+      if (e.target && e.target.id === 'successOverlay') hideSuccess();
     });
-    $('#downloadCsvBtn').addEventListener('click', () => {
-      if (!lastSubmission) return;
-      const r = submissionRows(lastSubmission);
-      download('revision-request.csv', toCsv([r.header, ...r.rows]), 'text/csv');
-    });
-    $('#startOverBtn').addEventListener('click', resetForm);
 
     // Team setup drawer (the panel logic lives in setup.js)
     $('#setupBtn').addEventListener('click', () => window.TeamSetup.open());
