@@ -22,7 +22,7 @@ function openStore(name) {
   return getStore(name);
 }
 
-const MAX_BYTES = 200 * 1024;
+const MAX_BYTES = 512 * 1024; // room for a drawn signature + attachment references
 const TTL_MS = 30 * 24 * 60 * 60 * 1000; // drafts expire 30 days after saving
 const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no ambiguous chars
 const CODE_RE = /^[A-Z0-9]{4}-[A-Z0-9]{4}$/;

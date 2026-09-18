@@ -33,6 +33,14 @@ function json(statusCode, body) {
 
 function val(v) { return v == null ? '' : v; }
 
+// Flatten a stored value for a spreadsheet: attachments become their URLs and
+// a drawn signature becomes a label instead of an enormous data URL.
+function cellText(v) {
+  if (Array.isArray(v)) return v.map((f) => (f && f.url) ? f.url : String(f)).filter(Boolean).join(' | ');
+  if (typeof v === 'string' && v.indexOf('data:image/') === 0) return 'Signed (drawn signature)';
+  return val(v);
+}
+
 function csvCell(v) {
   const s = val(v);
   return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -58,8 +66,8 @@ function toCsv(records) {
       ];
     }
 
-    const aboutVals = aboutIds.map((id) => (sub.about || {})[id]);
-    const ackVals = ackIds.map((id) => (sub.acknowledgment || {})[id]);
+    const aboutVals = aboutIds.map((id) => cellText((sub.about || {})[id]));
+    const ackVals = ackIds.map((id) => cellText((sub.acknowledgment || {})[id]));
     const revs = sub.revisions || [];
 
     if (!revs.length) {
@@ -69,7 +77,7 @@ function toCsv(records) {
       rows.push([
         sub.submittedAt,
         ...aboutVals,
-        ...revIds.map((id) => rev[id]),
+        ...revIds.map((id) => cellText(rev[id])),
         ...ackVals
       ]);
     });

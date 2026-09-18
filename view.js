@@ -64,13 +64,57 @@
     Object.keys(labels || {}).forEach((id) => {
       const v = values ? values[id] : '';
       const isCheckbox = typeof v === 'boolean' || v === 'true' || v === 'false';
+
+      // Attachments: an array of { name, type, url } references.
+      if (Array.isArray(v)) {
+        const files = v.filter((f) => f && f.url);
+        if (opts.skipEmpty && !files.length) return;
+        rows.push({
+          label: labels[id],
+          value: files.length ? files.map((f) => f.name || 'attachment').join(', ') : '—',
+          files: files, image: null,
+          checked: isCheckbox ? (v === true || v === 'true') : null
+        });
+        return;
+      }
+
+      // Drawn signature: stored as a data URL image.
+      if (typeof v === 'string' && v.indexOf('data:image/') === 0) {
+        rows.push({ label: labels[id], value: 'Signed', files: null, image: v, checked: null });
+        return;
+      }
+
       if (opts.skipEmpty && (v == null || v === '')) return;
       let display;
       if (isCheckbox) display = (v === true || v === 'true') ? 'Agreed' : 'Not agreed';
       else display = v == null || v === '' ? '—' : String(v);
-      rows.push({ label: labels[id], value: display, checked: isCheckbox ? (v === true || v === 'true') : null });
+      rows.push({ label: labels[id], value: display, files: null, image: null, checked: isCheckbox ? (v === true || v === 'true') : null });
     });
     return rows;
+  }
+
+  // Renders attachment thumbnails / a drawn signature. Uses only phrasing
+  // content (span/img/a) so it can sit inside a <p> or <dd>.
+  function mediaNode(row) {
+    if (row.image) {
+      return h('span', { class: 'media-inline' },
+        h('img', { class: 'sig-image', src: row.image, alt: 'Drawn signature' })
+      );
+    }
+    if (row.files && row.files.length) {
+      const wrap = h('span', { class: 'media-inline' });
+      row.files.forEach((f) => {
+        const isImage = f.type && /^image\//.test(f.type);
+        wrap.append(h('a', {
+          class: 'attach-view__item', href: f.url, target: '_blank', rel: 'noopener noreferrer'
+        }, isImage
+          ? h('img', { src: f.url, alt: f.name || 'attachment', loading: 'lazy' })
+          : h('span', { class: 'attach-view__doc', text: '📄 ' + (f.name || 'document') })
+        ));
+      });
+      return wrap;
+    }
+    return null;
   }
 
   // Turn http(s) URLs inside a value into real, clickable links. Chrome's
@@ -117,9 +161,12 @@
     wrap.innerHTML = '';
     const labels = (sub._labels && sub._labels.about) || {};
     labelValueRows(labels, sub.about).forEach((row) => {
+      const dd = linkified('dd', null, row.value);
+      const media = mediaNode(row);
+      if (media) dd.append(media);
       wrap.append(h('div', { class: 'kv__row' },
         h('dt', { text: row.label }),
-        linkified('dd', null, row.value)
+        dd
       ));
     });
   }
@@ -143,9 +190,12 @@
         // Skip the category/location we already surfaced in the heading.
         if (row.value === '—') return;
         if (row.label === labels.category && row.value === heading) return;
+        const value = linkified('p', 'view-item__value', row.value);
+        const media = mediaNode(row);
+        if (media) value.append(media);
         card.append(h('div', { class: 'view-item__field' },
           h('span', { class: 'view-item__label', text: row.label }),
-          linkified('p', 'view-item__value', row.value)
+          value
         ));
       });
       wrap.append(card);
@@ -167,12 +217,16 @@
     }
     rows.forEach((row) => {
       const isAck = row.checked !== null;
+      const inner = h('div', {}, h('p', { class: 'ack-row__label', text: row.label }));
+      if (!isAck) {
+        const value = linkified('p', 'ack-row__value', row.value);
+        const media = mediaNode(row);
+        if (media) value.append(media);
+        inner.append(value);
+      }
       wrap.append(h('div', { class: 'ack-row' + (isAck && row.checked ? ' ack-row--ok' : '') },
         isAck ? h('span', { class: 'ack-row__mark', text: row.checked ? '✓' : '✕' }) : null,
-        h('div', {},
-          h('p', { class: 'ack-row__label', text: row.label }),
-          isAck ? null : linkified('p', 'ack-row__value', row.value)
-        )
+        inner
       ));
     });
   }

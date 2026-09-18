@@ -24,7 +24,7 @@ function openStore(name) {
 }
 
 
-const MAX_BYTES = 200 * 1024; // 200 KB per submission
+const MAX_BYTES = 512 * 1024; // room for a drawn signature + long text fields
 
 function json(statusCode, body) {
   return {
@@ -110,6 +110,13 @@ function pickLabel(obj, pattern) {
   return '';
 }
 
+/** Flatten a value for email/Sheets: attachment URLs and a short signature label. */
+function cellText(v) {
+  if (Array.isArray(v)) return v.map((f) => (f && f.url) ? f.url : String(f)).filter(Boolean).join(' | ');
+  if (typeof v === 'string' && v.indexOf('data:image/') === 0) return 'Signed (drawn signature)';
+  return v == null ? '' : v;
+}
+
 /** Build a flattened, label-keyed payload for the Sheets/email integration. */
 function notificationPayload(submission, viewUrl, round) {
   const L = submission._labels || {};
@@ -118,13 +125,13 @@ function notificationPayload(submission, viewUrl, round) {
   const ackLabels = (L.ack) || {};
   const items = (submission.revisions || []).map((rev) => {
     const row = {};
-    Object.keys(revisionLabels).forEach((id) => { row[revisionLabels[id]] = rev[id] == null ? '' : rev[id]; });
+    Object.keys(revisionLabels).forEach((id) => { row[revisionLabels[id]] = cellText(rev[id]); });
     return row;
   });
   const about = {};
-  Object.keys(aboutLabels).forEach((id) => { about[aboutLabels[id]] = submission.about[id] == null ? '' : submission.about[id]; });
+  Object.keys(aboutLabels).forEach((id) => { about[aboutLabels[id]] = cellText((submission.about || {})[id]); });
   const acknowledgment = {};
-  Object.keys(ackLabels).forEach((id) => { acknowledgment[ackLabels[id]] = submission.acknowledgment[id] == null ? '' : submission.acknowledgment[id]; });
+  Object.keys(ackLabels).forEach((id) => { acknowledgment[ackLabels[id]] = cellText((submission.acknowledgment || {})[id]); });
   return {
     event: 'revision.submitted',
     submittedAt: submission.submittedAt || new Date().toISOString(),

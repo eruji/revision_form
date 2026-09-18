@@ -111,8 +111,15 @@
     submit: '/api/submit',
     get: '/api/get',
     draft: '/api/draft',
-    admin: '/api/admin'
+    admin: '/api/admin',
+    upload: '/api/upload'
   };
+
+  // Attachments
+  const MAX_ATTACHMENTS = 5;                 // per revision item
+  const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;  // matches netlify/functions/upload.js
+  const ATTACH_TYPES = 'image/png,image/jpeg,image/webp,image/gif,application/pdf';
+  const IMAGE_MAX_DIM = 1600;
 
   async function apiFetch(url, options) {
     const res = await fetch(url, Object.assign({ cache: 'no-store' }, options || {}));
@@ -146,16 +153,98 @@
     ta.remove();
   }
 
+  // ── Attachment helpers (photos / PDFs) ───────────────────────────────────
+  function readAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Could not read that file'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('Could not read that image'));
+      img.src = src;
+    });
+  }
+
+  /**
+   * Re-encodes large photos to a sensible print size before upload, so a 12 MP
+   * phone photo does not blow the 4 MB cap or slow the form down. Small images
+   * and PDFs/GIFs are uploaded untouched.
+   */
+  async function prepareAttachment(file) {
+    if (file.size > MAX_UPLOAD_BYTES) {
+      throw new Error(file.name + ' is larger than 4 MB');
+    }
+    const isImage = /^image\//.test(file.type || '');
+    const dataUrl = await readAsDataUrl(file);
+    if (!isImage || file.type === 'image/gif') {
+      return { dataUrl: dataUrl, type: file.type || 'application/pdf' };
+    }
+    try {
+      const img = await loadImage(dataUrl);
+      const longest = Math.max(img.width, img.height);
+      const needsResize = longest > IMAGE_MAX_DIM || file.size > 1.5 * 1024 * 1024;
+      if (!needsResize) return { dataUrl: dataUrl, type: file.type };
+      const scale = Math.min(1, IMAGE_MAX_DIM / longest);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      return { dataUrl: canvas.toDataURL('image/jpeg', 0.82), type: 'image/jpeg' };
+    } catch (e) {
+      return { dataUrl: dataUrl, type: file.type || 'image/png' };
+    }
+  }
+
+  async function uploadAttachment(file) {
+    const prepared = await prepareAttachment(file);
+    const out = await apiFetch(API.upload, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: file.name, type: prepared.type, dataUrl: prepared.dataUrl })
+    });
+    if (!out.res.ok || !out.data || !out.data.ok || !out.data.file) {
+      throw new Error((out.data && out.data.error) || 'Could not upload that file');
+    }
+    return out.data.file;
+  }
+
   // ── Configuration load / save ────────────────────────────────────────────
   function loadConfig() {
     try {
       const raw = localStorage.getItem(KEY_CONFIG);
       if (raw) {
         const saved = JSON.parse(raw);
-        if (saved && saved.schemaVersion === DEFAULTS.schemaVersion) return saved;
+        if (saved && saved.schemaVersion === DEFAULTS.schemaVersion) return mergeDefaultFields(saved);
       }
     } catch (e) { /* fall through to defaults */ }
     return deepClone(DEFAULTS);
+  }
+
+  // A browser that saved its config before a release would otherwise never see
+  // newly-shipped default fields (like attachments or the drawn signature).
+  // Append any missing default field without discarding team customizations.
+  function mergeDefaultFields(saved) {
+    const merge = (list, defaults) => {
+      const out = Array.isArray(list) ? list : [];
+      (defaults || []).forEach((df) => {
+        if (!out.some((f) => f && f.id === df.id)) out.push(deepClone(df));
+      });
+      return out;
+    };
+    saved.aboutFields = merge(saved.aboutFields, DEFAULTS.aboutFields);
+    saved.revisionFields = merge(saved.revisionFields, DEFAULTS.revisionFields);
+    saved.ackFields = merge(saved.ackFields, DEFAULTS.ackFields);
+    return saved;
   }
 
   function persistConfig() {
@@ -170,6 +259,9 @@
    * Returns a wrapper element carrying .field (and data-half for layout).
    */
   function buildField(field, value, onChange) {
+    if (field.type === 'file') return buildFileField(field, value, onChange);
+    if (field.type === 'signature') return buildSignatureField(field, value, onChange);
+
     const wrap = h('div', {
       class: 'field' + (field.half ? '' : ' field--full'),
       'data-half': field.half ? 'true' : 'false',
@@ -214,6 +306,154 @@
     label.htmlFor = input.id = 'f-' + field.id + '-' + uid().slice(0, 5);
 
     wrap.append(input);
+    return wrap;
+  }
+
+  // ── Attachments: a repeatable list of uploaded photos / PDFs ─────────────
+  function buildFileField(field, value, onChange) {
+    const wrap = h('div', {
+      class: 'field field--full',
+      'data-half': 'false',
+      'data-field-id': field.id
+    });
+    const label = h('label', {}, field.label, field.required ? h('span', { class: 'req', text: '*' }) : null);
+    wrap.append(label);
+    if (field.help) wrap.append(h('p', { class: 'field__help', text: field.help }));
+
+    let files = Array.isArray(value) ? value.slice() : [];
+    const list = h('div', { class: 'attach-list' });
+    const status = h('p', { class: 'attach-status' });
+    const inputId = 'f-' + field.id + '-' + uid().slice(0, 6);
+    const fileInput = h('input', {
+      id: inputId, type: 'file', multiple: true, accept: ATTACH_TYPES, class: 'attach-input'
+    });
+    const pick = h('label', { class: 'attach-pick', for: inputId },
+      h('span', { class: 'attach-pick__plus', 'aria-hidden': 'true', text: '＋' }),
+      h('span', { class: 'attach-pick__text' },
+        h('strong', { text: 'Add photos or PDFs' }),
+        h('small', { text: 'Up to ' + MAX_ATTACHMENTS + ' files, 4 MB each' })
+      )
+    );
+
+    function renderList() {
+      list.innerHTML = '';
+      files.forEach((f) => {
+        const thumb = f.type && /^image\//.test(f.type)
+          ? h('img', { src: f.url, alt: f.name || 'attachment', loading: 'lazy' })
+          : h('span', { class: 'attach-chip__ext', text: (String(f.name || 'file').split('.').pop() || 'file').toUpperCase() });
+        list.append(h('div', { class: 'attach-chip' },
+          h('a', { class: 'attach-chip__thumb', href: f.url, target: '_blank', rel: 'noopener noreferrer' }, thumb),
+          h('span', { class: 'attach-chip__name', text: f.name || 'attachment' }),
+          h('button', {
+            type: 'button', class: 'iconbtn iconbtn--danger', title: 'Remove',
+            'aria-label': 'Remove ' + (f.name || 'attachment'),
+            onclick: () => { files = files.filter((x) => x !== f); commit(); }
+          }, '✕')
+        ));
+      });
+      fileInput.disabled = files.length >= MAX_ATTACHMENTS;
+      pick.classList.toggle('is-disabled', files.length >= MAX_ATTACHMENTS);
+    }
+
+    function commit() {
+      onChange(files.slice());
+      renderList();
+    }
+
+    fileInput.addEventListener('change', async () => {
+      const picked = Array.from(fileInput.files || []);
+      fileInput.value = '';
+      const room = MAX_ATTACHMENTS - files.length;
+      if (room <= 0) { toast('You can attach up to ' + MAX_ATTACHMENTS + ' files per item'); return; }
+      const batch = picked.slice(0, room);
+      if (picked.length > room) toast('Only the first ' + room + ' file' + (room === 1 ? '' : 's') + ' were added');
+      for (let i = 0; i < batch.length; i++) {
+        status.textContent = 'Uploading ' + (i + 1) + ' of ' + batch.length + '…';
+        try {
+          const uploaded = await uploadAttachment(batch[i]);
+          files.push(uploaded);
+          commit();
+        } catch (err) {
+          toast(err && err.message ? err.message : 'Could not upload that file');
+        }
+      }
+      status.textContent = '';
+    });
+
+    wrap.append(pick, fileInput, list, status);
+    renderList();
+    return wrap;
+  }
+
+  // ── Drawn signature (canvas) ─────────────────────────────────────────────
+  function buildSignatureField(field, value, onChange) {
+    const wrap = h('div', {
+      class: 'field field--full',
+      'data-half': 'false',
+      'data-field-id': field.id
+    });
+    wrap.append(h('label', {}, field.label, field.required ? h('span', { class: 'req', text: '*' }) : null));
+    if (field.help) wrap.append(h('p', { class: 'field__help', text: field.help }));
+
+    const canvas = document.createElement('canvas');
+    canvas.className = 'sig-canvas';
+    canvas.width = 600;
+    canvas.height = 180;
+    const clearBtn = h('button', { type: 'button', class: 'btn btn--ghost sig-clear', text: 'Clear' });
+    wrap.append(h('div', { class: 'sig-wrap' }, canvas, clearBtn));
+
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+    let dirty = false;
+    let last = null;
+
+    function pos(e) {
+      const r = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / (r.width || 1);
+      const scaleY = canvas.height / (r.height || 1);
+      return { x: (e.clientX - r.left) * scaleX, y: (e.clientY - r.top) * scaleY };
+    }
+    function down(e) {
+      drawing = true;
+      last = pos(e);
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+    }
+    function move(e) {
+      if (!drawing) return;
+      e.preventDefault();
+      const p = pos(e);
+      ctx.strokeStyle = '#2a2a24';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(last.x, last.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      last = p;
+      dirty = true;
+    }
+    function up() {
+      if (!drawing) return;
+      drawing = false;
+      if (dirty) onChange(canvas.toDataURL('image/png'));
+    }
+    canvas.addEventListener('pointerdown', down);
+    canvas.addEventListener('pointermove', move);
+    canvas.addEventListener('pointerup', up);
+    canvas.addEventListener('pointercancel', up);
+    canvas.addEventListener('pointerleave', up);
+
+    clearBtn.addEventListener('click', () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      dirty = false;
+      onChange('');
+    });
+
+    // Restore a signature saved in a draft / resumed on another device.
+    if (typeof value === 'string' && value.indexOf('data:image/') === 0) {
+      loadImage(value).then((img) => { ctx.drawImage(img, 0, 0, canvas.width, canvas.height); dirty = true; }).catch(() => {});
+    }
     return wrap;
   }
 
@@ -412,6 +652,13 @@
 
   function isBlank(v) { return v == null || String(v).trim() === ''; }
 
+  // Required-value check that understands attachments (a non-empty array) and
+  // the drawn signature (a data URL string).
+  function missingRequired(field, value) {
+    if (field.type === 'file') return !Array.isArray(value) || value.length === 0;
+    return isBlank(value);
+  }
+
   function validate() {
     clearErrors();
     const problems = [];
@@ -421,7 +668,7 @@
     const aboutHidden = $('#aboutCard') && $('#aboutCard').hidden;
     if (!aboutHidden) {
       enabled(CFG.aboutFields).forEach((f) => {
-        if (f.required && isBlank(state.about[f.id])) {
+        if (f.required && missingRequired(f, state.about[f.id])) {
           const wrap = $('.field[data-field-id="' + f.id + '"]');
           flagError(wrap);
           problems.push(wrap);
@@ -433,7 +680,7 @@
     state.items.forEach((item, idx) => {
       enabled(CFG.revisionFields).forEach((f) => {
         if (!f.required) return;
-        if (isBlank(item.values[f.id])) {
+        if (missingRequired(f, item.values[f.id])) {
           const card = $('.item[data-uid="' + item.uid + '"]');
           const wrap = card && card.querySelector('.field[data-field-id="' + f.id + '"]');
           flagError(wrap, 'Revision #' + (idx + 1) + ': ' + f.label + ' is required.');
@@ -565,6 +812,17 @@
     return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
 
+  // Flatten a stored value for a spreadsheet: attachment arrays become their
+  // URLs, and a drawn signature becomes a short label instead of a huge data
+  // URL (the image is still visible in the read-only view / dashboard).
+  function cellText(v) {
+    if (Array.isArray(v)) {
+      return v.map((f) => (f && f.url) ? f.url : String(f)).filter(Boolean).join(' | ');
+    }
+    if (typeof v === 'string' && v.indexOf('data:image/') === 0) return 'Signed (drawn signature)';
+    return v == null ? '' : String(v);
+  }
+
   function toCsv(rows) {
     return rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
   }
@@ -580,13 +838,13 @@
       ...revIds.map((id) => sub._labels.revision[id]),
       ...ackIds.map((id) => sub._labels.ack[id])
     ];
-    const aboutVals = aboutIds.map((id) => sub.about[id]);
-    const ackVals = ackIds.map((id) => sub.acknowledgment[id]);
+    const aboutVals = aboutIds.map((id) => cellText(sub.about[id]));
+    const ackVals = ackIds.map((id) => cellText(sub.acknowledgment[id]));
 
     const rows = (sub.revisions || []).map((rev) => [
       sub.submittedAt,
       ...aboutVals,
-      ...revIds.map((id) => rev[id]),
+      ...revIds.map((id) => cellText(rev[id])),
       ...ackVals
     ]);
     return { header: header, rows: rows.length ? rows : [header.map(() => '')] };
@@ -1118,7 +1376,7 @@
         if (id === 'category' && v === rev.category) return;
         card.append(h('div', { class: 'prev-item__field' },
           h('span', { class: 'view-item__label', text: labels[id] }),
-          linkified('p', 'prev-item__value', v)));
+          linkified('p', 'prev-item__value', cellText(v))));
       });
       wrap.append(card);
     });

@@ -832,3 +832,69 @@ input::placeholder, textarea::placeholder { color: #b3b0a4; }
 /* ── Office: archived submissions ── */
 .sub--archived { opacity: 0.72; border-left: 3px solid var(--line); }
 .sub--archived .sub__head { background: #f2f0ea; }
+
+/* ── Attachments (photos / PDFs) ── */
+.attach-input {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.attach-pick {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border: 1.5px dashed var(--olive-500); border-radius: var(--radius-sm);
+  background: var(--olive-100); color: var(--olive-700); cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.attach-pick:hover { background: #e4ead6; }
+.attach-pick.is-disabled { opacity: 0.5; cursor: not-allowed; }
+.attach-pick__plus { font-size: 18px; line-height: 1; }
+.attach-pick__text { display: flex; flex-direction: column; }
+.attach-pick__text strong { font-size: 13.5px; }
+.attach-pick__text small { font-size: 11.5px; color: var(--ink-soft); }
+.field.has-error .attach-pick { border-color: var(--danger); background: var(--danger-bg); }
+
+.attach-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 2px; }
+.attach-chip {
+  display: flex; align-items: center; gap: 8px; max-width: 100%;
+  border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fff; padding: 6px 8px;
+}
+.attach-chip__thumb {
+  width: 42px; height: 42px; border-radius: 6px; overflow: hidden; flex: 0 0 auto;
+  display: grid; place-items: center; background: var(--olive-100); text-decoration: none;
+}
+.attach-chip__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.attach-chip__ext { font-size: 10px; font-weight: 700; color: var(--olive-700); letter-spacing: 0.5px; }
+.attach-chip__name { font-size: 12.5px; color: var(--ink); max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attach-chip .iconbtn { width: 26px; height: 26px; }
+.attach-status { margin: 0; font-size: 12px; color: var(--ink-soft); }
+.attach-status:empty { display: none; }
+
+/* ── Drawn signature (canvas) ── */
+.sig-wrap { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.sig-canvas {
+  width: 100%; max-width: 600px; height: auto; aspect-ratio: 600 / 180;
+  border: 1.5px dashed var(--olive-500); border-radius: var(--radius-sm);
+  background: #fff; touch-action: none; cursor: crosshair;
+}
+.field.has-error .sig-canvas { border-color: var(--danger); background: var(--danger-bg); }
+
+/* ── Attachment + signature media in read-only views ── */
+.media-inline { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.sig-image {
+  max-width: 260px; width: 100%; height: auto; border: 1px solid var(--line);
+  border-radius: 8px; background: #fff; display: block;
+}
+.attach-view__item {
+  display: block; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+  background: #fff; text-decoration: none; line-height: 0;
+}
+.attach-view__item img { width: 108px; height: 108px; object-fit: cover; display: block; }
+.attach-view__doc {
+  display: block; padding: 10px 12px; font-size: 12.5px; color: var(--olive-700);
+  line-height: 1.4; max-width: 200px; overflow-wrap: anywhere;
+}
+
+@media print {
+  .attach-view__item { break-inside: avoid; }
+  .attach-view__item img { width: 140px; height: 140px; }
+  .sig-image { max-width: 320px; }
+}

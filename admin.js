@@ -230,12 +230,38 @@
     Object.keys(labels || {}).forEach((id) => {
       const v = values ? values[id] : '';
       const isCheckbox = typeof v === 'boolean' || v === 'true' || v === 'false';
+      if (Array.isArray(v)) {
+        const files = v.filter((f) => f && f.url);
+        rows.push({ label: labels[id], value: files.map((f) => f.name || 'attachment').join(', ') || '—', files: files, image: null, checked: null });
+        return;
+      }
+      if (typeof v === 'string' && v.indexOf('data:image/') === 0) {
+        rows.push({ label: labels[id], value: 'Signed', files: null, image: v, checked: null });
+        return;
+      }
       let display;
       if (isCheckbox) display = (v === true || v === 'true') ? 'Agreed' : 'Not agreed';
       else display = v == null || v === '' ? '—' : String(v);
-      rows.push({ label: labels[id], value: display, checked: isCheckbox ? (v === true || v === 'true') : null });
+      rows.push({ label: labels[id], value: display, files: null, image: null, checked: isCheckbox ? (v === true || v === 'true') : null });
     });
     return rows;
+  }
+
+  function mediaNode(row) {
+    if (row.image) {
+      return h('span', { class: 'media-inline' }, h('img', { class: 'sig-image', src: row.image, alt: 'Drawn signature' }));
+    }
+    if (row.files && row.files.length) {
+      const wrap = h('span', { class: 'media-inline' });
+      row.files.forEach((f) => {
+        const isImage = f.type && /^image\//.test(f.type);
+        wrap.append(h('a', { class: 'attach-view__item', href: f.url, target: '_blank', rel: 'noopener noreferrer' },
+          isImage ? h('img', { src: f.url, alt: f.name || 'attachment', loading: 'lazy' })
+                  : h('span', { class: 'attach-view__doc', text: '📄 ' + (f.name || 'document') })));
+      });
+      return wrap;
+    }
+    return null;
   }
 
   function buildDetail(rec) {
@@ -257,8 +283,12 @@
     const aboutCard = h('section', { class: 'card' },
       h('div', { class: 'card__head' }, h('div', {}, h('h2', { text: 'About this round' }))));
     const dl = h('dl', { class: 'kv' });
-    valueRows(L.about, about).forEach((r) => dl.append(h('div', { class: 'kv__row' },
-      h('dt', { text: r.label }), linkified('dd', null, r.value))));
+    valueRows(L.about, about).forEach((r) => {
+      const dd = linkified('dd', null, r.value);
+      const media = mediaNode(r);
+      if (media) dd.append(media);
+      dl.append(h('div', { class: 'kv__row' }, h('dt', { text: r.label }), dd));
+    });
     aboutCard.append(dl);
     wrap.append(aboutCard);
 
@@ -272,9 +302,12 @@
       valueRows(L.revision, rev).forEach((r) => {
         if (r.value === '—') return;
         if (r.label === (L.revision || {}).category && r.value === (rev.category || '')) return;
+        const value = linkified('p', 'view-item__value', r.value);
+        const media = mediaNode(r);
+        if (media) value.append(media);
         item.append(h('div', { class: 'view-item__field' },
           h('span', { class: 'view-item__label', text: r.label }),
-          linkified('p', 'view-item__value', r.value)));
+          value));
       });
       itemCard.append(item);
     });
@@ -286,11 +319,16 @@
         h('div', { class: 'card__head' }, h('div', {}, h('h2', { text: 'Acknowledgment' }))));
       ackRows.forEach((r) => {
         const isAck = r.checked !== null;
+        const inner = h('div', {}, h('p', { class: 'ack-row__label', text: r.label }));
+        if (!isAck) {
+          const value = linkified('p', 'ack-row__value', r.value);
+          const media = mediaNode(r);
+          if (media) value.append(media);
+          inner.append(value);
+        }
         ackCard.append(h('div', { class: 'ack-row' + (isAck && r.checked ? ' ack-row--ok' : '') },
           isAck ? h('span', { class: 'ack-row__mark', text: r.checked ? '✓' : '✕' }) : null,
-          h('div', {},
-            h('p', { class: 'ack-row__label', text: r.label }),
-            isAck ? null : linkified('p', 'ack-row__value', r.value))
+          inner
         ));
       });
       wrap.append(ackCard);

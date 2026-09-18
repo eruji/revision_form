@@ -33,7 +33,7 @@ A real form needs to grow with the client. That's what this POC does.
 | `styles.css` | Styling — olive/cream brand palette, responsive |
 | `config.js` | **The questions and policy copy your team will iterate on** |
 | `app.js` | Unlimited items, validation, draft autosave, backend calls |
-| `netlify/functions/*` | Serverless API — `submit`, `get`, `draft`, `admin`, `rounds` (Netlify Blobs) |
+| `netlify/functions/*` | Serverless API — `submit`, `get`, `draft`, `admin`, `rounds`, `upload`, `file` (Netlify Blobs) |
 | `google_apps_script.gs` | Apps Script bridge: Google Sheet work queue + email notification |
 | `netlify.toml` | Publish dir, functions dir, `/api/*` routing, headers |
 | `.github/workflows/deploy.yml` | CI: install deps → stage files → deploy on push |
@@ -66,6 +66,8 @@ to browser `localStorage` so you can still demo it offline.
 | **Save progress until submit** | Autosave in the browser, plus **Save & continue later** → a resume code stored server-side that works on any device via `/?resume=CODE`. Saved drafts **expire after 30 days**. |
 | **Office can see and share drafts** | Saved drafts appear in the office dashboard with a **View** read-only link (`/view.html?draft=CODE`) and a **Copy client link** button to send the client back to finish. |
 | **Client copy for records** | Private read-only page with **Print / Save as PDF** and **Download JSON**. |
+| **Photos & attachments** | Each revision item can attach up to 5 photos or PDFs (4 MB each; large images are resized in the browser first). Files live in Netlify Blobs and are reachable only by their random id — the read-only view and office dashboard show thumbnails, and CSV export lists the URLs. |
+| **Drawn signature** | The acknowledgment step includes a canvas signature pad (mouse, finger, or stylus). The drawn PNG is stored with the submission and shown in the read-only view / dashboard alongside the typed name. |
 | **Read-only online view** | `/view.html?token=…` — no edit fields. |
 
 ### Office dashboard
@@ -94,14 +96,16 @@ to browser `localStorage` so you can still demo it offline.
 ### Backend at a glance
 - **Netlify Functions + Netlify Blobs** — no extra account, data stays in this
   Netlify site.
-- Endpoints: `/api/submit`, `/api/get`, `/api/draft`, `/api/admin`.
+- Endpoints: `/api/submit`, `/api/get`, `/api/draft`, `/api/admin`, `/api/upload`, `/api/file`.
 - Env vars on the Netlify site: `ADMIN_PASSWORD` (secret), `BLOBS_SITE_ID`,
   `BLOBS_TOKEN` (secret).
 
 > **Privacy notes:** submissions contain client PII. Tokens are stored hashed,
 > drafts are deleted when a round is submitted, and responses are marked
-> `no-store`. Before a real rollout, add a data-retention policy, rotate the
-> Blobs token, and consider connecting the site to GitHub in Netlify (which
+> `no-store`. Uploaded attachments are served only via their random file id (no
+> listing endpoint) and carry `Cache-Control: private`. Before a real rollout,
+> add a data-retention policy for submissions **and their attachments**, rotate
+> the Blobs token, and consider connecting the site to GitHub in Netlify (which
 > injects the Blobs context and removes the need for `BLOBS_TOKEN`).
 
 ---
@@ -289,14 +293,13 @@ Options, roughly in order of effort:
 | **Current build: Netlify Functions + Blobs** | ✅ | Works today; office reads via `/admin.html` + CSV. |
 | **Apps Script → Google Sheet** | ✅ | Swap the storage layer if the team prefers reading in Sheets. |
 | **Airtable / Supabase** | ✅ | Managed DB with nicer admin tooling; modest setup. |
-| **Jotform** | ✅ | Native *Configurable List* widget does repeatable rows; also has drawn signatures. Paid for volume. |
+| **Jotform** | ✅ | Native *Configurable List* widget does repeatable rows; also offers drawn signatures and uploads. Paid for volume. |
 | **Typeform / Tally** | ⚠️ | Tally has repeating sections on higher tiers; verify before committing. |
 
-Two POC gaps to decide on before production:
-- **File/photo uploads** — not included here. Uploads need storage (Drive/S3) and
-  were the reason the Google version used reference *links* instead.
-- **Drawn signature** — this POC uses a typed e-signature. A canvas signature
-  widget or Jotform is needed if you want a drawn one.
+Before production, decide on one remaining gap:
+- **Attachment storage & retention** — this POC keeps uploads in Netlify Blobs (with
+  per-file ids, no listing). A production rollout should set a retention/cleanup
+  policy for submitted files alongside the submission itself.
 
 ---
 
@@ -314,6 +317,22 @@ All defaults live in `config.js`. Example — make “Why” required and turn o
 
 Reopen the app and it renders from the new config. (If you've saved overrides in
 Team setup, click **Reset to defaults** to pick up file changes.)
+
+The two special field types added for this build:
+
+```js
+// On a revision item — up to 5 photos/PDFs, uploaded on their own endpoint
+{ id: 'attachments', label: 'Photos / attachments', type: 'file',
+  help: 'Large images are resized automatically.', required: false, enabled: true },
+
+// In the acknowledgment block — canvas signature pad (PNG data URL)
+{ id: 'signatureDrawn', label: 'Draw your signature', type: 'signature',
+  required: false, enabled: true }
+```
+
+Attachments appear in the read-only view and dashboard as thumbnails; a drawn
+signature is shown as an image. In CSV exports the attachment column holds the
+file URLs and the signature column reads “Signed (drawn signature)”.
 
 ---
 

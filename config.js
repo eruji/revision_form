@@ -150,6 +150,15 @@ window.REVISION_FORM_CONFIG = {
       enabled: true
     },
     {
+      id: 'attachments',
+      label: 'Photos / attachments',
+      type: 'file',
+      help: 'Add up to 5 photos or PDFs (marked-up renderings, screenshots, inspiration). ' +
+        'Large images are resized automatically.',
+      required: false,
+      enabled: true
+    },
+    {
       id: 'priority',
       label: 'Priority',
       type: 'select',
@@ -198,6 +207,14 @@ window.REVISION_FORM_CONFIG = {
       required: true,
       enabled: true,
       half: true
+    },
+    {
+      id: 'signatureDrawn',
+      label: 'Draw your signature',
+      type: 'signature',
+      help: 'Sign with your mouse, finger, or stylus. Optional if you typed your name above.',
+      required: false,
+      enabled: true
     }
   ]
 };
