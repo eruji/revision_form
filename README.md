@@ -33,7 +33,8 @@ A real form needs to grow with the client. That's what this POC does.
 | `styles.css` | Styling — olive/cream brand palette, responsive |
 | `config.js` | **The questions and policy copy your team will iterate on** |
 | `app.js` | Unlimited items, validation, draft autosave, backend calls |
-| `netlify/functions/*` | Serverless API — `submit`, `get`, `draft`, `admin` (Netlify Blobs) |
+| `netlify/functions/*` | Serverless API — `submit`, `get`, `draft`, `admin`, `rounds` (Netlify Blobs) |
+| `google_apps_script.gs` | Apps Script bridge: Google Sheet work queue + email notification |
 | `netlify.toml` | Publish dir, functions dir, `/api/*` routing, headers |
 | `.github/workflows/deploy.yml` | CI: install deps → stage files → deploy on push |
 | `revision_request_form.gs` | Legacy Google Forms builder (alternative path) |
@@ -96,6 +97,70 @@ to browser `localStorage` so you can still demo it offline.
 > Blobs token, and consider connecting the site to GitHub in Netlify (which
 > injects the Blobs context and removes the need for `BLOBS_TOKEN`).
 
+---
+
+## Issuing a revision request link
+
+The office no longer asks the client to type the project and phase. Instead:
+
+1. Open `/admin.html` and use **New revision request link**.
+2. Enter client, project, and design phase (a note to the client is optional),
+   then **Create link**.
+3. Copy the link and send it. It looks like
+   `https://revision.pepperandolive.com/?r=AbC123xyz`.
+
+When the client opens it, the form shows a context banner (*“Revision request
+for Maple Residence — Design Development”*) and **section 01 is hidden** — the
+project, phase, and client are baked into the link and stamped onto the
+submission server-side.
+
+### Reopening a request for one-off items
+In the **Request links** list, click **Reopen** on a submitted round and send the
+same link again. The client sees their previously submitted items in a
+read-only panel and adds only the new ones. Each submission is recorded
+separately, and the Sheet receives the new rows.
+
+---
+
+## Notifications + Google Sheet work queue
+
+Set the `NOTIFY_WEBHOOK` environment variable to a Google Apps Script Web App
+and every submission produces:
+
+- an **email** to your studio address, and
+- one **row per revision item** in a Google Sheet with
+  `Status / Assigned To / Completed / Notes` columns for staff to work through.
+
+One-time setup:
+
+1. Open <https://script.google.com> → **New project**, paste
+   [`google_apps_script.gs`](./google_apps_script.gs).
+2. Edit `CONFIG.NOTIFY_EMAIL` (and the spreadsheet name if you like).
+3. Run **`setup()`** and authorize — it creates the Sheet and logs its URL.
+4. **Deploy → New deployment → Web app**; *Execute as: Me*,
+   *Who has access: Anyone*. Copy the `/exec` URL.
+5. In Netlify, set `NOTIFY_WEBHOOK` and redeploy:
+   ```bash
+   npx netlify-cli env:set NOTIFY_WEBHOOK "https://script.google.com/macros/s/.../exec" --context production
+   ```
+
+Until `NOTIFY_WEBHOOK` is set, submissions are still saved and visible in the
+office dashboard — notifications are simply skipped.
+
+---
+
+## Custom subdomain (revision.pepperandolive.com)
+
+1. In Netlify: **Domain management → Add a domain** →
+   `revision.pepperandolive.com`.
+2. At your DNS provider, add a **CNAME**: host `revision` →
+   `<your-site>.netlify.app`.
+3. Wait for DNS and the automatic Let's Encrypt certificate.
+
+Request links are built from the browser's current origin, so once the subdomain
+is live the generated links automatically use
+`https://revision.pepperandolive.com`.
+
 ## Share for review
 
 | Link | Use |
@@ -114,7 +179,9 @@ Every push to `main` auto-deploys to Netlify via
 0. **Revision instructions (always visible)** — the one-round policy and billing
    terms are shown in full at the top of the page, never collapsed, and must be
    acknowledged before the form can be submitted.
-1. **About the round** — client, project, design phase, date.
+1. **Context from the request link** — project, phase, and client come from the
+   link the office sent, so there is no section 01. (A fallback "about" section
+   appears only if the form is opened without a link.)
 2. **Revision items** — each item captures Type, Location/Room, What to change,
    Why, and an inspiration link.
    - Big **“＋ Add another revision”** button. No cap.

@@ -18,7 +18,8 @@
   const state = {
     about: {},
     acknowledgment: {},
-    items: []                          // [{ uid, values: { fieldId: value } }]
+    items: [],                          // [{ uid, values: { fieldId: value } }]
+    round: null                         // office-issued request context, if any
   };
   let lastSubmission = null;
   let activeResumeCode = '';   // set when the client resumed a server-side draft
@@ -60,6 +61,32 @@
   }
 
   function todayISO() { return new Date().toISOString().slice(0, 10); }
+
+  function fmtDateShort(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return isNaN(d) ? iso : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  // Make URLs clickable in read-only lists.
+  const URL_RE = /(https?:\/\/[^\s<>"']+)/g;
+  function appendTextWithLinks(parent, text) {
+    const s = text == null ? '' : String(text);
+    let last = 0, m;
+    URL_RE.lastIndex = 0;
+    while ((m = URL_RE.exec(s)) !== null) {
+      if (m.index > last) parent.append(document.createTextNode(s.slice(last, m.index)));
+      const url = m[0].replace(/[.,;:)\]]+$/, '');
+      parent.append(h('a', { href: url, target: '_blank', rel: 'noopener noreferrer', text: url }));
+      last = m.index + m[0].length;
+    }
+    if (last < s.length) parent.append(document.createTextNode(s.slice(last)));
+  }
+  function linkified(tag, cls, text) {
+    const el = h(tag, cls ? { class: cls } : {});
+    appendTextWithLinks(el, text);
+    return el;
+  }
 
   function download(filename, content, type) {
     const blob = new Blob([content], { type: type || 'application/octet-stream' });
@@ -376,14 +403,18 @@
     clearErrors();
     const problems = [];
 
-    // About fields
-    enabled(CFG.aboutFields).forEach((f) => {
-      if (f.required && isBlank(state.about[f.id])) {
-        const wrap = $('.field[data-field-id="' + f.id + '"]');
-        flagError(wrap);
-        problems.push(wrap);
-      }
-    });
+    // About fields — skip when section 01 is hidden because the office-issued
+    // link already supplied the project/phase/client context.
+    const aboutHidden = $('#aboutCard') && $('#aboutCard').hidden;
+    if (!aboutHidden) {
+      enabled(CFG.aboutFields).forEach((f) => {
+        if (f.required && isBlank(state.about[f.id])) {
+          const wrap = $('.field[data-field-id="' + f.id + '"]');
+          flagError(wrap);
+          problems.push(wrap);
+        }
+      });
+    }
 
     // Revision items
     state.items.forEach((item, idx) => {
@@ -448,6 +479,7 @@
       about: about,
       revisions: revisions,
       acknowledgment: ack,
+      _roundId: state.round ? state.round.id : undefined,
       _labels: {
         about: labelMap(CFG.aboutFields),
         revision: labelMap(CFG.revisionFields),
@@ -470,14 +502,17 @@
   }
 
   function saveDraft() {
-    try {
-      localStorage.setItem(KEY_DRAFT, JSON.stringify({
-        about: state.about,
-        acknowledgment: state.acknowledgment,
-        items: state.items,
-        savedAt: new Date().toISOString()
-      }));
-    } catch (e) {}
+    saveDraftLocally();
+  }
+
+  function draftSnapshot() {
+    return {
+      about: state.about,
+      acknowledgment: state.acknowledgment,
+      items: state.items,
+      roundId: state.round ? state.round.id : undefined,
+      savedAt: new Date().toISOString()
+    };
   }
 
   function loadDraft() {
@@ -488,6 +523,7 @@
       state.about = d.about || {};
       state.acknowledgment = d.acknowledgment || {};
       state.items = (d.items && d.items.length) ? d.items : [newItem({})];
+      if (d.roundId && !state.round) state.round = { id: d.roundId };
       return true;
     } catch (e) {
       return false;
@@ -548,7 +584,8 @@
     const data = {
       about: state.about,
       items: state.items,
-      acknowledgment: state.acknowledgment
+      acknowledgment: state.acknowledgment,
+      roundId: state.round ? state.round.id : undefined
     };
     const btn = $('#saveDraftBtn');
     btn.disabled = true;
@@ -583,6 +620,7 @@
     state.about = data.about || {};
     state.acknowledgment = data.acknowledgment || {};
     state.items = (data.items && data.items.length) ? data.items : [newItem({})];
+    if (data.roundId && !state.round) state.round = { id: data.roundId };
     renderAbout();
     renderItems();
     renderAck();
@@ -608,14 +646,7 @@
   }
 
   function saveDraftLocally() {
-    try {
-      localStorage.setItem(KEY_DRAFT, JSON.stringify({
-        about: state.about,
-        acknowledgment: state.acknowledgment,
-        items: state.items,
-        savedAt: new Date().toISOString()
-      }));
-    } catch (e) {}
+    try { localStorage.setItem(KEY_DRAFT, JSON.stringify(draftSnapshot())); } catch (e) {}
   }
 
   async function handleSubmit(e) {
@@ -1017,6 +1048,81 @@
     toast('CSV exported');
   }
 
+  // ── Office-issued request context (replaces section 01) ──────────────────
+  async function loadRoundContext() {
+    let id = '';
+    try { id = new URLSearchParams(location.search).get('r') || ''; } catch (e) {}
+    if (!id) return;
+    try {
+      const out = await apiFetch('/api/rounds?id=' + encodeURIComponent(id));
+      if (out.res.ok && out.data && out.data.ok && out.data.round) applyRound(out.data.round);
+    } catch (e) { /* offline: fall back to section 01 */ }
+  }
+
+  function applyRound(round) {
+    state.round = round;
+    state.about = state.about || {};
+    const set = (id, v) => { if (v != null && v !== '') state.about[id] = v; };
+    set('clientName', round.clientName);
+    set('projectName', round.projectName);
+    set('designPhase', round.designPhase);
+    if (!state.about.dateSubmitted) state.about.dateSubmitted = todayISO();
+
+    const banner = $('#contextBanner');
+    if (banner) {
+      $('#contextTitle').textContent = round.projectName + (round.designPhase ? ' — ' + round.designPhase : '');
+      const meta = [];
+      if (round.clientName) meta.push('Prepared for ' + round.clientName);
+      if (round.reopenedAt) meta.push('Reopened ' + fmtDateShort(round.reopenedAt));
+      $('#contextMeta').textContent = meta.join(' · ');
+      const note = $('#contextNote');
+      note.textContent = round.note || '';
+      note.hidden = !round.note;
+      banner.hidden = false;
+    }
+
+    const aboutCard = $('#aboutCard');
+    if (aboutCard) aboutCard.hidden = true;
+
+    if (round.previousItems && round.previousItems.length) renderPreviousItems(round.previousItems);
+    renumberSteps();
+  }
+
+  function renderPreviousItems(items) {
+    const panel = $('#previousPanel');
+    const wrap = $('#previousItems');
+    if (!panel || !wrap) return;
+    wrap.innerHTML = '';
+    const labels = labelMap(CFG.revisionFields);
+    items.forEach((rev, i) => {
+      const card = h('div', { class: 'prev-item' });
+      card.append(h('div', { class: 'prev-item__head' },
+        h('span', { class: 'item__badge', text: '#' + (i + 1) }),
+        h('strong', { text: rev.category || rev.location || ('Item ' + (i + 1)) })));
+      Object.keys(labels).forEach((id) => {
+        const v = rev[id];
+        if (v == null || v === '') return;
+        if (id === 'category' && v === rev.category) return;
+        card.append(h('div', { class: 'prev-item__field' },
+          h('span', { class: 'view-item__label', text: labels[id] }),
+          linkified('p', 'prev-item__value', v)));
+      });
+      wrap.append(card);
+    });
+    panel.hidden = false;
+  }
+
+  function renumberSteps() {
+    const pairs = [['aboutCard', 'stepAbout'], ['itemsCard', 'stepItems'], ['ackCard', 'stepAck']];
+    let n = 1;
+    pairs.forEach(([cardId, stepId]) => {
+      const card = document.getElementById(cardId);
+      const step = document.getElementById(stepId);
+      if (!card || !step) return;
+      if (!card.hidden) { step.textContent = String(n).padStart(2, '0'); n++; }
+    });
+  }
+
   // ── Wiring ───────────────────────────────────────────────────────────────
   function hydrateState() {
     const restored = loadDraft();
@@ -1103,10 +1209,12 @@
     renderAck();
     bind();
     initReviewBanner();
+    loadRoundContext();   // async: applies office-issued context and hides section 01
     try {
       const resume = new URLSearchParams(location.search).get('resume');
       if (resume) resumeDraft(resume);
     } catch (e) {}
+    renumberSteps();
     if (localStorage.getItem(KEY_DRAFT)) {
       $('#draftStatus').textContent = 'Draft restored ✓';
       $('#draftStatus').classList.add('is-saved');

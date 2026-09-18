@@ -328,6 +328,103 @@
     download(recordName(rec) + '.csv', buildCsv([rec]), 'text/csv;charset=utf-8');
   }
 
+  // ── Office-issued request links (rounds) ────────────────────────────────
+  function roundLink(id) { return location.origin + '/?r=' + id; }
+
+  async function loadRounds(key) {
+    try {
+      const res = await fetch('/api/rounds', { headers: { 'x-admin-key': key }, cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) renderRounds(data.rounds || []);
+    } catch (e) { /* ignore */ }
+  }
+
+  function renderRounds(rounds) {
+    const list = document.querySelector('#roundsList');
+    if (!list) return;
+    list.innerHTML = '';
+    if (!rounds.length) {
+      list.append(h('p', { class: 'admin-empty', text: 'No request links yet — create one above.' }));
+      return;
+    }
+    rounds.forEach((r) => {
+      const status = r.status === 'submitted' ? 'Submitted' : (r.status === 'closed' ? 'Closed' : 'Open');
+      const link = roundLink(r.id);
+      const actions = h('div', { class: 'round-card__actions' },
+        h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy link', onclick: (e) => copyText(link, e.currentTarget) }),
+        r.status !== 'open' ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Reopen', onclick: () => reopenRound(r.id) }) : null,
+        h('a', { class: 'btn btn--ghost', href: link, target: '_blank', rel: 'noopener', text: 'Open' }),
+        h('button', { type: 'button', class: 'btn btn--danger', text: 'Delete', onclick: () => deleteRound(r.id, r.clientName) })
+      );
+      list.append(h('div', { class: 'round-card' },
+        h('div', { class: 'round-card__head' },
+          h('strong', { text: (r.clientName ? r.clientName + ' · ' : '') + r.projectName }),
+          h('span', { class: 'badge badge--' + (r.status || 'open'), text: status })
+        ),
+        h('div', { class: 'round-card__meta' },
+          r.designPhase ? h('span', { text: r.designPhase }) : null,
+          h('span', { text: 'Created ' + fmtDate(r.createdAt) }),
+          r.submittedAt ? h('span', { text: '· ' + (r.itemCount || 0) + ' items submitted ' + fmtDate(r.submittedAt) }) : null,
+          h('code', { class: 'code-chip', text: r.id })
+        ),
+        h('div', { class: 'round-card__link' }, h('input', { type: 'text', readonly: true, value: link })),
+        actions
+      ));
+    });
+  }
+
+  async function createRound() {
+    const projectName = document.querySelector('#nrProject').value.trim();
+    const err = document.querySelector('#newRoundError');
+    if (!projectName) { err.textContent = 'Project name is required.'; err.hidden = false; return; }
+    err.hidden = true;
+    try {
+      const res = await fetch('/api/rounds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': getKey() },
+        body: JSON.stringify({
+          clientName: document.querySelector('#nrClient').value.trim(),
+          projectName: projectName,
+          designPhase: document.querySelector('#nrPhase').value.trim(),
+          note: document.querySelector('#nrNote').value.trim()
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error('create failed');
+      document.querySelector('#newRoundLink').value = roundLink(data.round.id);
+      document.querySelector('#newRoundResult').hidden = false;
+      ['nrClient', 'nrProject', 'nrPhase', 'nrNote'].forEach((id) => { document.querySelector('#' + id).value = ''; });
+      toast('Request link created');
+      loadRounds(getKey());
+    } catch (e) {
+      err.textContent = 'Could not create the link. Please try again.';
+      err.hidden = false;
+    }
+  }
+
+  async function reopenRound(id) {
+    try {
+      const res = await fetch('/api/rounds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': getKey() },
+        body: JSON.stringify({ action: 'reopen', id: id })
+      });
+      if (!res.ok) throw new Error('reopen failed');
+      toast('Request reopened — send the same link again');
+      loadRounds(getKey());
+    } catch (e) { toast('Could not reopen the request'); }
+  }
+
+  async function deleteRound(id, name) {
+    if (!window.confirm('Delete the request link for ' + (name || 'this client') + '?')) return;
+    try {
+      const res = await fetch('/api/rounds?id=' + encodeURIComponent(id), { method: 'DELETE', headers: { 'x-admin-key': getKey() } });
+      if (!res.ok) throw new Error('delete failed');
+      toast('Request link deleted');
+      loadRounds(getKey());
+    } catch (e) { toast('Could not delete the link'); }
+  }
+
   function renderRecords(records) {
     const list = $('#adminList');
     list.innerHTML = '';
@@ -385,6 +482,7 @@
       showList();
       renderRecords(data.records || []);
       renderDrafts(data.drafts || []);
+      loadRounds(key);
       return true;
     } catch (e) {
       showGate(false);
@@ -427,6 +525,10 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !$('#detailOverlay').hidden) closeDetail();
     });
+
+    // Office-issued request links
+    $('#createRoundBtn').addEventListener('click', createRound);
+    $('#copyNewRoundBtn').addEventListener('click', (e) => copyText($('#newRoundLink').value, e.currentTarget));
   }
 
   function init() {

@@ -51,6 +51,38 @@
 
     <!-- List -->
     <section id="listWrap" hidden>
+      <section class="card new-round">
+        <div class="card__head">
+          <span class="step">🔗</span>
+          <div>
+            <h2>New revision request link</h2>
+            <p>We already know the client, project and phase — generate a link to send them.</p>
+          </div>
+        </div>
+        <div class="round-form">
+          <div class="field"><label for="nrClient">Client name</label>
+            <input id="nrClient" type="text" placeholder="e.g. Jane Doe" /></div>
+          <div class="field"><label for="nrProject">Project name *</label>
+            <input id="nrProject" type="text" placeholder="e.g. Maple Residence" /></div>
+          <div class="field"><label for="nrPhase">Design phase</label>
+            <input id="nrPhase" type="text" placeholder="e.g. Design Development" /></div>
+          <div class="field"><label for="nrNote">Note to the client (optional)</label>
+            <input id="nrNote" type="text" placeholder="e.g. Please send all changes for this phase" /></div>
+        </div>
+        <div class="new-round__actions">
+          <button type="button" class="btn btn--primary" id="createRoundBtn">Create link</button>
+          <span class="new-round__error" id="newRoundError" hidden></span>
+        </div>
+        <div class="new-round__result" id="newRoundResult" hidden>
+          <input type="text" id="newRoundLink" readonly />
+          <button type="button" class="btn btn--ghost" id="copyNewRoundBtn">Copy link</button>
+        </div>
+      </section>
+
+      <h2 class="admin-heading">Request links</h2>
+      <p class="admin-hint">Send a link to start a round. When a client wants to add one-off items later, hit <b>Reopen</b> and send them the same link again.</p>
+      <div id="roundsList"></div>
+
       <div class="admin-summary" id="adminSummary"></div>
       <h2 class="admin-heading">Submitted revision requests</h2>
       <div id="adminList"></div>
