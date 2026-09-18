@@ -1,5 +1,5 @@
 /**
- * GET /api/get?token=...
+ * GET /clients/api/get?token=...
  * Returns ONE submission, only if the caller holds its private token.
  * No token => no data. Unknown token => 404 (never leaks whether other
  * submissions exist).

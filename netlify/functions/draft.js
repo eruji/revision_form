@@ -1,5 +1,5 @@
 /**
- * /api/draft
+ * /clients/api/draft
  *   POST   { code?, data }  -> { ok, code, resumeUrl }   save / update a draft
  *   GET    ?code=XXXX-XXXX   -> { ok, data, savedAt }     load a draft
  *   DELETE ?code=XXXX-XXXX   -> { ok }                    remove a draft
@@ -95,7 +95,7 @@ exports.handler = async (event) => {
     await store.setJSON(draftKey(code), { code: code, data: data, savedAt: savedAt, expiresAt: expiresAt });
     await updateIndex(store, summaryFrom(code, data, savedAt, expiresAt), false);
 
-    return json(200, { ok: true, code: code, resumeUrl: '/form.html?resume=' + encodeURIComponent(code), expiresAt: expiresAt });
+    return json(200, { ok: true, code: code, resumeUrl: '/clients/form.html?resume=' + encodeURIComponent(code), expiresAt: expiresAt });
   }
 
   if (event.httpMethod === 'GET') {

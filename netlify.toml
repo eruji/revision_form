@@ -10,11 +10,57 @@
 [functions."cleanup-drafts"]
   schedule = "@daily"
 
-# Clean API paths: /api/submit -> /.netlify/functions/submit
+# Office-only API — these sit behind Cloudflare Access at /api/*.
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+
+# Public client API under /clients/api/* (outside the Access zone). Listed
+# explicitly, not as a wildcard, so /clients/api/admin cannot reach the office
+# functions through the public path.
+[[redirects]]
+  from = "/clients/api/submit"
+  to = "/.netlify/functions/submit"
+  status = 200
+
+[[redirects]]
+  from = "/clients/api/get"
+  to = "/.netlify/functions/get"
+  status = 200
+
+[[redirects]]
+  from = "/clients/api/draft"
+  to = "/.netlify/functions/draft"
+  status = 200
+
+[[redirects]]
+  from = "/clients/api/upload"
+  to = "/.netlify/functions/upload"
+  status = 200
+
+[[redirects]]
+  from = "/clients/api/file"
+  to = "/.netlify/functions/file"
+  status = 200
+
+[[redirects]]
+  from = "/clients/api/round"
+  to = "/.netlify/functions/round"
+  status = 200
+
+# Old flat client URLs -> new /clients/ paths.
+[[redirects]]
+  from = "/form.html"
+  to = "/clients/form.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/view.html"
+  to = "/clients/view.html"
+  status = 301
+  force = true
 
 # The dashboard moved to the site root; keep old bookmarks working.
 [[redirects]]
@@ -44,11 +90,16 @@
 
 # Never cache anything that could contain client data.
 [[headers]]
-  for = "/view.html"
+  for = "/clients/form.html"
   [headers.values]
     Cache-Control = "no-store"
 
-# The dashboard is now the site root (password protected); always serve it fresh.
+[[headers]]
+  for = "/clients/view.html"
+  [headers.values]
+    Cache-Control = "no-store"
+
+# The dashboard is the site root (behind Cloudflare Access); always fresh.
 [[headers]]
   for = "/"
   [headers.values]
@@ -56,10 +107,5 @@
 
 [[headers]]
   for = "/index.html"
-  [headers.values]
-    Cache-Control = "no-store"
-
-[[headers]]
-  for = "/form.html"
   [headers.values]
     Cache-Control = "no-store"

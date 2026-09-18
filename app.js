@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Pepper & Olive Interiors — Revision Request (proof of concept)
-   Vanilla JS. No build step, no server. Open form.html directly.
+   Vanilla JS. No build step, no server. Open clients/form.html directly.
    ═══════════════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -105,11 +105,10 @@
 
   // ── Backend API (Netlify Functions) ──────────────────────────────────────
   const API = {
-    submit: '/api/submit',
-    get: '/api/get',
-    draft: '/api/draft',
-    admin: '/api/admin',
-    upload: '/api/upload'
+    submit: '/clients/api/submit',
+    get: '/clients/api/get',
+    draft: '/clients/api/draft',
+    upload: '/clients/api/upload'
   };
 
   // Attachments
@@ -985,7 +984,7 @@
     try { id = new URLSearchParams(location.search).get('r') || ''; } catch (e) {}
     if (!id) return;
     try {
-      const out = await apiFetch('/api/rounds?id=' + encodeURIComponent(id));
+      const out = await apiFetch('/clients/api/round?id=' + encodeURIComponent(id));
       if (out.res.ok && out.data && out.data.ok && out.data.round) applyRound(out.data.round);
     } catch (e) { /* offline: fall back to section 01 */ }
   }

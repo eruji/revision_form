@@ -149,8 +149,8 @@
     toast._t = setTimeout(() => { t.hidden = true; }, 2400);
   }
 
-  function clientLink(code) { return location.origin + '/form.html?resume=' + encodeURIComponent(code); }
-  function draftViewLink(code) { return location.origin + '/view.html?draft=' + encodeURIComponent(code); }
+  function clientLink(code) { return location.origin + '/clients/form.html?resume=' + encodeURIComponent(code); }
+  function draftViewLink(code) { return location.origin + '/clients/view.html?draft=' + encodeURIComponent(code); }
 
   async function deleteDraft(code, name) {
     if (!window.confirm('Delete the saved draft for ' + (name || 'this client') + '? This cannot be undone.')) return;
@@ -397,7 +397,7 @@
   }
 
   // ── Office-issued request links (rounds) ────────────────────────────────
-  function roundLink(id) { return location.origin + '/form.html?r=' + id; }
+  function roundLink(id) { return location.origin + '/clients/form.html?r=' + id; }
 
   async function loadRounds(key) {
     try {
@@ -638,8 +638,9 @@
     init._done = true;
     window.TeamSetup.init({});
     bind();
-    const key = getKey();
-    if (key) load(key, false); else showGate(false);
+    // With Cloudflare Access in front this succeeds with no key; otherwise the
+    // 401 drops us to the password gate (local dev / pre-Cloudflare).
+    load(getKey(), false);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

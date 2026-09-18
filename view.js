@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Read-only view of a submitted revision request.
-   Loaded by view.html with either:
+   Loaded by clients/view.html with either:
      ?token=...  -> fetched from the server (private link)
      ?local=...  -> read from this browser's localStorage (same-device fallback)
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -283,7 +283,7 @@
 
     if (draftCode) {
       try {
-        const res = await fetch('/api/draft?code=' + encodeURIComponent(draftCode), { cache: 'no-store' });
+        const res = await fetch('/clients/api/draft?code=' + encodeURIComponent(draftCode), { cache: 'no-store' });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data && data.ok && data.data) {
           const d = data.data;
@@ -306,7 +306,7 @@
 
     if (token) {
       try {
-        const res = await fetch('/api/get?token=' + encodeURIComponent(token), { cache: 'no-store' });
+        const res = await fetch('/clients/api/get?token=' + encodeURIComponent(token), { cache: 'no-store' });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data && data.ok) {
           render(data.submission, data.submittedAt);

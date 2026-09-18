@@ -1,5 +1,5 @@
 /**
- * POST /api/upload   { name, type, dataUrl }  -> { ok, file }
+ * POST /clients/api/upload   { name, type, dataUrl }  -> { ok, file }
  *
  * Stores one client attachment (photo or PDF) in Netlify Blobs and returns a
  * stable, unguessable URL the form can reference. The file id is 18 random
@@ -88,8 +88,8 @@ exports.handler = async (event) => {
   const host = (event.headers && (event.headers.host || event.headers.Host)) || '';
   const proto = (event.headers && (event.headers['x-forwarded-proto'] || event.headers['X-Forwarded-Proto'])) || 'https';
   const url = host
-    ? proto + '://' + host + '/api/file?id=' + encodeURIComponent(id)
-    : '/api/file?id=' + encodeURIComponent(id);
+    ? proto + '://' + host + '/clients/api/file?id=' + encodeURIComponent(id)
+    : '/clients/api/file?id=' + encodeURIComponent(id);
 
   return json(200, {
     ok: true,

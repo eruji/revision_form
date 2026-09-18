@@ -27,13 +27,13 @@ A real form needs to grow with the client. That's what this POC does.
 
 | File | Purpose |
 |---|---|
-| `index.html` / `admin.js` | Password-protected office dashboard at the site root (`/`), with per-request JSON/CSV export |
-| `form.html` / `app.js` | Client revision form — opened via a generated link (`?r=…`, `?resume=…`) |
-| `view.html` / `view.js` | Private read-only copy (`?token=…`) with print/PDF + JSON |
+| `index.html` / `admin.js` | Office dashboard at the site root (`/`) — behind Cloudflare Access; per-request JSON/CSV export |
+| `clients/form.html` / `app.js` | Client revision form — opened via a generated link (`?r=…`, `?resume=…`) |
+| `clients/view.html` / `view.js` | Private read-only copy (`?token=…`) with print/PDF + JSON |
+| `setup.js` | Team setup panel (configurable wording), opened from the dashboard |
 | `styles.css` | Styling — olive/cream brand palette, responsive |
 | `config.js` | **The questions and policy copy your team will iterate on** |
-| `app.js` | Client form: unlimited items, validation, draft autosave, backend calls |
-| `netlify/functions/*` | Serverless API — `submit`, `get`, `draft`, `admin`, `rounds`, `upload`, `file` (Netlify Blobs) |
+| `netlify/functions/*` | API — office (`admin`, `rounds`) + public client (`submit`, `get`, `draft`, `round`, `upload`, `file`), with `lib/access.js` for Cloudflare Access verification |
 | `google_apps_script.gs` | Apps Script bridge: Google Sheet work queue + email notification |
 | `netlify.toml` | Publish dir, functions dir, `/api/*` routing, headers |
 | `.github/workflows/deploy.yml` | CI: install deps → stage files → deploy on push |
@@ -46,17 +46,19 @@ functions.
 
 | URL | What it is |
 |---|---|
-| `/` | Password-protected office dashboard (the homepage) |
-| `/form.html?r=…` | Client revision form, opened from a generated request link |
-| `/form.html?resume=…` | Client form restored from a saved draft code |
-| `/view.html?token=…` | Private read-only copy of a submission |
+| `/` | Office dashboard — **behind Cloudflare Access** |
+| `/api/admin`, `/api/rounds` | Office APIs — **behind Cloudflare Access** |
+| `/clients/form.html?r=…` | Client revision form, opened from a generated request link (public) |
+| `/clients/form.html?resume=…` | Client form restored from a saved draft code (public) |
+| `/clients/view.html?token=…` | Private read-only copy of a submission (public) |
+| `/clients/api/*` | Public client API (submit, get, draft, round, upload, file) |
 
-Clients only ever reach `form.html` through a link the dashboard generates; the
-root is the team's dashboard.
+Clients only ever reach `/clients/…` through a link the dashboard generates; the
+root and the office APIs are gated by Cloudflare Zero Trust.
 
 ## Run it (10 seconds)
 
-**Option A — just open the client form:** double-click `form.html`.
+**Option A — just open the client form:** double-click `clients/form.html`.
 
 **Option B — local server (needed for the dashboard, best for sharing):**
 ```bash
@@ -64,25 +66,25 @@ cd revision_form
 python -m http.server 8080      # or: npx serve .
 ```
 Then open <http://localhost:8080> for the dashboard (it needs the API, so use the
-full site or `netlify dev`), or <http://localhost:8080/form.html> for the form.
+full site or `netlify dev`), or <http://localhost:8080/clients/form.html> for the
+form.
 
-> The app saves to the shared backend when it is reachable. If it isn't (for
-example opening `form.html` directly, or on a plain static host), it falls back
-to browser `localStorage` so you can still demo the form offline. The dashboard
-itself requires the backend.
+> The form and read-only copy call `/clients/api/*`; if the backend isn't
+> reachable they fall back to browser `localStorage` so you can still demo the
+> form offline. The dashboard itself requires the backend.
 
 ## Reading responses, privacy & saving progress
 
 | Requirement | How it works |
 |---|---|
-| **Office reads responses** | Password-protected dashboard at the site root (`/`) lists every submission; open one for **Print / PDF**, **JSON**, or **CSV**. |
-| **Client can't see others** | Every submission gets a secret 256-bit token. `/api/get` returns only the submission matching that token, and unknown tokens get a plain 404. There is **no public endpoint that lists submissions**. |
-| **Save progress until submit** | Autosave in the browser, plus **Save & continue later** → a resume code stored server-side that works on any device via `/form.html?resume=CODE`. Saved drafts **expire after 30 days**. |
-| **Office can see and share drafts** | Saved drafts appear in the office dashboard with a **View** read-only link (`/view.html?draft=CODE`) and a **Copy client link** button to send the client back to finish. |
+| **Office reads responses** | The dashboard at the site root (`/`) is behind **Cloudflare Access** (team SSO, no shared password). It lists every submission; open one for **Print / PDF**, **JSON**, or **CSV**. |
+| **Client can't see others** | Every submission gets a secret 256-bit token. `/clients/api/get` returns only the submission matching that token, and unknown tokens get a plain 404. There is **no public endpoint that lists submissions**. |
+| **Save progress until submit** | Autosave in the browser, plus **Save & continue later** → a resume code stored server-side that works on any device via `/clients/form.html?resume=CODE`. Saved drafts **expire after 30 days**. |
+| **Office can see and share drafts** | Saved drafts appear in the office dashboard with a **View** read-only link (`/clients/view.html?draft=CODE`) and a **Copy client link** button to send the client back to finish. |
 | **Client copy for records** | Private read-only page with **Print / Save as PDF** and **Download JSON**. |
 | **Photos & attachments** | Each revision item can attach up to 5 photos or PDFs (4 MB each; large images are resized in the browser first). Files live in Netlify Blobs and are reachable only by their random id — the read-only view and office dashboard show thumbnails, and CSV export lists the URLs. |
 | **Drawn signature** | The acknowledgment step includes a canvas signature pad (mouse, finger, or stylus). The drawn PNG is stored with the submission and shown in the read-only view / dashboard alongside the typed name. |
-| **Read-only online view** | `/view.html?token=…` — no edit fields. |
+| **Read-only online view** | `/clients/view.html?token=…` — no edit fields. |
 
 ### Office dashboard
 - URL: `/` (the site root) on the live site.
@@ -96,23 +98,27 @@ itself requires the backend.
     full) and restored with **Unarchive**, or permanently **Delete**d (with a
     confirmation prompt). Archived requests live in their own
     **Archived requests** section and are still available in a per-request CSV/JSON export.
-  - For each **draft** you can **View** it read-only (`/view.html?draft=CODE`),
+  - For each **draft** you can **View** it read-only (`/clients/view.html?draft=CODE`),
     **Copy client link** (the resume link to send back to the client), or
     **Delete** it. Drafts expire automatically after 30 days (a daily scheduled
     job purges them).
-- Password: stored as the `ADMIN_PASSWORD` environment variable in Netlify.
-- To change it:
-  ```bash
-  npx netlify-cli env:set ADMIN_PASSWORD "your-new-password" --context production
-  ```
-  then redeploy.
+- **Access:** the dashboard and the office APIs (`/api/admin`, `/api/rounds`)
+  are protected by **Cloudflare Access** (Zero Trust). No shared password —
+  members sign in with the team IdP. The Netlify functions verify Cloudflare's
+  `Cf-Access-Jwt-Assertion`, so the raw `*.netlify.app` origin cannot be used to
+  bypass Cloudflare. `ADMIN_PASSWORD` remains an optional fallback for local dev
+  when the Access env vars are unset (see “Custom domain + Cloudflare Zero Trust” below).
 
 ### Backend at a glance
 - **Netlify Functions + Netlify Blobs** — no extra account, data stays in this
   Netlify site.
-- Endpoints: `/api/submit`, `/api/get`, `/api/draft`, `/api/admin`, `/api/upload`, `/api/file`.
-- Env vars on the Netlify site: `ADMIN_PASSWORD` (secret), `BLOBS_SITE_ID`,
-  `BLOBS_TOKEN` (secret).
+- Office endpoints (behind Access): `/api/admin`, `/api/rounds`.
+- Public client endpoints: `/clients/api/submit`, `/clients/api/get`,
+  `/clients/api/draft`, `/clients/api/round`, `/clients/api/upload`,
+  `/clients/api/file`.
+- Env vars on the Netlify site: `CF_ACCESS_TEAM_DOMAIN`, `CF_ACCESS_AUD`
+  (Cloudflare Access), `BLOBS_SITE_ID`, `BLOBS_TOKEN` (secret), and optional
+  `ADMIN_PASSWORD` (local fallback).
 
 > **Privacy notes:** submissions contain client PII. Tokens are stored hashed,
 > drafts are deleted when a round is submitted, and responses are marked
@@ -132,7 +138,7 @@ The office no longer asks the client to type the project and phase. Instead:
 2. Enter client, project, and design phase (a note to the client is optional),
    then **Create link**.
 3. Copy the link and send it. It looks like
-   `https://revision.pepperandolive.com/form.html?r=AbC123xyz`.
+   `https://revision.pepperandolive.com/clients/form.html?r=AbC123xyz`.
 
 When the client opens it, the form shows a context banner (*“Revision request
 for Maple Residence — Design Development”*) and **section 01 is hidden** — the
@@ -182,24 +188,57 @@ the dashboard and the Netlify email still fires.
 
 ---
 
-## Custom subdomain (revision.pepperandolive.com)
+## Custom domain + Cloudflare Zero Trust (revision.pepperandolive.com)
 
-1. In Netlify: **Domain management → Add a domain** →
+The dashboard (`/`) and the office APIs (`/api/admin`, `/api/rounds`) sit behind
+**Cloudflare Access**. The client pages and APIs under `/clients/` are public, so
+request links work for clients who don't have a Cloudflare account.
+
+1. **Netlify:** Project configuration → Domain management → Add a domain →
    `revision.pepperandolive.com`.
-2. At your DNS provider, add a **CNAME**: host `revision` →
-   `<your-site>.netlify.app`.
-3. Wait for DNS and the automatic Let's Encrypt certificate.
+2. **DNS (Cloudflare):** add `CNAME revision → <your-site>.netlify.app`, set to
+   **Proxied** (orange cloud), SSL/TLS mode **Full (strict)**, and enable
+   **Always Use HTTPS**.
+3. **Access app 1 — the office:** Zero Trust → Access → Applications →
+   *Self-hosted*, application domain `revision.pepperandolive.com` (no path = the
+   whole site), policy **Allow → your team** (Google Workspace / email OTP).
+4. **Access app 2 — the client surface:** application domain
+   `revision.pepperandolive.com/clients` with policy **Bypass → Everyone**.
+   Because the client pages load shared assets from the root, add these as extra
+   public hostnames on this same app: `/styles.css`, `/config.js`, `/setup.js`,
+   `/app.js`, `/view.js`. (Access matches the most specific path, so `/clients/*`
+   wins over the whole-site app.)
+5. **Netlify env vars:** set `CF_ACCESS_TEAM_DOMAIN` (e.g.
+   `pepperandolive.cloudflareaccess.com`) and `CF_ACCESS_AUD` (the Audience tag
+   shown on the Access application). Redeploy. The office functions now accept
+   requests carrying a valid Cloudflare `Cf-Access-Jwt-Assertion`.
+
+**Why the JWT check matters:** Cloudflare Access only guards traffic through
+Cloudflare. Your Netlify origin (`<your-site>.netlify.app`) stays publicly
+reachable, so without this check someone could hit `/api/admin` directly and
+bypass Zero Trust. The functions verify the Access JWT (RS256 against the team's
+Access certs, matching the app `aud`) and reject anything that didn't come
+through Cloudflare.
+
+**Verify:** in a private window, `/` should prompt for Access (no password),
+`/clients/form.html?r=…` should load with no prompt, and hitting
+`https://<your-site>.netlify.app/api/admin` directly should return `401`.
+
+> If your Cloudflare plan doesn't do path-specific bypass the way you expect, the
+> fallback is to keep the dashboard at a path instead of the root: redirect `/` →
+> `/admin` (Netlify), and protect only `/admin*` + `/api/admin*` + `/api/rounds*`.
+> No Bypass app needed then.
 
 Request links are built from the browser's current origin, so once the subdomain
 is live the generated links automatically use
-`https://revision.pepperandolive.com`.
+`https://revision.pepperandolive.com/clients/…`.
 
 ## Share for review
 
 | Link | Use |
 |---|---|
-| **https://pepper-olive-revision-form.netlify.app/form.html?review=1** | **Send this to reviewers** — shows a dismissible "Review mode" banner explaining what to click |
-| https://pepper-olive-revision-form.netlify.app | The clean, client-facing version (no banner) |
+| **https://revision.pepperandolive.com/clients/form.html?review=1** | **Send this to reviewers** — shows a dismissible "Review mode" banner explaining what to click |
+| https://revision.pepperandolive.com/clients/form.html | The clean, client-facing version (no banner) |
 
 Every push to `main` auto-deploys to Netlify via
 `.github/workflows/deploy.yml`, using the `NETLIFY_AUTH_TOKEN` and
@@ -258,14 +297,14 @@ Changes apply instantly and persist in your browser. This makes it cheap to
 prototype three or four question sets, screenshot them, and pick one as a team.
 
 ### 🗂 Office dashboard (internal — the one place the team reads submissions)
-The password-protected dashboard at **`/`** (see “Reading responses”
+The dashboard at **`/`** (behind Cloudflare Access — see “Reading responses”
 above) lists every client, exports each request to JSON/CSV, manages request
-links, and archives or
-deletes requests. It links to **Team setup**; there is no separate in-app office
+links, and archives or deletes requests. Its **Team setup** button pops the
+configuration panel open over the dashboard; there is no separate in-app office
 view.
 
-The **Team setup** button is **hidden from clients**; it appears only when the
-URL includes `?manage=1`.
+The same setup panel is available on the client form only with `?manage=1`
+(hidden from clients).
 
 ---
 
@@ -275,8 +314,7 @@ URL includes `?manage=1`.
    and rewording the intro. Save.
 2. Submit a fake round with **10 items** to feel the unlimited flow.
 3. Open the office dashboard (`/`), open a submission, and click *Download CSV*.
-   Is that the
-   shape your team wants to triage from?
+   Is that the shape your team wants to triage from?
 4. Decide together:
    - Which fields are **required vs. nice-to-have**?
    - Do we want a **priority** or **deadline** field?

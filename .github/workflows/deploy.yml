@@ -32,8 +32,9 @@ jobs:
       # This keeps .git, README, and the legacy .gs script off the live site.
       - name: Stage static site
         run: |
-          mkdir -p dist
-          cp index.html form.html view.html styles.css config.js setup.js app.js view.js admin.js netlify.toml dist/
+          mkdir -p dist/clients
+          cp index.html styles.css config.js setup.js app.js view.js admin.js netlify.toml dist/
+          cp clients/form.html clients/view.html dist/clients/
 
       - name: Deploy to Netlify (production)
         run: npx --yes netlify-cli@latest deploy --prod --dir=dist

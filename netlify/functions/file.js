@@ -1,5 +1,5 @@
 /**
- * GET /api/file?id=<file-id>
+ * GET /clients/api/file?id=<file-id>
  * Streams one previously uploaded attachment back as an image/PDF.
  *
  * The id is 18 random bytes and is returned only to the client who uploaded the

@@ -1,5 +1,5 @@
 /**
- * POST /api/submit
+ * POST /clients/api/submit
  * Stores a completed revision request and returns a private read token.
  *
  * Privacy model:
@@ -160,7 +160,7 @@ exports.handler = async (event) => {
 
   const token = crypto.randomBytes(24).toString('base64url');
   const key = 'sub_' + hashToken(token);
-  const viewUrl = '/view.html?token=' + encodeURIComponent(token);
+  const viewUrl = '/clients/view.html?token=' + encodeURIComponent(token);
 
   // If this submission came from an office-issued link, pull the round context
   // and stamp it onto the submission (authoritative, not client-supplied).
