@@ -33,7 +33,7 @@ jobs:
       - name: Stage static site
         run: |
           mkdir -p dist
-          cp index.html form.html view.html styles.css config.js app.js view.js admin.js netlify.toml dist/
+          cp index.html form.html view.html styles.css config.js setup.js app.js view.js admin.js netlify.toml dist/
 
       - name: Deploy to Netlify (production)
         run: npx --yes netlify-cli@latest deploy --prod --dir=dist

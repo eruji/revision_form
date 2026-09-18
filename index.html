@@ -24,7 +24,7 @@
     </div>
     <div class="topbar__actions">
       <a class="btn btn--ghost" id="sheetBtn" href="#" target="_blank" rel="noopener" hidden>Work queue sheet</a>
-      <a class="btn btn--ghost" href="/form.html?setup=1">Team setup</a>
+      <button type="button" class="btn btn--ghost" id="teamSetupBtn">Team setup</button>
       <button type="button" class="btn btn--ghost" id="refreshBtn" hidden>Refresh</button>
       <button type="button" class="btn btn--primary" id="exportCsvBtn" hidden>Export all CSV</button>
       <button type="button" class="btn btn--ghost" id="signOutBtn" hidden>Sign out</button>
@@ -116,6 +116,26 @@
 
   <div class="toast" id="toast" hidden></div>
 
+  <!-- ═══════════════════════════ TEAM SETUP DRAWER ═══════════════════════════ -->
+  <aside class="drawer" id="setupDrawer" hidden aria-labelledby="setupTitle">
+    <div class="drawer__head">
+      <div>
+        <h2 id="setupTitle">Team setup</h2>
+        <p>Decide what to ask. Changes apply live and are saved in this browser.</p>
+      </div>
+      <button type="button" class="iconbtn" id="closeSetupBtn" aria-label="Close">✕</button>
+    </div>
+    <div class="drawer__body" id="setupBody"></div>
+    <div class="drawer__foot">
+      <button type="button" class="btn btn--primary" id="saveConfigBtn">Save &amp; apply</button>
+      <button type="button" class="btn btn--ghost" id="exportConfigBtn">Export config</button>
+      <button type="button" class="btn btn--ghost" id="importConfigBtn">Import config</button>
+      <input type="file" id="importConfigFile" accept="application/json" hidden />
+      <button type="button" class="btn btn--danger" id="resetConfigBtn">Reset to defaults</button>
+    </div>
+  </aside>
+  <div class="scrim" id="setupScrim" hidden></div>
+
   <!-- Full read-only detail for one submission -->
   <div class="overlay" id="detailOverlay" hidden>
     <div class="modal detail-modal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
@@ -130,6 +150,7 @@
   </div>
 
   <script src="config.js"></script>
+  <script src="setup.js"></script>
   <script src="admin.js"></script>
 </body>
 </html>

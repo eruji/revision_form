@@ -240,10 +240,10 @@ a *Clear draft* button too.
 These are the parts that directly answer *“what should we ask?”*
 
 ### 🔧 Team setup (internal — hidden from clients)
-Reachable from the office dashboard's **Team setup** button, which opens
-`/form.html?setup=1` and shows the configuration panel on its own (the client
-form is hidden; closing the panel returns you to the still-unlocked dashboard).
-Clients never see it. A live panel over the form:
+Reachable from the office dashboard's **Team setup** button, which pops the
+configuration panel open right over the dashboard — no page load, and the client
+revision form is never involved. Clients never see it. A live panel over the
+form:
 - Turn any question **on/off** and mark it **required**.
 - **Rename** question labels inline.
 - **Reorder** the fields that appear on every revision item.

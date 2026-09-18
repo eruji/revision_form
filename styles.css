@@ -456,11 +456,6 @@ input::placeholder, textarea::placeholder { color: #b3b0a4; }
 .drawer__head h2 { font-size: 24px; color: var(--olive-900); }
 .drawer__head p { margin: 3px 0 0; font-size: 13px; color: var(--ink-soft); }
 .drawer__head .iconbtn { margin-left: auto; }
-/* Team setup opened as its own panel (?setup=1): hide the client form so only
-   the configuration drawer is visible. */
-body.setup-only .page,
-body.setup-only .topbar { display: none !important; }
-body.setup-only .scrim { background: rgba(42, 42, 36, 0.06); }
 .drawer__body { flex: 1; overflow: auto; padding: 20px 22px 40px; }
 .drawer__foot {
   border-top: 1px solid var(--line);

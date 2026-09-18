@@ -645,11 +645,15 @@
     $('#createRoundBtn').addEventListener('click', createRound);
     $('#copyNewRoundBtn').addEventListener('click', (e) => copyText($('#newRoundLink').value, e.currentTarget));
     $('#saveSheetUrlBtn').addEventListener('click', saveSheetUrl);
+
+    // Team setup panel (configurable wording) — pops open over the dashboard.
+    $('#teamSetupBtn').addEventListener('click', () => window.TeamSetup.open());
   }
 
   function init() {
     if (init._done) return;
     init._done = true;
+    window.TeamSetup.init({});
     bind();
     const key = getKey();
     if (key) load(key, false); else showGate(false);
