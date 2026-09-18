@@ -88,10 +88,36 @@ exports.handler = async (event) => {
 
   const qs = event.queryStringParameters || {};
 
-  // Save office settings (e.g. the Google Sheet work-queue URL).
+  // Save office settings (e.g. the Google Sheet work-queue URL) or archive.
   if (event.httpMethod === 'POST') {
     let body;
     try { body = JSON.parse(event.body || '{}'); } catch (e) { return json(400, { ok: false, error: 'Invalid body' }); }
+
+    // Archive / unarchive a submitted request (keeps the data, hides it).
+    if (body.action === 'archive' || body.action === 'unarchive') {
+      const id = String(body.id || '');
+      const archive = body.action === 'archive';
+      if (!id) return json(400, { ok: false, error: 'Missing id' });
+      try {
+        const store = openStore('revision-submissions');
+        let index = [];
+        try { index = (await store.get('__index__', { type: 'json' })) || []; } catch (e) { index = []; }
+        const entry = index.find((e) => e && (e.id === id || e.key === id));
+        if (!entry) return json(404, { ok: false, error: 'Not found' });
+        const rec = await store.get(entry.key, { type: 'json' });
+        if (rec) {
+          rec.archived = archive;
+          rec.archivedAt = archive ? new Date().toISOString() : null;
+          await store.setJSON(entry.key, rec);
+        }
+        entry.archived = archive;
+        await store.setJSON('__index__', index);
+        return json(200, { ok: true, archived: archive });
+      } catch (e) {
+        return json(500, { ok: false, error: 'Could not update the request' });
+      }
+    }
+
     if (!body.settings || typeof body.settings !== 'object') return json(400, { ok: false, error: 'Nothing to update' });
     try {
       const settingsStore = openStore('revision-settings');
@@ -104,20 +130,40 @@ exports.handler = async (event) => {
     }
   }
 
-  // Delete a saved draft (office cleanup).
-  if (event.httpMethod === 'DELETE' && qs.draft) {
-    const code = String(qs.draft).trim().toUpperCase();
-    if (!/^[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code)) return json(400, { ok: false, error: 'Invalid code' });
-    try {
-      const draftStore = openStore('revision-drafts');
-      await draftStore.delete('draft_' + require('crypto').createHash('sha256').update(code).digest('hex'));
-      let index = [];
-      try { index = (await draftStore.get('__draft_index__', { type: 'json' })) || []; } catch (e) { index = []; }
-      await draftStore.setJSON('__draft_index__', index.filter((e) => e && e.code !== code));
-      return json(200, { ok: true });
-    } catch (e) {
-      return json(500, { ok: false, error: 'Could not delete draft' });
+  // Delete a saved draft or a submitted request (office cleanup).
+  if (event.httpMethod === 'DELETE') {
+    if (qs.draft) {
+      const code = String(qs.draft).trim().toUpperCase();
+      if (!/^[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code)) return json(400, { ok: false, error: 'Invalid code' });
+      try {
+        const draftStore = openStore('revision-drafts');
+        await draftStore.delete('draft_' + require('crypto').createHash('sha256').update(code).digest('hex'));
+        let index = [];
+        try { index = (await draftStore.get('__draft_index__', { type: 'json' })) || []; } catch (e) { index = []; }
+        await draftStore.setJSON('__draft_index__', index.filter((e) => e && e.code !== code));
+        return json(200, { ok: true });
+      } catch (e) {
+        return json(500, { ok: false, error: 'Could not delete draft' });
+      }
     }
+
+    if (qs.submission) {
+      const id = String(qs.submission);
+      try {
+        const store = openStore('revision-submissions');
+        let index = [];
+        try { index = (await store.get('__index__', { type: 'json' })) || []; } catch (e) { index = []; }
+        const entry = index.find((e) => e && (e.id === id || e.key === id));
+        if (!entry) return json(404, { ok: false, error: 'Not found' });
+        await store.delete(entry.key);
+        await store.setJSON('__index__', index.filter((e) => e !== entry));
+        return json(200, { ok: true });
+      } catch (e) {
+        return json(500, { ok: false, error: 'Could not delete the request' });
+      }
+    }
+
+    return json(400, { ok: false, error: 'Nothing to delete' });
   }
 
   try {

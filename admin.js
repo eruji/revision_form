@@ -458,16 +458,24 @@
   }
 
   function renderRecords(records) {
-    const list = $('#adminList');
-    list.innerHTML = '';
+    const active = records.filter((r) => !r.archived);
+    const archived = records.filter((r) => r.archived);
     $('#adminSummary').textContent =
-      records.length + (records.length === 1 ? ' submission' : ' submissions') + ' total.';
+      active.length + (active.length === 1 ? ' active request' : ' active requests') +
+      (archived.length ? ' · ' + archived.length + ' archived' : '');
+    const ac = document.querySelector('#archivedCount');
+    if (ac) ac.textContent = archived.length ? '(' + archived.length + ')' : '';
+    renderRecordList('#adminList', active, false);
+    renderRecordList('#archivedList', archived, true);
+  }
+
+  function renderRecordList(selector, records, isArchived) {
+    const list = document.querySelector(selector);
+    if (!list) return;
+    list.innerHTML = '';
 
     if (!records.length) {
-      list.append(h('div', { class: 'empty-state' },
-        h('div', { text: '🗂' }),
-        h('p', { text: 'No revision requests yet.' })
-      ));
+      list.append(h('p', { class: 'admin-empty', text: isArchived ? 'Nothing archived.' : 'No revision requests yet.' }));
       return;
     }
 
@@ -490,7 +498,7 @@
         ));
       });
 
-      list.append(h('div', { class: 'sub' },
+      list.append(h('div', { class: 'sub' + (isArchived ? ' sub--archived' : '') },
         h('div', { class: 'sub__head' },
           h('strong', { text: name + (project ? ' · ' + project : '') }),
           h('span', { text: fmtDate(rec.submittedAt) }),
@@ -501,10 +509,44 @@
           h('button', { type: 'button', class: 'btn btn--ghost', text: 'View', onclick: () => openDetail(rec) }),
           h('button', { type: 'button', class: 'btn btn--ghost', text: 'JSON', onclick: () => exportRecordJson(rec) }),
           h('button', { type: 'button', class: 'btn btn--ghost', text: 'CSV', onclick: () => exportRecordCsv(rec) }),
-          workQueueSheetUrl ? h('a', { class: 'btn btn--ghost', href: workQueueSheetUrl, target: '_blank', rel: 'noopener', text: 'Sheet' }) : null
+          workQueueSheetUrl ? h('a', { class: 'btn btn--ghost', href: workQueueSheetUrl, target: '_blank', rel: 'noopener', text: 'Sheet' }) : null,
+          isArchived
+            ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Unarchive', onclick: () => archiveSubmission(rec.id, false) })
+            : h('button', { type: 'button', class: 'btn btn--ghost', text: 'Archive', onclick: () => archiveSubmission(rec.id, true) }),
+          h('button', { type: 'button', class: 'btn btn--danger', text: 'Delete', onclick: () => deleteSubmission(rec.id, name) })
         )
       ));
     });
+  }
+
+  async function archiveSubmission(id, archive) {
+    try {
+      const res = await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': getKey() },
+        body: JSON.stringify({ action: archive ? 'archive' : 'unarchive', id: id })
+      });
+      if (!res.ok) throw new Error('archive failed');
+      toast(archive ? 'Request archived' : 'Request restored');
+      load(getKey(), false);
+    } catch (e) {
+      toast('Could not update the request');
+    }
+  }
+
+  async function deleteSubmission(id, name) {
+    if (!window.confirm('Permanently delete the revision request for ' + (name || 'this client') + '? This cannot be undone.')) return;
+    try {
+      const res = await fetch('/api/admin?submission=' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: { 'x-admin-key': getKey() }
+      });
+      if (!res.ok) throw new Error('delete failed');
+      toast('Revision request deleted');
+      load(getKey(), false);
+    } catch (e) {
+      toast('Could not delete the request');
+    }
   }
 
   async function load(key, showErrorOnFail) {
