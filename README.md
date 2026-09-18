@@ -76,6 +76,10 @@ to browser `localStorage` so you can still demo it offline.
 - Shows **submitted requests** and **saved drafts**.
   - Each **submitted request** has **View** (full read-only detail), **JSON**,
     and **CSV** export, plus **Print / Save as PDF** from the detail view.
+  - Submitted requests can be **Archived** (hidden from the main list but kept in
+    full) and restored with **Unarchive**, or permanently **Delete**d (with a
+    confirmation prompt). Archived requests live in their own
+    **Archived requests** section and are still included in **Export all CSV**.
   - For each **draft** you can **View** it read-only (`/view.html?draft=CODE`),
     **Copy client link** (the resume link to send back to the client), or
     **Delete** it. Drafts expire automatically after 30 days (a daily scheduled
