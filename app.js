@@ -505,21 +505,24 @@
   }
 
   // Team Setup is an internal tool. It is hidden from clients and revealed
-  // only for the team via ?manage=1 (the admin panel links straight to it with
-  // ?manage=1&setup=1, which also opens the drawer).
+  // only for the team via ?manage=1. The dashboard links to ?setup=1, which
+  // shows the setup panel on its own (the client form is hidden).
   function initManageTools() {
     let manage = false;
-    let openOnLoad = false;
+    let setupOnly = false;
     try {
       const p = new URLSearchParams(location.search);
       manage = p.has('manage') || p.has('setup');
-      openOnLoad = p.has('setup');
+      setupOnly = p.has('setup');
     } catch (e) {}
     if (manage) {
       const el = $('#topbarActions');
       if (el) el.hidden = false;
     }
-    if (openOnLoad) openSetup();
+    if (setupOnly) {
+      document.body.classList.add('setup-only');
+      openSetup();
+    }
   }
 
   // ── Revision items (unlimited) ───────────────────────────────────────────
@@ -1026,6 +1029,8 @@
     $('#setupDrawer').hidden = true;
     $('#setupScrim').hidden = true;
     setupDraft = null;
+    // Opened as its own panel (?setup=1): return to the dashboard.
+    if (document.body.classList.contains('setup-only')) location.href = '/';
   }
 
   function applySetupDraft() {

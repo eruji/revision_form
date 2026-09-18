@@ -241,9 +241,9 @@ These are the parts that directly answer *“what should we ask?”*
 
 ### 🔧 Team setup (internal — hidden from clients)
 Reachable from the office dashboard's **Team setup** button, which opens
-`/form.html?manage=1&setup=1` and drops you straight into the panel (or use
-`/form.html?manage=1` and click the button). Clients never see it. A live panel
-over the form:
+`/form.html?setup=1` and shows the configuration panel on its own (the client
+form is hidden; closing the panel returns you to the still-unlocked dashboard).
+Clients never see it. A live panel over the form:
 - Turn any question **on/off** and mark it **required**.
 - **Rename** question labels inline.
 - **Reorder** the fields that appear on every revision item.
