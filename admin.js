@@ -82,6 +82,11 @@
   function buildCsv(records) {
     let header = null;
     const rows = [];
+    const cellText = (v) => {
+      if (Array.isArray(v)) return v.map((f) => (f && f.url) ? f.url : String(f)).filter(Boolean).join(' | ');
+      if (typeof v === 'string' && v.indexOf('data:image/') === 0) return 'Signed (drawn signature)';
+      return v == null ? '' : String(v);
+    };
     records.forEach((rec) => {
       const sub = rec.submission || {};
       const L = sub._labels || { about: {}, revision: {}, ack: {} };
@@ -91,16 +96,32 @@
       if (!header) {
         header = ['Submitted At',
           ...aboutIds.map((id) => L.about[id]),
+          'Room / Area',
+          'Decision',
           ...revIds.map((id) => L.revision[id]),
           ...ackIds.map((id) => L.ack[id])];
       }
-      const aboutVals = aboutIds.map((id) => (sub.about || {})[id]);
-      const ackVals = ackIds.map((id) => (sub.acknowledgment || {})[id]);
+      const aboutVals = aboutIds.map((id) => cellText((sub.about || {})[id]));
+      const ackVals = ackIds.map((id) => cellText((sub.acknowledgment || {})[id]));
+      const emptyRev = revIds.map(() => '');
+      const revVals = (rev) => revIds.map((id) => cellText(rev[id]));
+      const rooms = Array.isArray(sub.rooms) ? sub.rooms : [];
       const revs = sub.revisions || [];
-      if (!revs.length) rows.push([sub.submittedAt, ...aboutVals, ...revIds.map(() => ''), ...ackVals]);
-      revs.forEach((rev) => rows.push([
-        sub.submittedAt, ...aboutVals, ...revIds.map((id) => rev[id]), ...ackVals
-      ]));
+      if (rooms.length) {
+        rooms.forEach((room) => {
+          if (room.decision === 'approve') {
+            rows.push([sub.submittedAt, ...aboutVals, room.name, 'Approved', ...emptyRev, ...ackVals]);
+            return;
+          }
+          const list = Array.isArray(room.revisions) ? room.revisions : [];
+          if (!list.length) rows.push([sub.submittedAt, ...aboutVals, room.name, 'Revised', ...emptyRev, ...ackVals]);
+          list.forEach((rev) => rows.push([sub.submittedAt, ...aboutVals, room.name, 'Revised', ...revVals(rev), ...ackVals]));
+        });
+      } else if (!revs.length) {
+        rows.push([sub.submittedAt, ...aboutVals, '', '', ...emptyRev, ...ackVals]);
+      } else {
+        revs.forEach((rev) => rows.push([sub.submittedAt, ...aboutVals, '', '', ...revVals(rev), ...ackVals]));
+      }
     });
     const all = header ? [header, ...rows] : [];
     return all.map((r) => r.map(csvCell).join(',')).join('\r\n');
@@ -291,9 +312,7 @@
     aboutCard.append(dl);
     wrap.append(aboutCard);
 
-    const itemCard = h('section', { class: 'card' },
-      h('div', { class: 'card__head' }, h('div', {}, h('h2', { text: 'Revision items' }))));
-    (sub.revisions || []).forEach((rev, i) => {
+    const revisionItem = (rev, i) => {
       const item = h('div', { class: 'view-item' });
       item.append(h('div', { class: 'view-item__head' },
         h('span', { class: 'item__badge', text: '#' + (i + 1) }),
@@ -308,8 +327,28 @@
           h('span', { class: 'view-item__label', text: r.label }),
           value));
       });
-      itemCard.append(item);
-    });
+      return item;
+    };
+
+    const itemCard = h('section', { class: 'card' },
+      h('div', { class: 'card__head' }, h('div', {}, h('h2', { text: 'Revision items' }))));
+    const rooms = Array.isArray(sub.rooms) ? sub.rooms : [];
+    if (rooms.length) {
+      rooms.forEach((room) => {
+        const approved = room.decision === 'approve';
+        itemCard.append(h('div', { class: 'view-room__head' },
+          h('h3', { class: 'view-room__name', text: room.name }),
+          h('span', { class: 'view-room__badge ' + (approved ? 'is-ok' : 'is-revise'),
+            text: approved ? '✓ Approved' : '✎ Revisions requested' })));
+        if (approved) {
+          itemCard.append(h('p', { class: 'view-room__note', text: 'Approved as designed — no revisions for this area.' }));
+        } else {
+          (room.revisions || []).forEach((rev, i) => itemCard.append(revisionItem(rev, i)));
+        }
+      });
+    } else {
+      (sub.revisions || []).forEach((rev, i) => itemCard.append(revisionItem(rev, i)));
+    }
     wrap.append(itemCard);
 
     const ackRows = valueRows(L.ack, sub.acknowledgment || {});
@@ -451,7 +490,10 @@
   async function createRound() {
     const projectName = document.querySelector('#nrProject').value.trim();
     const err = document.querySelector('#newRoundError');
+    const rooms = Array.from(document.querySelectorAll('#nrRooms .nr-room'))
+      .map((i) => i.value.trim()).filter(Boolean);
     if (!projectName) { err.textContent = 'Project name is required.'; err.hidden = false; return; }
+    if (!rooms.length) { err.textContent = 'Add at least one room/area.'; err.hidden = false; return; }
     err.hidden = true;
     try {
       const res = await fetch('/api/rounds', {
@@ -462,7 +504,8 @@
           projectName: projectName,
           designPhase: document.querySelector('#nrPhase').value.trim(),
           note: document.querySelector('#nrNote').value.trim(),
-          driveUrl: document.querySelector('#nrDrive').value.trim()
+          driveUrl: document.querySelector('#nrDrive').value.trim(),
+          rooms: rooms
         })
       });
       const data = await res.json().catch(() => ({}));
@@ -470,12 +513,31 @@
       document.querySelector('#newRoundLink').value = roundLink(data.round.id);
       document.querySelector('#newRoundResult').hidden = false;
       ['nrClient', 'nrProject', 'nrPhase', 'nrNote', 'nrDrive'].forEach((id) => { document.querySelector('#' + id).value = ''; });
+      document.querySelector('#nrRooms').innerHTML = '';
+      addRoomRow('');
       toast('Request link created');
       loadRounds(getKey());
     } catch (e) {
       err.textContent = 'Could not create the link. Please try again.';
       err.hidden = false;
     }
+  }
+
+  // ── Rooms / areas list in the new-link form ──────────────────────────────
+  function roomInputRow(value) {
+    const input = h('input', { class: 'nr-room', type: 'text', placeholder: 'e.g. Kitchen', value: value || '' });
+    const row = h('div', { class: 'room-input' }, input,
+      h('button', { type: 'button', class: 'iconbtn iconbtn--danger', title: 'Remove area', 'aria-label': 'Remove area',
+        onclick: () => row.remove() }, '✕'));
+    return row;
+  }
+
+  function addRoomRow(value) {
+    const wrap = document.querySelector('#nrRooms');
+    if (!wrap) return;
+    const row = roomInputRow(value);
+    wrap.append(row);
+    if (!value) row.querySelector('input').focus();
   }
 
   async function reopenRound(id) {
@@ -645,6 +707,9 @@
 
     // Team setup panel (configurable wording) — pops open over the dashboard.
     $('#teamSetupBtn').addEventListener('click', () => window.TeamSetup.open());
+
+    // Rooms / areas in the new-link form
+    $('#nrAddRoomBtn').addEventListener('click', () => addRoomRow(''));
   }
 
   function init() {
@@ -652,6 +717,7 @@
     init._done = true;
     window.TeamSetup.init({});
     bind();
+    if (document.querySelector('#nrRooms') && !document.querySelector('#nrRooms .nr-room')) addRoomRow('');
     // With Cloudflare Access in front this succeeds with no key; otherwise the
     // 401 drops us to the password gate (local dev / pre-Cloudflare).
     load(getKey(), false);

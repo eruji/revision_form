@@ -86,6 +86,12 @@
           <div class="field"><label for="nrDrive">Google Drive folder link (optional)</label>
             <input id="nrDrive" type="url" placeholder="https://drive.google.com/drive/folders/…" /></div>
         </div>
+        <div class="field">
+          <label>Rooms / areas in scope *</label>
+          <p class="field__help">Add each room or area in this phase. The client approves each one, or requests revisions for the ones that need changes.</p>
+          <div id="nrRooms" class="room-inputs"></div>
+          <button type="button" class="btn btn--ghost" id="nrAddRoomBtn">＋ Add area</button>
+        </div>
         <div class="new-round__actions">
           <button type="button" class="btn btn--primary" id="createRoundBtn">Create link</button>
           <span class="new-round__error" id="newRoundError" hidden></span>

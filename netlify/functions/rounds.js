@@ -108,6 +108,7 @@ function summary(round) {
     projectName: round.projectName,
     designPhase: round.designPhase,
     driveUrl: round.driveUrl || '',
+    rooms: round.rooms || [],
     status: round.status,
     createdAt: round.createdAt,
     submittedAt: last ? last.submittedAt : null,
@@ -162,6 +163,14 @@ exports.handler = async (event) => {
     const projectName = String(body.projectName || '').trim();
     if (!projectName) return json(400, { ok: false, error: 'Project name is required' });
 
+    // Areas/rooms in scope. Each gets a stable id so the client can group
+    // revisions under it and the draft survives a reload.
+    const rooms = (Array.isArray(body.rooms) ? body.rooms : [])
+      .map((r) => String((r && r.name) || r || '').trim())
+      .filter(Boolean)
+      .slice(0, 60)
+      .map((name) => ({ id: crypto.randomBytes(4).toString('hex'), name: name }));
+
     const round = {
       id: newId(),
       clientName: String(body.clientName || '').trim(),
@@ -169,6 +178,7 @@ exports.handler = async (event) => {
       designPhase: String(body.designPhase || '').trim(),
       note: String(body.note || '').trim(),
       driveUrl: cleanUrl(body.driveUrl),
+      rooms: rooms,
       status: 'open',
       createdAt: new Date().toISOString(),
       submissions: [],

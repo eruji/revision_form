@@ -15,7 +15,8 @@
   const state = {
     about: {},
     acknowledgment: {},
-    items: [],                          // [{ uid, values: { fieldId: value } }]
+    items: [],                          // [{ uid, roomId, values: { fieldId: value } }]
+    rooms: [],                          // [{ id, name, decision: '' | 'approve' | 'revise' }]
     round: null                         // office-issued request context, if any
   };
   let activeResumeCode = '';   // set when the client resumed a server-side draft
@@ -495,18 +496,123 @@
   }
 
   // ── Revision items (unlimited) ───────────────────────────────────────────
-  function newItem(values) {
-    return { uid: uid(), values: values || {} };
+  function newItem(values, roomId) {
+    return { uid: uid(), roomId: roomId || null, values: values || {} };
+  }
+
+  function roomItems(roomId) {
+    return state.items.filter((i) => i.roomId === roomId);
   }
 
   function renderItems() {
     const wrap = $('#items');
     wrap.innerHTML = '';
-    state.items.forEach((item, idx) => wrap.append(buildItemCard(item, idx)));
+    state.items.forEach((item, idx) => wrap.append(buildItemCard(item, idx, {
+      onMove: (dir) => moveItem(idx, dir),
+      onDuplicate: () => duplicateItem(idx),
+      onRemove: () => removeItem(idx),
+      disableUp: idx === 0,
+      disableDown: idx === state.items.length - 1,
+      disableRemove: state.items.length === 1
+    })));
     updateItemMeta();
   }
 
-  function buildItemCard(item, idx) {
+  // ── Rooms / areas review (office-issued links) ───────────────────────────
+  function syncRoomsVisibility() {
+    const hasRooms = state.rooms.length > 0;
+    const roomsCard = $('#roomsCard');
+    const itemsCard = $('#itemsCard');
+    if (roomsCard) roomsCard.hidden = !hasRooms;
+    if (itemsCard) itemsCard.hidden = hasRooms;
+    if (hasRooms) renderRooms();
+    renumberSteps();
+  }
+
+  function renderRooms() {
+    const wrap = $('#rooms');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    state.rooms.forEach((room) => wrap.append(buildRoomBlock(room)));
+  }
+
+  function buildRoomBlock(room) {
+    const items = roomItems(room.id);
+    const block = h('div', { class: 'room', 'data-room-id': room.id });
+
+    const choose = (decision) => {
+      room.decision = decision;
+      if (decision === 'approve') {
+        state.items = state.items.filter((i) => i.roomId !== room.id);
+      } else if (!roomItems(room.id).length) {
+        state.items.push(newItem({}, room.id));
+      }
+      renderRooms();
+      scheduleDraftSave();
+    };
+
+    const seg = h('div', { class: 'decision' },
+      h('label', { class: 'decision__opt' + (room.decision === 'approve' ? ' is-on' : '') },
+        h('input', { type: 'radio', name: 'decision-' + room.id, checked: room.decision === 'approve', onchange: () => choose('approve') }),
+        h('span', { text: '✓ Approve as designed' })),
+      h('label', { class: 'decision__opt' + (room.decision === 'revise' ? ' is-on' : '') },
+        h('input', { type: 'radio', name: 'decision-' + room.id, checked: room.decision === 'revise', onchange: () => choose('revise') }),
+        h('span', { text: '✎ Revise this area' }))
+    );
+
+    block.append(h('div', { class: 'room__head' },
+      h('h3', { class: 'room__name', text: room.name }),
+      seg
+    ));
+
+    if (room.decision === 'revise') {
+      const list = h('div', { class: 'room__items' });
+      items.forEach((item, idx) => list.append(buildItemCard(item, idx, {
+        onMove: (dir) => moveRoomItem(room.id, item.uid, dir),
+        onDuplicate: () => duplicateRoomItem(room.id, item.uid),
+        onRemove: () => { state.items = state.items.filter((i) => i.uid !== item.uid); renderRooms(); scheduleDraftSave(); },
+        disableUp: idx === 0,
+        disableDown: idx === items.length - 1,
+        disableRemove: false
+      })));
+      block.append(list,
+        h('button', { type: 'button', class: 'add-btn add-btn--room',
+          onclick: () => { state.items.push(newItem({}, room.id)); renderRooms(); scheduleDraftSave(); } },
+          h('span', { class: 'add-btn__plus', 'aria-hidden': 'true', text: '＋' }),
+          h('span', { text: 'Add a revision for ' + room.name })));
+    } else if (room.decision === 'approve') {
+      block.append(h('p', { class: 'room__approved', text: '✓ Approved as designed — no revisions for this area.' }));
+    } else {
+      block.append(h('p', { class: 'room__hint', text: 'Choose Approve or Revise above.' }));
+    }
+
+    return block;
+  }
+
+  function moveRoomItem(roomId, itemUid, dir) {
+    const items = roomItems(roomId);
+    const idx = items.findIndex((i) => i.uid === itemUid);
+    const target = idx + dir;
+    if (idx < 0 || target < 0 || target >= items.length) return;
+    const a = state.items.indexOf(items[idx]);
+    const b = state.items.indexOf(items[target]);
+    const tmp = state.items[a]; state.items[a] = state.items[b]; state.items[b] = tmp;
+    renderRooms();
+    scheduleDraftSave();
+  }
+
+  function duplicateRoomItem(roomId, itemUid) {
+    const src = roomItems(roomId).find((i) => i.uid === itemUid);
+    if (!src) return;
+    const copy = newItem(deepClone(src.values), roomId);
+    state.items.splice(state.items.indexOf(src) + 1, 0, copy);
+    renderRooms();
+    toast('Revision duplicated');
+    scheduleDraftSave();
+  }
+
+  function buildItemCard(item, idx, opts) {
+    opts = opts || {};
     const fields = enabled(CFG.revisionFields);
 
     const chip = h('span', { class: 'item__cat', text: categoryLabel(item) });
@@ -516,20 +622,20 @@
     const tools = h('div', { class: 'item__tools' },
       h('button', {
         type: 'button', class: 'iconbtn', title: 'Move up', 'aria-label': 'Move revision up',
-        disabled: idx === 0, onclick: () => moveItem(idx, -1)
+        disabled: !!opts.disableUp, onclick: () => opts.onMove && opts.onMove(-1)
       }, '↑'),
       h('button', {
         type: 'button', class: 'iconbtn', title: 'Move down', 'aria-label': 'Move revision down',
-        disabled: idx === state.items.length - 1, onclick: () => moveItem(idx, 1)
+        disabled: !!opts.disableDown, onclick: () => opts.onMove && opts.onMove(1)
       }, '↓'),
       h('button', {
         type: 'button', class: 'iconbtn', title: 'Duplicate', 'aria-label': 'Duplicate revision',
-        onclick: () => duplicateItem(idx)
+        onclick: () => opts.onDuplicate && opts.onDuplicate()
       }, '⧉'),
       h('button', {
         type: 'button', class: 'iconbtn iconbtn--danger', title: 'Remove',
-        'aria-label': 'Remove revision', disabled: state.items.length === 1,
-        onclick: () => removeItem(idx)
+        'aria-label': 'Remove revision', disabled: !!opts.disableRemove,
+        onclick: () => opts.onRemove && opts.onRemove()
       }, '🗑')
     );
 
@@ -652,18 +758,47 @@
       });
     }
 
-    // Revision items
-    state.items.forEach((item, idx) => {
-      enabled(CFG.revisionFields).forEach((f) => {
-        if (!f.required) return;
-        if (missingRequired(f, item.values[f.id])) {
-          const card = $('.item[data-uid="' + item.uid + '"]');
-          const wrap = card && card.querySelector('.field[data-field-id="' + f.id + '"]');
-          flagError(wrap, 'Revision #' + (idx + 1) + ': ' + f.label + ' is required.');
-          problems.push(wrap);
+    // Revision items — grouped per room when the link specified areas.
+    if (state.rooms.length) {
+      state.rooms.forEach((room) => {
+        const block = $('.room[data-room-id="' + room.id + '"]');
+        if (!room.decision) {
+          flagError(block, 'Choose Approve or Revise for ' + room.name + '.');
+          problems.push(block);
+          return;
         }
+        if (room.decision !== 'revise') return;
+        const items = roomItems(room.id);
+        if (!items.length) {
+          flagError(block, 'Add at least one revision for ' + room.name + '.');
+          problems.push(block);
+          return;
+        }
+        items.forEach((item, idx) => {
+          enabled(CFG.revisionFields).forEach((f) => {
+            if (!f.required) return;
+            if (missingRequired(f, item.values[f.id])) {
+              const card = $('.item[data-uid="' + item.uid + '"]');
+              const wrap = card && card.querySelector('.field[data-field-id="' + f.id + '"]');
+              flagError(wrap, room.name + ' · revision #' + (idx + 1) + ': ' + f.label + ' is required.');
+              problems.push(wrap);
+            }
+          });
+        });
       });
-    });
+    } else {
+      state.items.forEach((item, idx) => {
+        enabled(CFG.revisionFields).forEach((f) => {
+          if (!f.required) return;
+          if (missingRequired(f, item.values[f.id])) {
+            const card = $('.item[data-uid="' + item.uid + '"]');
+            const wrap = card && card.querySelector('.field[data-field-id="' + f.id + '"]');
+            flagError(wrap, 'Revision #' + (idx + 1) + ': ' + f.label + ' is required.');
+            problems.push(wrap);
+          }
+        });
+      });
+    }
 
     // Acknowledgment
     enabled(CFG.ackFields).forEach((f) => {
@@ -701,11 +836,26 @@
     enabled(CFG.aboutFields).forEach((f) => { about[f.id] = state.about[f.id] || ''; });
     const ack = {};
     enabled(CFG.ackFields).forEach((f) => { ack[f.id] = state.acknowledgment[f.id] || ''; });
-    const revisions = state.items.map((item) => {
+    const rowFor = (item) => {
       const row = {};
       enabled(CFG.revisionFields).forEach((f) => { row[f.id] = item.values[f.id] || ''; });
       return row;
-    });
+    };
+    let rooms = [];
+    let revisions = [];
+    if (state.rooms.length) {
+      state.rooms.forEach((room) => {
+        const revs = room.decision === 'revise' ? roomItems(room.id).map((item) => {
+          const row = rowFor(item);
+          row.room = room.name;
+          return row;
+        }) : [];
+        rooms.push({ id: room.id, name: room.name, decision: room.decision || '', revisions: revs });
+        revisions = revisions.concat(revs);
+      });
+    } else {
+      revisions = state.items.map(rowFor);
+    }
 
     return {
       id: uid(),
@@ -713,6 +863,7 @@
       business: CFG.business,
       hourlyRate: CFG.hourlyRate,
       about: about,
+      rooms: rooms,
       revisions: revisions,
       acknowledgment: ack,
       _roundId: state.round ? state.round.id : undefined,
@@ -746,6 +897,7 @@
       about: state.about,
       acknowledgment: state.acknowledgment,
       items: state.items,
+      rooms: state.rooms,
       roundId: state.round ? state.round.id : undefined,
       savedAt: new Date().toISOString()
     };
@@ -758,7 +910,9 @@
       const d = JSON.parse(raw);
       state.about = d.about || {};
       state.acknowledgment = d.acknowledgment || {};
-      state.items = (d.items && d.items.length) ? d.items : [newItem({})];
+      state.rooms = Array.isArray(d.rooms) ? d.rooms : [];
+      state.items = Array.isArray(d.items) ? d.items : [];
+      if (!state.rooms.length && !state.items.length) state.items = [newItem({})];
       if (d.roundId && !state.round) state.round = { id: d.roundId };
       return true;
     } catch (e) {
@@ -832,11 +986,14 @@
   function applyDraft(data) {
     state.about = data.about || {};
     state.acknowledgment = data.acknowledgment || {};
-    state.items = (data.items && data.items.length) ? data.items : [newItem({})];
+    state.rooms = Array.isArray(data.rooms) ? data.rooms : [];
+    state.items = Array.isArray(data.items) ? data.items : [];
+    if (!state.rooms.length && !state.items.length) state.items = [newItem({})];
     if (data.roundId && !state.round) state.round = { id: data.roundId };
     renderAbout();
     renderItems();
     renderAck();
+    syncRoomsVisibility();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -935,6 +1092,7 @@
   function resetForm() {
     state.about = {};
     state.acknowledgment = {};
+    state.rooms = [];
     state.items = [newItem({})];
     activeResumeCode = '';
     clearDraft();
@@ -943,6 +1101,7 @@
     renderAbout();
     renderItems();
     renderAck();
+    syncRoomsVisibility();
     hideSuccess();
     $('#draftStatus').textContent = 'Draft saved locally';
     $('#draftStatus').classList.remove('is-saved');
@@ -999,8 +1158,20 @@
     const aboutCard = $('#aboutCard');
     if (aboutCard) aboutCard.hidden = true;
 
+    // Areas/rooms in scope — keep any decisions already made (restored draft).
+    if (round.rooms && round.rooms.length) {
+      const existing = state.rooms || [];
+      state.rooms = round.rooms.map((r) => {
+        const prev = existing.find((e) => e.id === r.id || e.name === r.name);
+        return { id: r.id, name: r.name, decision: (prev && prev.decision) || '' };
+      });
+      state.items = state.items.filter((i) => i.roomId);
+    } else {
+      state.rooms = [];
+    }
+    syncRoomsVisibility();
+
     if (round.previousItems && round.previousItems.length) renderPreviousItems(round.previousItems);
-    renumberSteps();
   }
 
   function renderPreviousItems(items) {
@@ -1009,7 +1180,8 @@
     if (!panel || !wrap) return;
     wrap.innerHTML = '';
     const labels = labelMap(CFG.revisionFields);
-    items.forEach((rev, i) => {
+
+    const renderOne = (rev, i) => {
       const card = h('div', { class: 'prev-item' });
       card.append(h('div', { class: 'prev-item__head' },
         h('span', { class: 'item__badge', text: '#' + (i + 1) }),
@@ -1022,13 +1194,30 @@
           h('span', { class: 'view-item__label', text: labels[id] }),
           linkified('p', 'prev-item__value', cellText(v))));
       });
-      wrap.append(card);
-    });
+      return card;
+    };
+
+    // Group under their area when the round was room-based.
+    if (items.some((it) => it && it.room)) {
+      const groups = [];
+      items.forEach((rev) => {
+        const name = rev.room || 'Other';
+        let g = groups.find((x) => x.name === name);
+        if (!g) { g = { name: name, items: [] }; groups.push(g); }
+        g.items.push(rev);
+      });
+      groups.forEach((g) => {
+        wrap.append(h('h3', { class: 'prev-room__name', text: g.name }));
+        g.items.forEach((rev, i) => wrap.append(renderOne(rev, i)));
+      });
+    } else {
+      items.forEach((rev, i) => wrap.append(renderOne(rev, i)));
+    }
     panel.hidden = false;
   }
 
   function renumberSteps() {
-    const pairs = [['aboutCard', 'stepAbout'], ['itemsCard', 'stepItems'], ['ackCard', 'stepAck']];
+    const pairs = [['aboutCard', 'stepAbout'], ['roomsCard', 'stepRooms'], ['itemsCard', 'stepItems'], ['ackCard', 'stepAck']];
     let n = 1;
     pairs.forEach(([cardId, stepId]) => {
       const card = document.getElementById(cardId);
@@ -1112,7 +1301,7 @@
       const resume = new URLSearchParams(location.search).get('resume');
       if (resume) resumeDraft(resume);
     } catch (e) {}
-    renumberSteps();
+    syncRoomsVisibility();
     if (localStorage.getItem(KEY_DRAFT)) {
       $('#draftStatus').textContent = 'Draft restored ✓';
       $('#draftStatus').classList.add('is-saved');

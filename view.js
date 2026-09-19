@@ -171,35 +171,58 @@
     });
   }
 
+  function revisionCard(rev, i, labels) {
+    const card = h('div', { class: 'view-item' });
+    const heading = rev.category || rev.location || ('Revision ' + (i + 1));
+    card.append(h('div', { class: 'view-item__head' },
+      h('span', { class: 'item__badge', text: '#' + (i + 1) }),
+      h('strong', { text: heading })
+    ));
+    labelValueRows(labels, rev).forEach((row) => {
+      // Skip the category/location we already surfaced in the heading.
+      if (row.value === '—') return;
+      if (row.label === labels.category && row.value === heading) return;
+      const value = linkified('p', 'view-item__value', row.value);
+      const media = mediaNode(row);
+      if (media) value.append(media);
+      card.append(h('div', { class: 'view-item__field' },
+        h('span', { class: 'view-item__label', text: row.label }),
+        value
+      ));
+    });
+    return card;
+  }
+
   function renderItems(sub) {
     const wrap = $('#viewItems');
     wrap.innerHTML = '';
     const labels = (sub._labels && sub._labels.revision) || {};
     const items = sub.revisions || [];
+    const rooms = Array.isArray(sub.rooms) ? sub.rooms : [];
     $('#viewItemCount').textContent =
       items.length + (items.length === 1 ? ' item' : ' items') + ' submitted';
 
-    items.forEach((rev, i) => {
-      const card = h('div', { class: 'view-item' });
-      const heading = rev.category || rev.location || ('Revision ' + (i + 1));
-      card.append(h('div', { class: 'view-item__head' },
-        h('span', { class: 'item__badge', text: '#' + (i + 1) }),
-        h('strong', { text: heading })
-      ));
-      labelValueRows(labels, rev).forEach((row) => {
-        // Skip the category/location we already surfaced in the heading.
-        if (row.value === '—') return;
-        if (row.label === labels.category && row.value === heading) return;
-        const value = linkified('p', 'view-item__value', row.value);
-        const media = mediaNode(row);
-        if (media) value.append(media);
-        card.append(h('div', { class: 'view-item__field' },
-          h('span', { class: 'view-item__label', text: row.label }),
-          value
+    // Room-based submission: show each area with its approve/revise outcome.
+    if (rooms.length) {
+      rooms.forEach((room) => {
+        const block = h('div', { class: 'view-room' });
+        const approved = room.decision === 'approve';
+        block.append(h('div', { class: 'view-room__head' },
+          h('h3', { class: 'view-room__name', text: room.name }),
+          h('span', { class: 'view-room__badge ' + (approved ? 'is-ok' : 'is-revise'),
+            text: approved ? '✓ Approved' : '✎ Revisions requested' })
         ));
+        if (approved) {
+          block.append(h('p', { class: 'view-room__note', text: 'Approved as designed — no revisions for this area.' }));
+        } else {
+          (room.revisions || []).forEach((rev, i) => block.append(revisionCard(rev, i, labels)));
+        }
+        wrap.append(block);
       });
-      wrap.append(card);
-    });
+      return;
+    }
+
+    items.forEach((rev, i) => wrap.append(revisionCard(rev, i, labels)));
   }
 
   function renderAck(sub) {

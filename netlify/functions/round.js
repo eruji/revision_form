@@ -45,6 +45,7 @@ exports.handler = async (event) => {
         designPhase: round.designPhase,
         note: round.note,
         driveUrl: round.driveUrl || '',
+        rooms: round.rooms || [],
         status: round.status,
         reopenedAt: round.reopenedAt || null,
         previousItems: round.previousItems || []

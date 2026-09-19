@@ -117,6 +117,8 @@ function toCsv(records) {
       header = [
         'Submitted At',
         ...aboutIds.map((id) => labels.about[id]),
+        'Room / Area',
+        'Decision',
         ...revIds.map((id) => labels.revision[id]),
         ...ackIds.map((id) => labels.ack[id])
       ];
@@ -124,19 +126,34 @@ function toCsv(records) {
 
     const aboutVals = aboutIds.map((id) => cellText((sub.about || {})[id]));
     const ackVals = ackIds.map((id) => cellText((sub.acknowledgment || {})[id]));
+    const emptyRev = revIds.map(() => '');
+    const revVals = (rev) => revIds.map((id) => cellText(rev[id]));
+    const rooms = Array.isArray(sub.rooms) ? sub.rooms : [];
     const revs = sub.revisions || [];
 
-    if (!revs.length) {
-      rows.push([sub.submittedAt, ...aboutVals, ...revIds.map(() => ''), ...ackVals]);
+    if (rooms.length) {
+      // One row per area: approved areas record the sign-off with no revision;
+      // revised areas get one row per revision (nested under the room).
+      rooms.forEach((room) => {
+        if (room.decision === 'approve') {
+          rows.push([sub.submittedAt, ...aboutVals, room.name, 'Approved', ...emptyRev, ...ackVals]);
+          return;
+        }
+        const list = Array.isArray(room.revisions) ? room.revisions : [];
+        if (!list.length) {
+          rows.push([sub.submittedAt, ...aboutVals, room.name, 'Revised', ...emptyRev, ...ackVals]);
+        }
+        list.forEach((rev) => {
+          rows.push([sub.submittedAt, ...aboutVals, room.name, 'Revised', ...revVals(rev), ...ackVals]);
+        });
+      });
+    } else if (!revs.length) {
+      rows.push([sub.submittedAt, ...aboutVals, '', '', ...emptyRev, ...ackVals]);
+    } else {
+      revs.forEach((rev) => {
+        rows.push([sub.submittedAt, ...aboutVals, '', '', ...revVals(rev), ...ackVals]);
+      });
     }
-    revs.forEach((rev) => {
-      rows.push([
-        sub.submittedAt,
-        ...aboutVals,
-        ...revIds.map((id) => cellText(rev[id])),
-        ...ackVals
-      ]);
-    });
   });
 
   const all = header ? [header, ...rows] : [];

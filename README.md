@@ -147,6 +147,19 @@ for Maple Residence — Design Development”*) and **section 01 is hidden** —
 project, phase, and client are baked into the link and stamped onto the
 submission server-side.
 
+### Rooms / areas in scope
+You also list the **rooms / areas in scope** when creating the link (as many as
+the project needs — 2 or 20). The client's form shows each area with **Approve**
+or **Revise**:
+- **Approve** — recorded as approved as designed, with no revisions.
+- **Revise** — a revision box opens for that area, where the client can add as
+  many revision items as they need (nested under the area).
+
+Every area must get a decision, and revised areas need at least one item. The
+submission stores the per-area decisions plus the nested revisions, and the CSV
+export adds **Room / Area** and **Decision** columns (approved areas are one row
+with no revision; revised areas are one row per revision).
+
 ### Reopening a request for one-off items
 In the **Request links** list, click **Reopen** on a submitted round and send the
 same link again. The client sees their previously submitted items in a

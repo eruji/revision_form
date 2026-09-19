@@ -902,3 +902,56 @@ input::placeholder, textarea::placeholder { color: #b3b0a4; }
   .attach-view__item img { width: 140px; height: 140px; }
   .sig-image { max-width: 320px; }
 }
+
+/* ── Rooms / areas review (office-issued links) ── */
+.room {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.room:last-child { margin-bottom: 0; }
+.room.has-error { border-color: var(--danger); background: var(--danger-bg); }
+.room__head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px 16px; flex-wrap: wrap; margin-bottom: 12px;
+}
+.room__name { font-size: 20px; color: var(--olive-900); margin: 0; }
+.decision { display: flex; gap: 8px; flex-wrap: wrap; }
+.decision__opt {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 7px 14px; cursor: pointer; font-size: 13px; font-weight: 600;
+  color: var(--ink-soft); background: #fff;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.decision__opt:hover { border-color: var(--olive-200); }
+.decision__opt input { accent-color: var(--olive-700); margin: 0; }
+.decision__opt.is-on { border-color: var(--olive-700); background: var(--olive-100); color: var(--olive-900); }
+.room__items { display: flex; flex-direction: column; gap: 16px; margin-top: 4px; }
+.room__approved { margin: 0; color: var(--ok); font-weight: 600; font-size: 13.5px; }
+.room__hint { margin: 0; color: var(--ink-soft); font-size: 13px; }
+.add-btn--room { margin-top: 14px; }
+.prev-room__name {
+  font-family: var(--sans); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 1.3px; color: var(--olive-600); margin: 16px 0 8px;
+}
+.prev-room__name:first-child { margin-top: 0; }
+
+/* ── Rooms in the office new-link form ── */
+.room-inputs { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 10px; }
+.room-input { display: flex; gap: 8px; align-items: center; }
+.room-input input { flex: 1; }
+
+/* ── Room groups in the read-only view / dashboard detail ── */
+.view-room { margin-bottom: 18px; }
+.view-room:last-child { margin-bottom: 0; }
+.view-room__head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.view-room__name { font-size: 19px; color: var(--olive-900); margin: 0; }
+.view-room__badge {
+  font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px;
+}
+.view-room__badge.is-ok { background: #e9ede2; color: var(--ok); }
+.view-room__badge.is-revise { background: var(--olive-100); color: var(--olive-700); }
+.view-room__note { margin: 0 0 4px; color: var(--ink-soft); font-size: 13.5px; }
