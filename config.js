@@ -112,16 +112,6 @@ window.REVISION_FORM_CONFIG = {
       ]
     },
     {
-      id: 'location',
-      label: 'Location / Room',
-      type: 'text',
-      help: 'e.g., Primary bathroom, Kitchen island, Mudroom layout',
-      placeholder: 'Where is this change?',
-      required: true,
-      enabled: true,
-      locked: true
-    },
-    {
       id: 'description',
       label: 'What would you like changed?',
       type: 'textarea',

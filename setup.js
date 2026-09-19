@@ -92,7 +92,9 @@
   // Append any missing default field without discarding team customizations.
   function mergeDefaultFields(saved) {
     const merge = (list, defaults) => {
-      const out = Array.isArray(list) ? list : [];
+      const ids = new Set((defaults || []).map((f) => f.id));
+      // Drop built-in fields that were removed from config.js (keep custom ones).
+      const out = (Array.isArray(list) ? list : []).filter((f) => f && (f.custom || ids.has(f.id)));
       (defaults || []).forEach((df) => {
         if (!out.some((f) => f && f.id === df.id)) out.push(deepClone(df));
       });

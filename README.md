@@ -269,8 +269,8 @@ Every push to `main` auto-deploys to Netlify via
 1. **Context from the request link** — project, phase, and client come from the
    link the office sent, so there is no section 01. (A fallback "about" section
    appears only if the form is opened without a link.)
-2. **Revision items** — each item captures Type, Location/Room, What to change,
-   Why, and an inspiration link.
+2. **Revision items** — each item captures Type, What to change, Why, and an
+   inspiration link. (Areas/rooms come from the request link, not the item.)
    - Big **“＋ Add another revision”** button. No cap.
    - Each card can be **duplicated, reordered, or removed**.
    - Live item counter (“8 items”).
@@ -350,7 +350,11 @@ is the contract** — the shape stored by `collectSubmission()` in `app.js`:
   "id": "…",
   "submittedAt": "2025-…",
   "about":     { "clientName": "…", "projectName": "…", "designPhase": "…" },
-  "revisions": [ { "category": "…", "location": "…", "description": "…",
+  "rooms": [ { "name": "Kitchen", "decision": "approve", "revisions": [] },
+             { "name": "Primary Bath", "decision": "revise",
+               "revisions": [ { "category": "…", "room": "Primary Bath",
+                                "description": "…", "reason": "…", "reference": "…" } ] } ],
+  "revisions": [ { "room": "Primary Bath", "category": "…", "description": "…",
                    "reason": "…", "reference": "…" } ],
   "acknowledgment": { "ackRound": true, "signature": "…" }
 }

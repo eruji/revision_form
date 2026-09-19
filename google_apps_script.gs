@@ -38,7 +38,7 @@ var CONFIG = {
 };
 
 var COLUMNS = [
-  'Timestamp', 'Project', 'Phase', 'Client', 'Item #', 'Type', 'Location',
+  'Timestamp', 'Project', 'Phase', 'Client', 'Item #', 'Type', 'Room / Area',
   'Change', 'Why', 'Reference', 'View Link', 'Status', 'Assigned To',
   'Completed', 'Notes'
 ];

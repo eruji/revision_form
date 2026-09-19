@@ -130,6 +130,7 @@ function notificationPayload(submission, viewUrl, round) {
   const items = (submission.revisions || []).map((rev) => {
     const row = {};
     Object.keys(revisionLabels).forEach((id) => { row[revisionLabels[id]] = cellText(rev[id]); });
+    if (rev.room) row.Room = rev.room;
     return row;
   });
   const about = {};
