@@ -359,10 +359,6 @@
     return String((id && sub.about[id]) || 'revision-request').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
   }
 
-  function exportRecordJson(rec) {
-    download(recordName(rec) + '.json', JSON.stringify(rec.submission || {}, null, 2), 'application/json');
-  }
-
   function exportRecordCsv(rec) {
     download(recordName(rec) + '.csv', buildCsv([rec]), 'text/csv;charset=utf-8');
   }
@@ -558,7 +554,6 @@
         items,
         h('div', { class: 'sub__actions' },
           h('button', { type: 'button', class: 'btn btn--ghost', text: 'View', onclick: () => openDetail(rec) }),
-          h('button', { type: 'button', class: 'btn btn--ghost', text: 'JSON', onclick: () => exportRecordJson(rec) }),
           h('button', { type: 'button', class: 'btn btn--ghost', text: 'CSV', onclick: () => exportRecordCsv(rec) }),
           canReopen ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Reopen', onclick: () => reopenRound(roundId) }) : null,
           workQueueSheetUrl ? h('a', { class: 'btn btn--ghost', href: workQueueSheetUrl, target: '_blank', rel: 'noopener', text: 'Sheet' }) : null,
@@ -634,7 +629,6 @@
     $('#detailCloseBtn').addEventListener('click', closeDetail);
     $('#detailOverlay').addEventListener('click', (e) => { if (e.target && e.target.id === 'detailOverlay') closeDetail(); });
     $('#detailPrintBtn').addEventListener('click', () => window.print());
-    $('#detailJsonBtn').addEventListener('click', () => { if (detailRecord) exportRecordJson(detailRecord); });
     $('#detailCsvBtn').addEventListener('click', () => { if (detailRecord) exportRecordCsv(detailRecord); });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !$('#detailOverlay').hidden) closeDetail();
