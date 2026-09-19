@@ -43,16 +43,6 @@
     });
   }
 
-  function download(filename, content, type) {
-    const blob = new Blob([content], { type: type || 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = h('a', { href: url, download: filename });
-    document.body.append(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
   function showError(message) {
     const status = $('#status');
     status.className = 'view-status view-status--error';
@@ -290,11 +280,6 @@
 
     $('#status').hidden = true;
     $('#view').hidden = false;
-
-    const safeName = ((name || 'revision-request') + (isDraft ? '-draft' : '')).replace(/[^a-z0-9]+/gi, '-').toLowerCase();
-    $('#downloadBtn').addEventListener('click', () =>
-      download(safeName + '.json', JSON.stringify(sub, null, 2))
-    );
   }
 
   async function load() {

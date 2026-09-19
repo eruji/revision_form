@@ -93,16 +93,6 @@
     } catch (e) { return ''; }
   }
 
-  function download(filename, content, type) {
-    const blob = new Blob([content], { type: type || 'application/octet-stream' });
-    const url = URL.createObjectURL(blob);
-    const a = h('a', { href: url, download: filename });
-    document.body.append(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
   function toast(msg) {
     const t = $('#toast');
     t.textContent = msg;
@@ -971,13 +961,7 @@
         'even on another device. Drafts are kept for 30 days, or until you submit.';
       $('#draftOverlay').hidden = false;
     } catch (e) {
-      download('revision-draft.json', JSON.stringify({
-        savedAt: new Date().toISOString(),
-        about: state.about,
-        items: state.items,
-        acknowledgment: state.acknowledgment
-      }, null, 2), 'application/json');
-      toast('Server unavailable — downloaded a draft file instead');
+      toast('Server unavailable — your draft is saved in this browser');
     } finally {
       btn.disabled = false;
     }

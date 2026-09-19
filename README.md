@@ -27,9 +27,9 @@ A real form needs to grow with the client. That's what this POC does.
 
 | File | Purpose |
 |---|---|
-| `index.html` / `admin.js` | Office dashboard at the site root (`/`) — behind Cloudflare Access; per-request JSON/CSV export |
+| `index.html` / `admin.js` | Office dashboard at the site root (`/`) — behind Cloudflare Access; per-request CSV export |
 | `clients/form.html` / `app.js` | Client revision form — opened via a generated link (`?r=…`, `?resume=…`) |
-| `clients/view.html` / `view.js` | Private read-only copy (`?token=…`) with print/PDF + JSON |
+| `clients/view.html` / `view.js` | Private read-only copy (`?token=…`) with print/PDF |
 | `setup.js` | Team setup panel (configurable wording), opened from the dashboard |
 | `styles.css` | Styling — brand palette + fonts matched to pepperandolive.com |
 | `clients/logo-*.svg`, `clients/favicon.ico` | Brand assets from the main site (served under public `/clients/`) |
@@ -78,11 +78,11 @@ form.
 
 | Requirement | How it works |
 |---|---|
-| **Office reads responses** | The dashboard at the site root (`/`) is behind **Cloudflare Access** (team SSO, no shared password). It lists every submission; open one for **Print / PDF**, **JSON**, or **CSV**. |
+| **Office reads responses** | The dashboard at the site root (`/`) is behind **Cloudflare Access** (team SSO, no shared password). It lists every submission; open one for **Print / PDF** or **CSV**. |
 | **Client can't see others** | Every submission gets a secret 256-bit token. `/clients/api/get` returns only the submission matching that token, and unknown tokens get a plain 404. There is **no public endpoint that lists submissions**. |
 | **Save progress until submit** | Autosave in the browser, plus **Save & continue later** → a resume code stored server-side that works on any device via `/clients/form.html?resume=CODE`. Saved drafts **expire after 30 days**. |
 | **Office can see and share drafts** | Saved drafts appear in the office dashboard with a **View** read-only link (`/clients/view.html?draft=CODE`) and a **Copy client link** button to send the client back to finish. |
-| **Client copy for records** | Private read-only page with **Print / Save as PDF** and **Download JSON**. |
+| **Client copy for records** | Private read-only page with **Print / Save as PDF**. |
 | **Photos & attachments** | Each revision item can attach up to 5 photos or PDFs (4 MB each; large images are resized in the browser first). Files live in Netlify Blobs and are reachable only by their random id — the read-only view and office dashboard show thumbnails, and CSV export lists the URLs. |
 | **Drawn signature** | The acknowledgment step includes a canvas signature pad (mouse, finger, or stylus). The drawn PNG is stored with the submission and shown in the read-only view / dashboard alongside the typed name. |
 | **Read-only online view** | `/clients/view.html?token=…` — no edit fields. |
@@ -93,12 +93,12 @@ form.
   paste the spreadsheet URL and Save, which adds **Sheet** links. It is hidden
   for now; the code remains for when Sheet sync is enabled.
 - Shows **submitted requests** and **saved drafts**.
-  - Each **submitted request** has **View** (full read-only detail), **JSON**,
-    and **CSV** export, plus **Print / Save as PDF** from the detail view.
+  - Each **submitted request** has **View** (full read-only detail) and **CSV**
+    export, plus **Print / Save as PDF** from the detail view.
   - Submitted requests can be **Archived** (hidden from the main list but kept in
     full) and restored with **Unarchive**, or permanently **Delete**d (with a
     confirmation prompt). Archived requests live in their own
-    **Archived requests** section and are still available in a per-request CSV/JSON export.
+    **Archived requests** section and are still available in a per-request CSV export.
   - For each **draft** you can **View** it read-only (`/clients/view.html?draft=CODE`),
     **Copy client link** (the resume link to send back to the client), or
     **Delete** it. Drafts expire automatically after 30 days (a daily scheduled
@@ -277,8 +277,7 @@ Every push to `main` auto-deploys to Netlify via
 3. **Acknowledgment** — the client must confirm they have read and agree to the
    instructions, plus the one-round and hourly-rate confirmations, typed
    e-signature, and date.
-4. **Submit** — success screen with a JSON/CSV download of exactly what the
-   office receives.
+4. **Submit** — success screen with the private read-only link for their records.
 5. **Read-only copy** — the private link renders every reference URL as a
    **clickable link**, and **Print / Save as PDF** preserves those links.
 
@@ -313,7 +312,7 @@ prototype three or four question sets, screenshot them, and pick one as a team.
 
 ### 🗂 Office dashboard (internal — the one place the team reads submissions)
 The dashboard at **`/`** (behind Cloudflare Access — see “Reading responses”
-above) lists every client, exports each request to JSON/CSV, manages request
+above) lists every client, exports each request to CSV, manages request
 links, and archives or deletes requests. Its **Team setup** button pops the
 configuration panel open over the dashboard; there is no separate in-app office
 view.
@@ -364,7 +363,7 @@ Options, roughly in order of effort:
 
 | Option | Unlimited items | Notes |
 |---|---|---|
-| **Current build: Netlify Functions + Blobs** | ✅ | Works today; office reads via the `/` dashboard (per-request JSON/CSV). |
+| **Current build: Netlify Functions + Blobs** | ✅ | Works today; office reads via the `/` dashboard (per-request CSV). |
 | **Apps Script → Google Sheet** | ✅ | Swap the storage layer if the team prefers reading in Sheets. |
 | **Airtable / Supabase** | ✅ | Managed DB with nicer admin tooling; modest setup. |
 | **Jotform** | ✅ | Native *Configurable List* widget does repeatable rows; also offers drawn signatures and uploads. Paid for volume. |
