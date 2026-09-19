@@ -428,6 +428,7 @@
       const actions = h('div', { class: 'round-card__actions' },
         h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy link', onclick: (e) => copyText(link, e.currentTarget) }),
         h('a', { class: 'btn btn--ghost', href: link, target: '_blank', rel: 'noopener', text: 'Open' }),
+        r.driveUrl ? h('a', { class: 'btn btn--ghost', href: r.driveUrl, target: '_blank', rel: 'noopener', text: 'Drive' }) : null,
         h('button', { type: 'button', class: 'btn btn--danger', text: 'Delete', onclick: () => deleteRound(r.id, r.clientName) })
       );
       list.append(h('div', { class: 'round-card' },
@@ -460,14 +461,15 @@
           clientName: document.querySelector('#nrClient').value.trim(),
           projectName: projectName,
           designPhase: document.querySelector('#nrPhase').value.trim(),
-          note: document.querySelector('#nrNote').value.trim()
+          note: document.querySelector('#nrNote').value.trim(),
+          driveUrl: document.querySelector('#nrDrive').value.trim()
         })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error('create failed');
       document.querySelector('#newRoundLink').value = roundLink(data.round.id);
       document.querySelector('#newRoundResult').hidden = false;
-      ['nrClient', 'nrProject', 'nrPhase', 'nrNote'].forEach((id) => { document.querySelector('#' + id).value = ''; });
+      ['nrClient', 'nrProject', 'nrPhase', 'nrNote', 'nrDrive'].forEach((id) => { document.querySelector('#' + id).value = ''; });
       toast('Request link created');
       loadRounds(getKey());
     } catch (e) {
@@ -533,6 +535,7 @@
       const roundId = sub._roundId;
       const round = roundId ? roundsById[roundId] : null;
       const canReopen = round && round.status !== 'open';
+      const driveUrl = (round && round.driveUrl) || '';
 
       const items = h('div', { class: 'sub__body' });
       (sub.revisions || []).forEach((rev, i) => {
@@ -556,6 +559,7 @@
           h('button', { type: 'button', class: 'btn btn--ghost', text: 'View', onclick: () => openDetail(rec) }),
           h('button', { type: 'button', class: 'btn btn--ghost', text: 'CSV', onclick: () => exportRecordCsv(rec) }),
           canReopen ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Reopen', onclick: () => reopenRound(roundId) }) : null,
+          driveUrl ? h('a', { class: 'btn btn--ghost', href: driveUrl, target: '_blank', rel: 'noopener', text: 'Drive' }) : null,
           workQueueSheetUrl ? h('a', { class: 'btn btn--ghost', href: workQueueSheetUrl, target: '_blank', rel: 'noopener', text: 'Sheet' }) : null,
           isArchived
             ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Unarchive', onclick: () => archiveSubmission(rec.id, false) })

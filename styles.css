@@ -786,6 +786,14 @@ input::placeholder, textarea::placeholder { color: #b3b0a4; }
 .context-banner__title { color: #fff; font-size: clamp(22px, 4vw, 30px); margin: 4px 0 6px; }
 .context-banner__meta { margin: 0; color: var(--olive-200); font-size: 13.5px; }
 .context-banner__note { margin: 10px 0 0; font-size: 13.5px; color: #fff; background: rgba(255, 255, 255, 0.12); padding: 8px 12px; border-radius: 8px; }
+.context-banner__drive { margin: 10px 0 0; }
+.context-banner__drive a {
+  color: #fff;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.context-banner__drive a:hover { color: var(--cream); }
 
 .previous-panel { background: #fdfbf5; }
 .prev-item { border: 1px solid var(--line); border-left: 3px solid var(--olive-200); border-radius: var(--radius-sm); background: #fff; padding: 12px 14px; margin-bottom: 10px; }

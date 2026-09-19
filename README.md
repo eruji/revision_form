@@ -136,8 +136,9 @@ form.
 The office no longer asks the client to type the project and phase. Instead:
 
 1. Open the dashboard at `/` and use **New revision request link**.
-2. Enter client, project, and design phase (a note to the client is optional),
-   then **Create link**.
+2. Enter client, project, and design phase (a note to the client and a
+   **Google Drive folder link** are optional), then **Create link**. The Drive
+   link shows up as a clickable button in the client's request banner.
 3. Copy the link and send it. It looks like
    `https://revision.pepperandolive.com/clients/form.html?r=AbC123xyz`.
 

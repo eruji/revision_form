@@ -89,6 +89,17 @@ function newId() {
   return crypto.randomBytes(9).toString('base64url'); // ~12 url-safe chars
 }
 
+// Keep a pasted link safe: require http(s), and tolerate a missing scheme.
+function cleanUrl(v) {
+  let s = String(v || '').trim();
+  if (!s) return '';
+  if (!/^https?:\/\//i.test(s)) s = 'https://' + s;
+  try {
+    const u = new URL(s);
+    return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : '';
+  } catch (e) { return ''; }
+}
+
 function summary(round) {
   const last = round.submissions && round.submissions.length ? round.submissions[round.submissions.length - 1] : null;
   return {
@@ -96,6 +107,7 @@ function summary(round) {
     clientName: round.clientName,
     projectName: round.projectName,
     designPhase: round.designPhase,
+    driveUrl: round.driveUrl || '',
     status: round.status,
     createdAt: round.createdAt,
     submittedAt: last ? last.submittedAt : null,
@@ -156,6 +168,7 @@ exports.handler = async (event) => {
       projectName: projectName,
       designPhase: String(body.designPhase || '').trim(),
       note: String(body.note || '').trim(),
+      driveUrl: cleanUrl(body.driveUrl),
       status: 'open',
       createdAt: new Date().toISOString(),
       submissions: [],

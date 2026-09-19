@@ -84,6 +84,14 @@
     return el;
   }
 
+  // Only allow http(s) links (guards against javascript:/data: URLs).
+  function safeUrl(u) {
+    try {
+      const url = new URL(String(u), location.href);
+      return (url.protocol === 'http:' || url.protocol === 'https:') ? url.href : '';
+    } catch (e) { return ''; }
+  }
+
   function download(filename, content, type) {
     const blob = new Blob([content], { type: type || 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
@@ -971,6 +979,20 @@
       const note = $('#contextNote');
       note.textContent = round.note || '';
       note.hidden = !round.note;
+      const drive = $('#contextDrive');
+      if (drive) {
+        const driveUrl = safeUrl(round.driveUrl);
+        drive.innerHTML = '';
+        if (driveUrl) {
+          drive.append(h('a', {
+            href: driveUrl, target: '_blank', rel: 'noopener noreferrer',
+            text: '📁 Open the shared Google Drive folder'
+          }));
+          drive.hidden = false;
+        } else {
+          drive.hidden = true;
+        }
+      }
       banner.hidden = false;
     }
 
