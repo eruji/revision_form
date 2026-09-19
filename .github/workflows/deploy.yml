@@ -35,6 +35,8 @@ jobs:
           mkdir -p dist/clients
           cp index.html styles.css config.js setup.js app.js view.js admin.js netlify.toml dist/
           cp clients/* dist/clients/
+          # Cache-bust assets (Cloudflare overrides our no-cache with a 4h browser TTL)
+          sed -i "s/__BUILD__/${GITHUB_SHA}/g" dist/index.html dist/clients/form.html dist/clients/view.html
 
       - name: Deploy to Netlify (production)
         run: npx --yes netlify-cli@latest deploy --prod --dir=dist
