@@ -96,11 +96,6 @@
     return data;
   }
 
-  function csvCell(v) {
-    const s = v == null ? '' : String(v);
-    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-  }
-
   function cellText(v) {
     if (Array.isArray(v)) return v.map((f) => (f && f.url) ? f.url : String(f)).filter(Boolean).join(' | ');
     if (typeof v === 'string' && v.indexOf('data:image/') === 0) return 'Signed (drawn signature)';
@@ -149,24 +144,10 @@
     return header ? [header, ...rows] : [];
   }
 
-  function buildCsv(records) {
-    return buildRows(records).map((r) => r.map(csvCell).join(',')).join('\r\n');
-  }
-
   // Tab-separated: paste straight into a Google Sheet (tabs = columns, lines = rows).
   function buildTsv(records) {
     const cell = (v) => String(v == null ? '' : v).replace(/[\t\r\n]+/g, ' ').trim();
     return buildRows(records).map((r) => r.map(cell).join('\t')).join('\n');
-  }
-
-  function download(filename, content, type) {
-    const blob = new Blob([content], { type: type || 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = h('a', { href: url, download: filename });
-    document.body.append(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   function copyText(text, btn) {
@@ -421,17 +402,6 @@
     document.querySelector('#detailOverlay').hidden = true;
     document.body.classList.remove('detail-open');
     detailRecord = null;
-  }
-
-  function recordName(rec) {
-    const sub = rec.submission || {};
-    const L = (sub._labels && sub._labels.about) || {};
-    const id = Object.keys(L).find((k) => /client name/i.test(L[k]));
-    return String((id && sub.about[id]) || 'revision-request').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
-  }
-
-  function exportRecordCsv(rec) {
-    download(recordName(rec) + '.csv', buildCsv([rec]), 'text/csv;charset=utf-8');
   }
 
   function copyForSheet(rec, btn) {
@@ -872,7 +842,6 @@
         items,
         h('div', { class: 'sub__actions' },
           h('button', { type: 'button', class: 'btn btn--ghost', text: 'View', onclick: () => openDetail(rec) }),
-          h('button', { type: 'button', class: 'btn btn--ghost', text: 'CSV', onclick: () => exportRecordCsv(rec) }),
           h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy for Sheet', onclick: (e) => copyForSheet(rec, e.currentTarget) }),
           canReopen ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Reopen', onclick: () => reopenRound(roundId) }) : null,
           driveUrl ? h('a', { class: 'btn btn--ghost', href: driveUrl, target: '_blank', rel: 'noopener', text: 'Drive' }) : null,
@@ -948,7 +917,6 @@
     $('#detailCloseBtn').addEventListener('click', closeDetail);
     $('#detailOverlay').addEventListener('click', (e) => { if (e.target && e.target.id === 'detailOverlay') closeDetail(); });
     $('#detailPrintBtn').addEventListener('click', () => window.print());
-    $('#detailCsvBtn').addEventListener('click', () => { if (detailRecord) exportRecordCsv(detailRecord); });
     $('#detailSheetBtn').addEventListener('click', (e) => { if (detailRecord) copyForSheet(detailRecord, e.currentTarget); });
 
     // Round-created confirmation overlay
