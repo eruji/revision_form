@@ -160,6 +160,17 @@
     </div>
   </div>
 
+  <!-- Round-created confirmation + send-email -->
+  <div class="overlay" id="roundCreatedOverlay" hidden>
+    <div class="modal detail-modal round-created-modal" role="dialog" aria-modal="true" aria-labelledby="roundCreatedTitle">
+      <div class="detail-actions no-print">
+        <h2 id="roundCreatedTitle" style="margin:0">Revision request link created</h2>
+        <button type="button" class="iconbtn" id="roundCreatedCloseBtn" aria-label="Close">✕</button>
+      </div>
+      <div id="roundCreatedBody"></div>
+    </div>
+  </div>
+
   <script src="config.js?v=__BUILD__"></script>
   <script src="setup.js?v=__BUILD__"></script>
   <script src="admin.js?v=__BUILD__"></script>

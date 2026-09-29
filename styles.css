@@ -832,6 +832,16 @@ input::placeholder, textarea::placeholder { color: #b3b0a4; }
 .round-card__link input { font-size: 12px; background: var(--cream); }
 .round-card__actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
+/* ── Round-created modal (send the link by email) ── */
+.round-created-modal { max-width: 620px; }
+.round-created-modal h3.rc-email-title { font-size: 21px; color: var(--olive-900); margin: 0; }
+.rc-dates { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+.rc-date { flex: 1 1 120px; background: var(--olive-100); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; }
+.rc-date__label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--ink-soft); }
+.rc-date strong { font-size: 13.5px; color: var(--ink); }
+.rc-to { margin: 0 0 12px; font-size: 13.5px; color: var(--ink-soft); }
+.rc-note { margin: 0; font-size: 13px; color: var(--ink-soft); }
+
 @media (max-width: 680px) {
   .round-form { grid-template-columns: 1fr; }
   .new-round__result { flex-direction: column; }

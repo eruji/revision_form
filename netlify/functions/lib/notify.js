@@ -288,6 +288,67 @@ function reminderEmails(round, kind) {
   };
 }
 
+// ── Round-invite email (sent after the office creates a request link) ──────
+function textToHtml(text) {
+  return String(text || '')
+    .split('\n')
+    .map((line) => {
+      const escaped = line
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+      return escaped.replace(/(https?:\/\/[^\s<"']+)/g, '<a href="$1" style="color:#8a6d3b;">$1</a>');
+    })
+    .join('<br />');
+}
+
+function defaultRoundInviteText(round, link) {
+  const client = round.clientName || '';
+  const project = round.projectName || 'your project';
+  const phase = round.designPhase || '';
+  const expires = round.expiresAt
+    ? new Date(round.expiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+    : '';
+  const note = round.note || '';
+  const lines = [];
+  lines.push('Hi' + (client ? ' ' + client : '') + ',');
+  lines.push('');
+  lines.push('We have prepared your design revision request for ' + project + (phase ? ' (' + phase + ')' : '') + '.');
+  lines.push('');
+  lines.push('Please review everything in full and submit your one consolidated round of revisions' + (expires ? ' by ' + expires : '') + '.');
+  lines.push('');
+  lines.push('Open the form here: ' + link);
+  if (note) { lines.push(''); lines.push('Note: ' + note); }
+  lines.push('');
+  lines.push('Thank you,');
+  lines.push('Pepper & Olive Interiors');
+  return lines.join('\n');
+}
+
+function roundInviteEmail(round, opts) {
+  opts = opts || {};
+  const project = round.projectName || 'your project';
+  const link = round.clientLink || opts.link || '';
+  const subject = opts.subject || ('Your revision request — ' + project);
+  const text = opts.message || defaultRoundInviteText(round, link);
+  return { subject: subject, text: text, html: textToHtml(text) };
+}
+
+/**
+ * Email a client their revision-request link after the office creates a round.
+ * Throws if the email provider is missing or the send fails.
+ */
+async function onRoundLink(round, opts) {
+  opts = opts || {};
+  const to = String(round.clientEmail || '').trim();
+  if (!to) return { sent: false, reason: 'no-email' };
+  const msg = roundInviteEmail(round, opts);
+  const sent = await sendEmail({ to: to, subject: msg.subject, text: msg.text, html: msg.html, replyTo: fromEmail() });
+  if (!sent) throw new Error('Email provider is not configured');
+  return { sent: true, to: to };
+}
+
 // ── Sending ────────────────────────────────────────────────────────────────
 async function sendResend(msg) {
   const res = await fetch('https://api.resend.com/emails', {
@@ -550,6 +611,8 @@ module.exports = {
   sendWhatsApp,
   onSubmission,
   onReminder,
+  onRoundLink,
+  roundInviteEmail,
   emailConfigured,
   officeRecipients,
   officeSubmissionEmail,

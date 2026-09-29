@@ -13,6 +13,7 @@
  */
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
+const { onRoundLink } = require('./lib/notify');
 // ── Authorization ─────────────────────────────────────────────────────────
 // Cloudflare Access JWT (Zero Trust) when CF_ACCESS_TEAM_DOMAIN + CF_ACCESS_AUD
 // are set, else the ADMIN_PASSWORD fallback via x-admin-key. The JWT check is
@@ -88,6 +89,10 @@ function json(statusCode, body) {
 
 function newId() {
   return crypto.randomBytes(9).toString('base64url'); // ~12 url-safe chars
+}
+
+function siteBase() {
+  return String(process.env.URL || process.env.DEPLOY_PRIME_URL || '').replace(/\/+$/, '');
 }
 
 function normalizeEmail(v) {
@@ -171,6 +176,19 @@ exports.handler = async (event) => {
     try { body = JSON.parse(event.body || '{}'); } catch (e) { return json(400, { ok: false, error: 'Invalid body' }); }
     const action = body.action || qs.action;
 
+    if (action === 'send') {
+      const round = await getRound(store, body.id || qs.id);
+      if (!round) return json(404, { ok: false, error: 'Not found' });
+      if (!round.clientEmail) return json(400, { ok: false, error: 'This request has no client email' });
+      round.clientLink = siteBase() + '/clients/form.html?r=' + round.id;
+      try {
+        const result = await onRoundLink(round, { subject: body.subject, message: body.message });
+        return json(200, { ok: true, sent: result.sent, to: result.to, emailFrom: process.env.EMAIL_FROM || '' });
+      } catch (e) {
+        return json(500, { ok: false, error: e && e.message ? e.message : 'Could not send the email' });
+      }
+    }
+
     if (action === 'reopen') {
       const round = await getRound(store, body.id || qs.id);
       if (!round) return json(404, { ok: false, error: 'Not found' });
@@ -216,7 +234,7 @@ exports.handler = async (event) => {
     };
     await store.setJSON('round_' + round.id, round);
     await upsertIndex(store, round);
-    return json(200, { ok: true, round: summary(round), link: '/clients/form.html?r=' + round.id });
+    return json(200, { ok: true, round: summary(round), link: '/clients/form.html?r=' + round.id, emailFrom: process.env.EMAIL_FROM || '' });
   }
 
   if (event.httpMethod === 'DELETE') {

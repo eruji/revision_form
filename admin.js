@@ -47,6 +47,19 @@
     });
   }
 
+  function fmtDateOnly(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return isNaN(d) ? iso : d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  function addDaysISO(iso, days) {
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    d.setDate(d.getDate() + days);
+    return d.toISOString();
+  }
+
   function showGate(showError) {
     $('#gateCard').hidden = false;
     $('#listWrap').hidden = true;
@@ -514,16 +527,141 @@
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error('create failed');
-      document.querySelector('#newRoundLink').value = roundLink(data.round.id);
-      document.querySelector('#newRoundResult').hidden = false;
       ['nrClient', 'nrEmail', 'nrProject', 'nrPhase', 'nrNote', 'nrDrive', 'nrExpires'].forEach((id) => { document.querySelector('#' + id).value = ''; });
       document.querySelector('#nrRooms').innerHTML = '';
       addRoomRow('');
-      toast('Request link created');
+      showRoundCreated(data.round, data.emailFrom || '');
       loadRounds(getKey());
     } catch (e) {
       err.textContent = 'Could not create the link. Please try again.';
       err.hidden = false;
+    }
+  }
+
+  // ── Round-created modal + send email ────────────────────────────────────
+  function kvRow(label, value) {
+    return h('div', { class: 'kv__row' },
+      h('dt', { text: label }),
+      h('dd', {}, linkified('span', null, String(value == null ? '' : value))));
+  }
+
+  function dateChip(label, iso) {
+    if (!iso) return null;
+    return h('div', { class: 'rc-date' },
+      h('span', { class: 'rc-date__label', text: label }),
+      h('strong', { text: fmtDateOnly(iso) }));
+  }
+
+  function defaultRoundEmail(round, link) {
+    const client = round.clientName || '';
+    const project = round.projectName || 'your project';
+    const phase = round.designPhase || '';
+    const due = fmtDateOnly(round.expiresAt);
+    const note = round.note || '';
+    const subject = 'Your revision request — ' + project;
+    const lines = [];
+    lines.push('Hi' + (client ? ' ' + client : '') + ',');
+    lines.push('');
+    lines.push('We have prepared your design revision request for ' + project + (phase ? ' (' + phase + ')' : '') + '.');
+    lines.push('');
+    lines.push('Please review everything in full and submit your one consolidated round of revisions' + (due ? ' by ' + due : '') + '.');
+    lines.push('');
+    lines.push('Open the form here: ' + link);
+    if (note) { lines.push(''); lines.push('Note: ' + note); }
+    lines.push('');
+    lines.push('Thank you,');
+    lines.push('Pepper & Olive Interiors');
+    return { subject: subject, message: lines.join('\n') };
+  }
+
+  function showRoundCreated(round, emailFrom) {
+    const link = roundLink(round.id);
+    const body = document.querySelector('#roundCreatedBody');
+    body.innerHTML = '';
+    const email = defaultRoundEmail(round, link);
+    const hasEmail = !!round.clientEmail;
+    const rooms = (round.rooms || []).map((r) => r.name).join(', ');
+
+    const linkRow = h('div', { class: 'round-card__link', style: 'margin:14px 0' },
+      h('input', { type: 'text', readonly: true, value: link }),
+      h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy link', onclick: (e) => copyText(link, e.currentTarget) })
+    );
+
+    const kv = h('dl', { class: 'kv' },
+      kvRow('Client', round.clientName || '—'),
+      kvRow('Project', round.projectName || '—'),
+      kvRow('Phase', round.designPhase || '—'),
+      kvRow('Rooms / areas', rooms || '—'),
+      round.driveUrl ? kvRow('Drive folder', round.driveUrl) : null
+    );
+
+    const dates = h('div', { class: 'rc-dates' },
+      dateChip('Created', round.createdAt),
+      dateChip('Reminder', addDaysISO(round.createdAt, 7)),
+      dateChip('Due', round.expiresAt)
+    );
+
+    const emailCard = h('section', { class: 'card' },
+      h('div', { class: 'card__head' }, h('div', {},
+        h('h3', { class: 'rc-email-title', text: 'Send the link by email' }),
+        h('p', { text: 'Sent from ' + (emailFrom || 'your email address') + '.' })
+      )),
+      hasEmail ? h('p', { class: 'rc-to', text: 'To: ' + round.clientEmail }) : null,
+      h('div', { class: 'field' },
+        h('label', { for: 'roundEmailSubject', text: 'Subject' }),
+        h('input', { id: 'roundEmailSubject', type: 'text', value: email.subject })
+      ),
+      h('div', { class: 'field' },
+        h('label', { for: 'roundEmailMessage', text: 'Message' }),
+        h('textarea', { id: 'roundEmailMessage', rows: 12, value: email.message })
+      ),
+      hasEmail
+        ? h('div', { class: 'modal__actions', style: 'justify-content:flex-start; margin-bottom:0' },
+            h('button', { type: 'button', id: 'roundEmailSendBtn', class: 'btn btn--primary', text: 'Send email', onclick: () => sendRoundEmail(round.id) }))
+        : h('p', { class: 'rc-note', text: 'No client email was entered on this request, so the link cannot be emailed. Add an email and reopen to send it later.' })
+    );
+
+    body.append(
+      h('p', { class: 'view-head__meta', text: 'The link is ready. Copy it, or email it to the client below.' }),
+      linkRow,
+      kv,
+      dates,
+      emailCard
+    );
+    document.querySelector('#roundCreatedOverlay').hidden = false;
+    document.body.classList.add('detail-open');
+  }
+
+  function closeRoundCreated() {
+    document.querySelector('#roundCreatedOverlay').hidden = true;
+    document.body.classList.remove('detail-open');
+  }
+
+  async function sendRoundEmail(id) {
+    const subjectInput = document.querySelector('#roundEmailSubject');
+    const messageInput = document.querySelector('#roundEmailMessage');
+    const btn = document.querySelector('#roundEmailSendBtn');
+    const subject = subjectInput ? subjectInput.value.trim() : '';
+    const message = messageInput ? messageInput.value.trim() : '';
+    if (!message) { toast('Message is empty'); return; }
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Sending…';
+    try {
+      const res = await fetch('/api/rounds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': getKey() },
+        body: JSON.stringify({ action: 'send', id: id, subject: subject, message: message })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'send failed');
+      btn.textContent = '✓ Sent';
+      toast('Email sent to ' + (data.to || 'the client'));
+    } catch (e) {
+      toast(e && e.message ? e.message : 'Could not send the email');
+      btn.textContent = original;
+    } finally {
+      btn.disabled = false;
     }
   }
 
@@ -700,8 +838,15 @@
     $('#detailOverlay').addEventListener('click', (e) => { if (e.target && e.target.id === 'detailOverlay') closeDetail(); });
     $('#detailPrintBtn').addEventListener('click', () => window.print());
     $('#detailCsvBtn').addEventListener('click', () => { if (detailRecord) exportRecordCsv(detailRecord); });
+
+    // Round-created confirmation overlay
+    $('#roundCreatedCloseBtn').addEventListener('click', closeRoundCreated);
+    $('#roundCreatedOverlay').addEventListener('click', (e) => { if (e.target && e.target.id === 'roundCreatedOverlay') closeRoundCreated(); });
+
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !$('#detailOverlay').hidden) closeDetail();
+      if (e.key !== 'Escape') return;
+      if (!$('#detailOverlay').hidden) closeDetail();
+      if (!$('#roundCreatedOverlay').hidden) closeRoundCreated();
     });
 
     // Office-issued request links
