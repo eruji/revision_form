@@ -10,6 +10,7 @@
   let workQueueSheetUrl = '';
   let lastRecords = [];
   let roundsById = {};
+  let roundsEmailFrom = '';
 
   function $(sel) { return document.querySelector(sel); }
 
@@ -453,6 +454,7 @@
       if (res.ok && data.ok) {
         const rounds = data.rounds || [];
         roundsById = {};
+        roundsEmailFrom = data.emailFrom || '';
         rounds.forEach((r) => { if (r && r.id) roundsById[r.id] = r; });
         renderRounds(rounds);
         // Re-render submissions so their Reopen button reflects round status.
@@ -478,6 +480,7 @@
       const actions = h('div', { class: 'round-card__actions' },
         h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy link', onclick: (e) => copyText(link, e.currentTarget) }),
         h('a', { class: 'btn btn--ghost', href: link, target: '_blank', rel: 'noopener', text: 'Open' }),
+        r.clientEmail ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Send email', onclick: () => showRoundCreated(r, roundsEmailFrom, { title: 'Send revision request', intro: 'Send this link to the client by email.' }) }) : null,
         r.driveUrl ? h('a', { class: 'btn btn--ghost', href: r.driveUrl, target: '_blank', rel: 'noopener', text: 'Drive' }) : null,
         h('button', { type: 'button', class: 'btn btn--danger', text: 'Delete', onclick: () => deleteRound(r.id, r.clientName) })
       );
@@ -574,7 +577,10 @@
     return { subject: subject, message: lines.join('\n') };
   }
 
-  function showRoundCreated(round, emailFrom) {
+  function showRoundCreated(round, emailFrom, opts) {
+    opts = opts || {};
+    const title = opts.title || 'Revision request link created';
+    const intro = opts.intro || 'The link is ready. Copy it, or email it to the client below.';
     const link = roundLink(round.id);
     const body = document.querySelector('#roundCreatedBody');
     body.innerHTML = '';
@@ -621,8 +627,9 @@
         : h('p', { class: 'rc-note', text: 'No client email was entered on this request, so the link cannot be emailed. Add an email and reopen to send it later.' })
     );
 
+    document.querySelector('#roundCreatedTitle').textContent = title;
     body.append(
-      h('p', { class: 'view-head__meta', text: 'The link is ready. Copy it, or email it to the client below.' }),
+      h('p', { class: 'view-head__meta', text: intro }),
       linkRow,
       kv,
       dates,

@@ -132,6 +132,7 @@ function summary(round) {
     clientEmail: round.clientEmail || '',
     projectName: round.projectName,
     designPhase: round.designPhase,
+    note: round.note || '',
     driveUrl: round.driveUrl || '',
     rooms: round.rooms || [],
     status: round.status,
@@ -168,7 +169,7 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'GET') {
     let index = [];
     try { index = (await store.get(INDEX_KEY, { type: 'json' })) || []; } catch (e) { index = []; }
-    return json(200, { ok: true, rounds: index });
+    return json(200, { ok: true, rounds: index, emailFrom: process.env.EMAIL_FROM || '' });
   }
 
   if (event.httpMethod === 'POST') {

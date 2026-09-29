@@ -15,6 +15,7 @@ Track changes to the revision form. Newest first.
 | 3 | Customizable message | ✅ Done | Editable Subject + Message (prefilled with a sensible default). |
 | 4 | From-address reminder | ✅ Done | Shows “Sent from …purchasing@pepperandolive.com” (reads `EMAIL_FROM`). |
 | 5 | No-email guard | ✅ Done | If the round has no client email, the modal says so instead of showing Send. |
+| 6 | Send email from Request links | ✅ Done | Each open round card now has a **Send email** button (when a client email is set). |
 
 ### Files touched
 
