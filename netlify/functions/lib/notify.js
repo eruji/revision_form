@@ -369,74 +369,86 @@ function callMeBotNumber(phone) {
 }
 
 /**
- * Send a WhatsApp message. `to` is the destination phone (client or office).
- * When `to` is omitted, the office default number is used. Provider priority:
- * Twilio → CallMeBot → generic WHATSAPP_WEBHOOK_URL.
+ * Send a WhatsApp message to the OFFICE group/contact (a single, fixed
+ * destination — clients are never messaged). Provider priority:
+ * TextMeBot (group-capable) → Twilio → CallMeBot → generic webhook.
  */
-async function sendWhatsApp(text, to) {
+async function sendWhatsApp(text) {
   text = String(text || '').slice(0, 1500);
 
-  // 1) Twilio WhatsApp (business-grade)
-  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_WHATSAPP_FROM) {
-    const dest = to || process.env.TWILIO_WHATSAPP_TO;
-    if (dest) {
-      try {
-        const from = /^whatsapp:/i.test(process.env.TWILIO_WHATSAPP_FROM)
-          ? process.env.TWILIO_WHATSAPP_FROM
-          : 'whatsapp:' + process.env.TWILIO_WHATSAPP_FROM.replace(/^\+/, '');
-        const toNum = twilioNumber(dest);
-        const form = new URLSearchParams();
-        form.set('From', from);
-        form.set('To', 'whatsapp:' + toNum.replace(/^\+/, ''));
-        form.set('Body', text);
-        const res = await fetch(
-          'https://api.twilio.com/2010-04-01/Accounts/' + process.env.TWILIO_ACCOUNT_SID + '/Messages.json',
-          {
-            method: 'POST',
-            headers: {
-              Authorization: 'Basic ' + Buffer.from(process.env.TWILIO_ACCOUNT_SID + ':' + process.env.TWILIO_AUTH_TOKEN).toString('base64'),
-              'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: form.toString()
-          }
-        );
-        if (!res.ok) console.error('twilio whatsapp returned', res.status);
-        return true;
-      } catch (e) {
-        console.error('twilio whatsapp failed:', e && e.message);
-        return false;
-      }
+  // 1) TextMeBot — can post into a WhatsApp GROUP the office number belongs to.
+  if (process.env.TEXTMEBOT_APIKEY && process.env.TEXTMEBOT_RECIPIENT) {
+    try {
+      const url =
+        'https://api.textmebot.com/send.php' +
+        '?recipient=' + encodeURIComponent(process.env.TEXTMEBOT_RECIPIENT) +
+        '&apikey=' + encodeURIComponent(process.env.TEXTMEBOT_APIKEY) +
+        '&text=' + encodeURIComponent(text) +
+        '&json=yes';
+      const res = await fetch(url, { method: 'GET' });
+      if (!res.ok) console.error('textmebot returned', res.status);
+      return true;
+    } catch (e) {
+      console.error('textmebot failed:', e && e.message);
+      return false;
     }
   }
 
-  // 2) CallMeBot (free, no account — uses your own WhatsApp)
-  if (process.env.CALLMEBOT_APIKEY) {
-    const phone = callMeBotNumber(to || process.env.CALLMEBOT_PHONE);
-    if (phone) {
-      try {
-        const url =
-          'https://api.callmebot.com/whatsapp.php' +
-          '?phone=' + encodeURIComponent(phone) +
-          '&apikey=' + encodeURIComponent(process.env.CALLMEBOT_APIKEY) +
-          '&text=' + encodeURIComponent(text);
-        const res = await fetch(url, { method: 'GET' });
-        if (!res.ok) console.error('callmebot returned', res.status);
-        return true;
-      } catch (e) {
-        console.error('callmebot failed:', e && e.message);
-        return false;
-      }
+  // 2) Twilio WhatsApp (business-grade, single recipient)
+  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_WHATSAPP_FROM && process.env.TWILIO_WHATSAPP_TO) {
+    try {
+      const from = /^whatsapp:/i.test(process.env.TWILIO_WHATSAPP_FROM)
+        ? process.env.TWILIO_WHATSAPP_FROM
+        : 'whatsapp:' + process.env.TWILIO_WHATSAPP_FROM.replace(/^\+/, '');
+      const toNum = twilioNumber(process.env.TWILIO_WHATSAPP_TO);
+      const form = new URLSearchParams();
+      form.set('From', from);
+      form.set('To', 'whatsapp:' + toNum.replace(/^\+/, ''));
+      form.set('Body', text);
+      const res = await fetch(
+        'https://api.twilio.com/2010-04-01/Accounts/' + process.env.TWILIO_ACCOUNT_SID + '/Messages.json',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: 'Basic ' + Buffer.from(process.env.TWILIO_ACCOUNT_SID + ':' + process.env.TWILIO_AUTH_TOKEN).toString('base64'),
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: form.toString()
+        }
+      );
+      if (!res.ok) console.error('twilio whatsapp returned', res.status);
+      return true;
+    } catch (e) {
+      console.error('twilio whatsapp failed:', e && e.message);
+      return false;
     }
   }
 
-  // 3) Generic webhook
+  // 3) CallMeBot (free — sends to your own WhatsApp number)
+  if (process.env.CALLMEBOT_APIKEY && process.env.CALLMEBOT_PHONE) {
+    try {
+      const url =
+        'https://api.callmebot.com/whatsapp.php' +
+        '?phone=' + encodeURIComponent(callMeBotNumber(process.env.CALLMEBOT_PHONE)) +
+        '&apikey=' + encodeURIComponent(process.env.CALLMEBOT_APIKEY) +
+        '&text=' + encodeURIComponent(text);
+      const res = await fetch(url, { method: 'GET' });
+      if (!res.ok) console.error('callmebot returned', res.status);
+      return true;
+    } catch (e) {
+      console.error('callmebot failed:', e && e.message);
+      return false;
+    }
+  }
+
+  // 4) Generic webhook
   const url = process.env.WHATSAPP_WEBHOOK_URL;
   if (url) {
     try {
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: text, to: to || '' })
+        body: JSON.stringify({ text: text })
       });
       if (!res.ok) console.error('whatsapp webhook returned', res.status);
       return true;
@@ -494,11 +506,7 @@ async function onSubmission(payload, opts) {
 
   const officeText = discordSubmissionText(payload);
   await sendDiscord(officeText);
-  await sendWhatsApp(officeText.replace(/\*\*/g, '')); // office default number
-  if (opts.clientPhone) {
-    const clientText = clientMsg.subject + '\n' + clientMsg.text;
-    await sendWhatsApp(clientText, opts.clientPhone);
-  }
+  await sendWhatsApp(officeText.replace(/\*\*/g, '')); // office group/contact
 
   return { emailSent: emailSent };
 }
@@ -522,11 +530,7 @@ async function onReminder(round, kind) {
 
   const officeText = msgs.office.subject + '\n' + msgs.office.text;
   await sendDiscord(officeText);
-  await sendWhatsApp(officeText); // office default number
-  if (round.clientPhone) {
-    const clientText = msgs.client.subject + '\n' + msgs.client.text;
-    await sendWhatsApp(clientText, round.clientPhone);
-  }
+  await sendWhatsApp(officeText); // office group/contact
 
   return { emailSent: emailSent };
 }

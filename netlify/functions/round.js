@@ -42,7 +42,6 @@ exports.handler = async (event) => {
         id: round.id,
         clientName: round.clientName,
         clientEmail: round.clientEmail || '',
-        clientPhone: round.clientPhone || '',
         projectName: round.projectName,
         designPhase: round.designPhase,
         note: round.note,

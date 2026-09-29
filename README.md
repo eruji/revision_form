@@ -225,32 +225,29 @@ instead of the SMTP vars.)
 **Discord** — set `DISCORD_WEBHOOK_URL` to a channel webhook; every submission
 and reminder posts a summary.
 
-**WhatsApp** — two supported paths (pick one):
+**WhatsApp — one office group chat.** WhatsApp notifications go to a single
+**group** the team watches (not to clients). Because Twilio and the free
+CallMeBot can only message a single phone number — they cannot post into a
+WhatsApp *group* — use **TextMeBot** for groups:
 
-**A. CallMeBot (free, 2 minutes, no account — best to start).** It sends from
-*your own* WhatsApp number. Get an API key by sending the message
-`I allow callmebot to send me messages` to the CallMeBot contact on WhatsApp
-(+34 644 51 95 23), then set:
-
-```bash
-npx netlify-cli env:set CALLMEBOT_APIKEY "<the-key-they-send-you>" --context production
-npx netlify-cli env:set CALLMEBOT_PHONE "15551234567" --context production   # your office WhatsApp, country code, no +
-```
-
-**B. Twilio WhatsApp (business-grade).** Create a Twilio account → Messaging →
-Try it out → WhatsApp sandbox (join the sandbox from your office phone). Then:
+1. Sign up at <https://textmebot.com> and get a **premium API key**.
+2. Link it to the WhatsApp number that is a **member of the group**.
+3. Get the group's **recipient id** (looks like `1203630…@g.us`) from the
+   TextMeBot dashboard / API.
+4. Set:
 
 ```bash
-npx netlify-cli env:set TWILIO_ACCOUNT_SID "AC..." --context production
-npx netlify-cli env:set TWILIO_AUTH_TOKEN "..." --context production
-npx netlify-cli env:set TWILIO_WHATSAPP_FROM "whatsapp:+14155238886" --context production   # sandbox sender
-npx netlify-cli env:set TWILIO_WHATSAPP_TO "+15551234567" --context production              # office number
+npx netlify-cli env:set TEXTMEBOT_APIKEY "<your-premium-apikey>" --context production
+npx netlify-cli env:set TEXTMEBOT_RECIPIENT "1203630...@g.us" --context production
 ```
 
-Office notifications go to the default office number above; client
-confirmations/reminders go to the **client WhatsApp number** you enter on the
-link form (add it alongside client email). To make WhatsApp the primary channel
-later, leave `NOTIFY_EMAIL` empty and keep the WhatsApp vars set.
+> The linked phone number **must** be a member of the group, or WhatsApp will
+> reject the message.
+
+Every submission + reminder now posts a summary into that group. To make
+WhatsApp the primary channel later, leave `NOTIFY_EMAIL` empty and keep the
+TextMeBot vars set. (A single-number alternative — CallMeBot or Twilio — is
+still supported if you ever want to ping one phone instead of a group.)
 
 ### Automatic reminders (no third party)
 

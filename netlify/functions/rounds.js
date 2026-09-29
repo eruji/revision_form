@@ -95,13 +95,6 @@ function normalizeEmail(v) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) ? s : '';
 }
 
-function normalizePhone(v) {
-  let s = String(v || '').trim().replace(/[^\d+]/g, '');
-  if (!s) return '';
-  if (!/^\+/.test(s)) s = '+' + s;
-  return s.length >= 8 ? s : '';
-}
-
 function expiryFor(value, fromDate) {
   const base = fromDate || new Date();
   const parsed = value ? new Date(String(value)) : null;
@@ -132,7 +125,6 @@ function summary(round) {
     id: round.id,
     clientName: round.clientName,
     clientEmail: round.clientEmail || '',
-    clientPhone: round.clientPhone || '',
     projectName: round.projectName,
     designPhase: round.designPhase,
     driveUrl: round.driveUrl || '',
@@ -189,9 +181,6 @@ exports.handler = async (event) => {
       if (body.clientEmail !== undefined) {
         round.clientEmail = normalizeEmail(body.clientEmail) || round.clientEmail;
       }
-      if (body.clientPhone !== undefined) {
-        round.clientPhone = normalizePhone(body.clientPhone) || round.clientPhone;
-      }
       round.reminders = {}; // fresh reminder cycle for the reopened round
       await store.setJSON('round_' + round.id, round);
       await upsertIndex(store, round);
@@ -213,7 +202,6 @@ exports.handler = async (event) => {
       id: newId(),
       clientName: String(body.clientName || '').trim(),
       clientEmail: normalizeEmail(body.clientEmail),
-      clientPhone: normalizePhone(body.clientPhone),
       projectName: projectName,
       designPhase: String(body.designPhase || '').trim(),
       note: String(body.note || '').trim(),

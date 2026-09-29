@@ -296,8 +296,7 @@ exports.handler = async (event) => {
       } catch (e) {}
       const payload = notificationPayload(submission, absView, round);
       const clientEmail = pickAbout(submission, /email/i) || (round && round.clientEmail) || '';
-      const clientPhone = (round && round.clientPhone) || '';
-      await onSubmission(payload, { clientEmail: clientEmail, clientPhone: clientPhone });
+      await onSubmission(payload, { clientEmail: clientEmail });
       // Netlify Forms email is only a fallback when no robust provider is set.
       if (!emailConfigured()) await relayToNetlifyForm(payload, host);
       // The webhook (Google Sheet work queue) still fires; tell the Apps Script

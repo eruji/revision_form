@@ -4,7 +4,32 @@ Track changes to the revision form. Newest first.
 
 ---
 
-## Rev 3 — Gmail SMTP + WhatsApp (current)
+## Rev 4 — WhatsApp goes to an office group chat (current)
+
+**Decision:** WhatsApp notifications go to a single office **group chat** (via
+TextMeBot). No client WhatsApp numbers are collected or used.
+
+### What changed
+
+| # | Item | Status |
+|---|---|---|
+| 1 | WhatsApp → office group | ✅ Done | `TEXTMEBOT_APIKEY` + `TEXTMEBOT_RECIPIENT` (e.g. `1203630…@g.us`). |
+| 2 | Removed client phone capture | ✅ Done | Dropped `nrPhone` field + `round.clientPhone` + client WhatsApp sends. |
+| 3 | Kept single-number fallbacks | ✅ Done | Twilio / CallMeBot / generic webhook still work (one recipient). |
+
+### Files touched
+
+- `netlify/functions/lib/notify.js` — TextMeBot group sender; single-destination WhatsApp; removed client sends.
+- `netlify/functions/rounds.js`, `round.js`, `submit.js`, `admin.js`, `index.html` — removed client phone.
+- `README.md` — TextMeBot group setup.
+
+### Env vars added
+
+`TEXTMEBOT_APIKEY`, `TEXTMEBOT_RECIPIENT`.
+
+---
+
+## Rev 3 — Gmail SMTP + WhatsApp
 
 **Decision:** use **Gmail SMTP** (own mailbox, app password) — not Resend.
 **Scope:** concrete WhatsApp integration (Twilio + CallMeBot) and a client
@@ -110,9 +135,10 @@ disabled on free accounts. Both are now *fallbacks only*.
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS` | one of SMTP or Resend | Your own mailbox |
 | `RESEND_API_KEY` | one of SMTP or Resend | Resend transactional API |
 | `DISCORD_WEBHOOK_URL` | no | Discord summary channel |
-| `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_WHATSAPP_FROM` / `TWILIO_WHATSAPP_TO` | no | Twilio WhatsApp (office + clients) |
-| `CALLMEBOT_APIKEY` / `CALLMEBOT_PHONE` | no | CallMeBot WhatsApp (free) |
-| `WHATSAPP_WEBHOOK_URL` | no | Generic WhatsApp webhook (`{ text, to }`) |
+| `TEXTMEBOT_APIKEY` / `TEXTMEBOT_RECIPIENT` | no | TextMeBot WhatsApp **group** (recommended) |
+| `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_WHATSAPP_FROM` / `TWILIO_WHATSAPP_TO` | no | Twilio WhatsApp (single number) |
+| `CALLMEBOT_APIKEY` / `CALLMEBOT_PHONE` | no | CallMeBot WhatsApp (single number, free) |
+| `WHATSAPP_WEBHOOK_URL` | no | Generic WhatsApp webhook (`{ text }`) |
 | `NOTIFY_WEBHOOK` | no (legacy) | Apps Script Sheet work queue |
 | `NETLIFY_FORM_NAME` | no (legacy) | Netlify Forms relay fallback |
 
