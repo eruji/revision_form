@@ -4,7 +4,29 @@ Track changes to the revision form. Newest first.
 
 ---
 
-## Rev 4 — WhatsApp goes to an office group chat (current)
+## Rev 5 — Email the client when a link is created (current)
+
+### What changed
+
+| # | Item | Status |
+|---|---|---|
+| 1 | Round-created modal | ✅ Done | After **Create link**, a card pops up with the link, all round details, and Created / Reminder / Due dates. |
+| 2 | Send email action | ✅ Done | `POST /api/rounds` `{ action:'send' }` → emails the client their link via `onRoundLink`. |
+| 3 | Customizable message | ✅ Done | Editable Subject + Message (prefilled with a sensible default). |
+| 4 | From-address reminder | ✅ Done | Shows “Sent from …purchasing@pepperandolive.com” (reads `EMAIL_FROM`). |
+| 5 | No-email guard | ✅ Done | If the round has no client email, the modal says so instead of showing Send. |
+
+### Files touched
+
+- `netlify/functions/lib/notify.js` — `roundInviteEmail` + `onRoundLink`.
+- `netlify/functions/rounds.js` — `send` action; `emailFrom` on create.
+- `index.html` — `roundCreatedOverlay`.
+- `admin.js` — `showRoundCreated` / `sendRoundEmail` / date chips.
+- `styles.css` — `rc-date` / `rc-email-title` styles.
+
+---
+
+## Rev 4 — WhatsApp goes to an office group chat
 
 **Decision:** WhatsApp notifications go to a single office **group chat** (via
 TextMeBot). No client WhatsApp numbers are collected or used.
