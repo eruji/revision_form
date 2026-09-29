@@ -34,7 +34,7 @@ A real form needs to grow with the client. That's what this POC does.
 | `styles.css` | Styling — brand palette + fonts matched to pepperandolive.com |
 | `clients/logo-*.svg`, `clients/favicon.ico` | Brand assets from the main site (served under public `/clients/`) |
 | `config.js` | **The questions and policy copy your team will iterate on** |
-| `netlify/functions/*` | API — office (`admin`, `rounds`) + public client (`submit`, `get`, `draft`, `round`, `upload`, `file`), with `lib/access.js` for Cloudflare Access verification |
+| `netlify/functions/*` | API — office (`admin`, `rounds`) + public client (`submit`, `get`, `draft`, `round`, `upload`, `file`), scheduled `cleanup-drafts` + `reminders`, with `lib/notify.js` for email/Discord/WhatsApp |
 | `google_apps_script.gs` | Apps Script bridge: Google Sheet work queue + email notification |
 | `netlify.toml` | Publish dir, functions dir, `/api/*` routing, headers |
 | `.github/workflows/deploy.yml` | CI: install deps → stage files → deploy on push |
@@ -120,6 +120,10 @@ form.
 - Env vars on the Netlify site: `CF_ACCESS_TEAM_DOMAIN`, `CF_ACCESS_AUD`
   (Cloudflare Access), `BLOBS_SITE_ID`, `BLOBS_TOKEN` (secret), and optional
   `ADMIN_PASSWORD` (local fallback).
+- Notification env vars: `EMAIL_FROM`, `NOTIFY_EMAIL` (office recipients) plus
+  **either** `SMTP_HOST`/`SMTP_USER`/`SMTP_PASS` (your own mailbox) **or**
+  `RESEND_API_KEY`; optional `DISCORD_WEBHOOK_URL`, `WHATSAPP_WEBHOOK_URL`,
+  and legacy `NOTIFY_WEBHOOK` (Apps Script) / `NETLIFY_FORM_NAME`.
 
 > **Privacy notes:** submissions contain client PII. Tokens are stored hashed,
 > drafts are deleted when a round is submitted, and responses are marked
@@ -136,11 +140,17 @@ form.
 The office no longer asks the client to type the project and phase. Instead:
 
 1. Open the dashboard at `/` and use **New revision request link**.
-2. Enter client, project, and design phase (a note to the client and a
-   **Google Drive folder link** are optional), then **Create link**. The Drive
-   link shows up as a clickable button in the client's request banner.
+2. Enter client name, **client email**, project, and design phase (a note, a
+   **Google Drive folder link**, and an **expiration date** are optional), then
+   **Create link**. The Drive link shows up as a clickable button in the
+   client's request banner, and the expiry date is shown to the client and used
+   for automatic reminders.
 3. Copy the link and send it. It looks like
    `https://revision.pepperandolive.com/clients/form.html?r=AbC123xyz`.
+
+> The client email powers the **confirmation** and **7-day reminder** emails.
+> If the office leaves it blank, the client form asks for it in the banner, and
+> the form falls back to the client's typed email.
 
 When the client opens it, the form shows a context banner (*“Revision request
 for Maple Residence — Design Development”*) and **section 01 is hidden** — the
@@ -164,27 +174,101 @@ with no revision; revised areas are one row per revision).
 In the **Request links** list, click **Reopen** on a submitted round and send the
 same link again. The client sees their previously submitted items in a
 read-only panel and adds only the new ones. Each submission is recorded
-separately, and the Sheet receives the new rows.
+separately, and the Sheet receives the new rows. Reopening resets the round's
+expiration date (+14 days by default) and its reminder cycle.
 
 ---
 
 ## Notifications + Google Sheet work queue
 
-**Email (Netlify, no third party).** The backend relays each saved submission to
-a hidden, registered Netlify Form (`revision-notification`); Netlify's own form
-notification sends the email.
+Notifications are handled by a single module
+([`netlify/functions/lib/notify.js`](./netlify/functions/lib/notify.js)) so the
+form does **not** depend on Netlify Forms or a Google Apps Script web app for
+the important emails. Netlify Forms has a monthly submission allowance and Apps
+Script web apps can be rate-limited / go dormant on free accounts — neither is a
+safe place for the only copy of a client notification.
 
-1. The hidden form is already in the page, and form detection is enabled.
-2. In Netlify: **Forms → revision-notification → Notifications → Add
-   notification → Email**, and enter the recipient.
-3. `NETLIFY_FORM_NAME=revision-notification` must be set (it is).
+### Email — Gmail SMTP (recommended, no dormant third party)
 
-The email is a plain field list (project, client, phase, item count, summary,
-read-only link). Netlify Forms has a monthly submission allowance on lower plans.
+Use your existing Google mailbox over SMTP with an **app password**. Nothing to
+go dormant — it is your own account. Setup:
 
-**Google Sheet work queue (optional).** Deploy the Apps Script to also append one
-row per revision item to a Sheet with `Status / Assigned To / Completed / Notes`
-columns. One-time setup:
+1. Make sure 2-Step Verification is on for the sending Google account.
+2. Go to <https://myaccount.google.com/apppasswords> → create an app password
+   (name it `revision-form`). Copy the 16-character password.
+3. Set the env vars:
+
+```bash
+npx netlify-cli env:set SMTP_HOST "smtp.gmail.com" --context production
+npx netlify-cli env:set SMTP_PORT "587" --context production
+npx netlify-cli env:set SMTP_SECURE "false" --context production
+npx netlify-cli env:set SMTP_USER "studio@pepperandolive.com" --context production
+npx netlify-cli env:set SMTP_PASS "<the-16-char-app-password>" --context production
+npx netlify-cli env:set EMAIL_FROM "Pepper & Olive Interiors <studio@pepperandolive.com>" --context production
+npx netlify-cli env:set NOTIFY_EMAIL "studio@pepperandolive.com, eric@pepperandolive.com" --context production
+```
+
+> Google sending limits: ~500/day on a personal Gmail, ~2,000/day on Google
+> Workspace — plenty for revision rounds. `SMTP_USER` must match `EMAIL_FROM`
+> (or be an alias of it).
+
+On submission the system sends:
+
+1. **Office** — a formatted summary (client, project, phase, item list, read-only link).
+2. **Client** — a confirmation with their private read-only copy.
+
+(Resend is still supported as an alternative — just set `RESEND_API_KEY`
+instead of the SMTP vars.)
+
+### WhatsApp + Discord (optional, can later replace email)
+
+**Discord** — set `DISCORD_WEBHOOK_URL` to a channel webhook; every submission
+and reminder posts a summary.
+
+**WhatsApp** — two supported paths (pick one):
+
+**A. CallMeBot (free, 2 minutes, no account — best to start).** It sends from
+*your own* WhatsApp number. Get an API key by sending the message
+`I allow callmebot to send me messages` to the CallMeBot contact on WhatsApp
+(+34 644 51 95 23), then set:
+
+```bash
+npx netlify-cli env:set CALLMEBOT_APIKEY "<the-key-they-send-you>" --context production
+npx netlify-cli env:set CALLMEBOT_PHONE "15551234567" --context production   # your office WhatsApp, country code, no +
+```
+
+**B. Twilio WhatsApp (business-grade).** Create a Twilio account → Messaging →
+Try it out → WhatsApp sandbox (join the sandbox from your office phone). Then:
+
+```bash
+npx netlify-cli env:set TWILIO_ACCOUNT_SID "AC..." --context production
+npx netlify-cli env:set TWILIO_AUTH_TOKEN "..." --context production
+npx netlify-cli env:set TWILIO_WHATSAPP_FROM "whatsapp:+14155238886" --context production   # sandbox sender
+npx netlify-cli env:set TWILIO_WHATSAPP_TO "+15551234567" --context production              # office number
+```
+
+Office notifications go to the default office number above; client
+confirmations/reminders go to the **client WhatsApp number** you enter on the
+link form (add it alongside client email). To make WhatsApp the primary channel
+later, leave `NOTIFY_EMAIL` empty and keep the WhatsApp vars set.
+
+### Automatic reminders (no third party)
+
+A daily scheduled function (`netlify/functions/reminders.js`, runs at 9:00) scans
+every open, unsubmitted round and:
+
+- **7 days after the link was sent** (or reopened) → emails the **client and the
+  office** that nothing has been submitted yet, with the expiration date.
+- **48 hours before the expiration date** → sends a final “expiring soon” reminder.
+
+Each reminder fires once per round per cycle. The expiration date defaults to
+**14 days** when the office leaves it blank and is shown to the client in the
+form banner.
+
+### Google Sheet work queue (optional, legacy)
+
+The Apps Script bridge can still append one row per revision item to a Sheet with
+`Status / Assigned To / Completed / Notes` columns. One-time setup:
 
 1. Open <https://script.google.com> → **New project**, paste
    [`google_apps_script.gs`](./google_apps_script.gs).
@@ -198,8 +282,11 @@ columns. One-time setup:
    npx netlify-cli env:set NOTIFY_WEBHOOK "https://script.google.com/macros/s/.../exec" --context production
    ```
 
-Notifications are optional: without `NOTIFY_WEBHOOK`, submissions still save to
-the dashboard and the Netlify email still fires.
+The backend tells the Apps Script to **skip its own email** when the new email
+provider is active, so the Sheet gets rows without double-emailing the office.
+If no email provider is configured, the app falls back to the legacy Netlify
+Form relay (`NETLIFY_FORM_NAME=revision-notification`) and the Apps Script
+email, so the old path keeps working.
 
 ---
 

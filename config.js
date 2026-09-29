@@ -91,6 +91,15 @@ window.REVISION_FORM_CONFIG = {
       enabled: true,
       locked: true,
       half: true
+    },
+    {
+      id: 'email',
+      label: 'Your email',
+      type: 'email',
+      help: 'We will email you a confirmation and any reminder about this request.',
+      required: false,
+      enabled: true,
+      half: true
     }
   ],
 

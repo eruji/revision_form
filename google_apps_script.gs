@@ -109,7 +109,9 @@ function doPost(e) {
   try {
     if (data.event === 'revision.submitted') {
       if (CONFIG.WRITE_TO_SHEET) appendSubmission_(data);
-      emailOffice_(data);
+      // skipEmail is set by the form backend when its own (robust) email has
+      // already been sent, so we only add Sheet rows and don't double-email.
+      if (!data.skipEmail) emailOffice_(data);
     }
     return ContentService.createTextOutput(JSON.stringify({ ok: true }))
       .setMimeType(ContentService.MimeType.JSON);

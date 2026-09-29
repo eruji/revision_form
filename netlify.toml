@@ -10,6 +10,10 @@
 [functions."cleanup-drafts"]
   schedule = "@daily"
 
+# Send 7-day + expiring-soon reminders for open, unsubmitted rounds (9am daily).
+[functions."reminders"]
+  schedule = "0 9 * * *"
+
 # Office-only API — these sit behind Cloudflare Access at /api/*.
 [[redirects]]
   from = "/api/*"

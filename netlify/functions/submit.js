@@ -12,6 +12,7 @@
  */
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
+const { onSubmission, emailConfigured } = require('./lib/notify');
 
 // Blobs needs an explicit siteID + token when functions are deployed outside
 // Netlify's own build (e.g. via `netlify deploy` from CI). When Netlify injects
@@ -43,6 +44,23 @@ function pickAbout(submission, pattern) {
   const labels = (submission._labels && submission._labels.about) || {};
   const id = Object.keys(labels).find((k) => pattern.test(labels[k]));
   return id ? about[id] : '';
+}
+
+/** Ensure the submission carries a labeled client-email field so the
+ *  notification payload and CSV always include it. */
+function ensureEmailField(submission, email) {
+  email = String(email || '').trim();
+  if (!email) return;
+  submission.about = submission.about || {};
+  submission._labels = submission._labels || {};
+  submission._labels.about = submission._labels.about || {};
+  const existingId = Object.keys(submission._labels.about).find((k) => /email/i.test(submission._labels.about[k]));
+  if (existingId) {
+    if (!submission.about[existingId]) submission.about[existingId] = email;
+    return;
+  }
+  submission._labels.about.email = 'Client Email';
+  submission.about.email = email;
 }
 
 /**
@@ -185,9 +203,20 @@ exports.handler = async (event) => {
         if (round.clientName) setByLabel(/client name/i, round.clientName);
         setByLabel(/project/i, round.projectName || '');
         setByLabel(/phase/i, round.designPhase || '');
+        // Prefer whatever email the client typed; fall back to the office's record.
+        if (round.clientEmail) {
+          const emailId = Object.keys(labels).find((k) => /email/i.test(labels[k]));
+          if (!emailId || !submission.about[emailId]) {
+            ensureEmailField(submission, round.clientEmail);
+          }
+        }
       }
     }
   } catch (e) { /* non-fatal */ }
+
+  // Carry the client's email (typed on the form or from the office-issued
+  // round) into the labeled about fields so notifications + CSV include it.
+  ensureEmailField(submission, pickAbout(submission, /email/i));
 
   // If no client name on the round, use the typed signature as the client name.
   try {
@@ -245,16 +274,18 @@ exports.handler = async (event) => {
         rIdx = rIdx.filter((r) => r && r.id !== round.id);
         const last = round.submissions[round.submissions.length - 1];
         rIdx.unshift({
-          id: round.id, clientName: round.clientName, projectName: round.projectName,
-          designPhase: round.designPhase, status: round.status, createdAt: round.createdAt,
-          submittedAt: last.submittedAt, itemCount: last.itemCount, reopenCount: round.reopenCount || 0
+          id: round.id, clientName: round.clientName, clientEmail: round.clientEmail || '',
+          projectName: round.projectName, designPhase: round.designPhase, status: round.status,
+          createdAt: round.createdAt, reopenedAt: round.reopenedAt || null,
+          expiresAt: round.expiresAt || null, submittedAt: last.submittedAt,
+          itemCount: last.itemCount, reopenCount: round.reopenCount || 0
         });
         await roundStore.setJSON('__rounds_index__', rIdx);
       } catch (e) { /* non-fatal */ }
     }
 
-    // Notify the office: the Netlify Form relay (email) and/or the webhook
-    // (e.g. Google Sheet / Apps Script).
+    // Notify the office + client. Robust email (Resend/SMTP) is preferred;
+    // the Netlify Form relay and the Apps Script webhook remain as fallbacks.
     try {
       let absView = viewUrl;
       let host = '';
@@ -264,7 +295,14 @@ exports.handler = async (event) => {
         if (host) absView = proto + '://' + host + viewUrl;
       } catch (e) {}
       const payload = notificationPayload(submission, absView, round);
-      await relayToNetlifyForm(payload, host);
+      const clientEmail = pickAbout(submission, /email/i) || (round && round.clientEmail) || '';
+      const clientPhone = (round && round.clientPhone) || '';
+      await onSubmission(payload, { clientEmail: clientEmail, clientPhone: clientPhone });
+      // Netlify Forms email is only a fallback when no robust provider is set.
+      if (!emailConfigured()) await relayToNetlifyForm(payload, host);
+      // The webhook (Google Sheet work queue) still fires; tell the Apps Script
+      // to skip its own email when we already handled email here.
+      payload.skipEmail = emailConfigured();
       await notify(payload);
     } catch (e) { /* never break the submission */ }
 

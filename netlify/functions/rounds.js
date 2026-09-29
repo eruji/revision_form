@@ -76,6 +76,7 @@ function openStore(name) {
 }
 
 const INDEX_KEY = '__rounds_index__';
+const DEFAULT_EXPIRY_DAYS = 14; // a round auto-expires if not submitted in time
 
 function json(statusCode, body) {
   return {
@@ -87,6 +88,31 @@ function json(statusCode, body) {
 
 function newId() {
   return crypto.randomBytes(9).toString('base64url'); // ~12 url-safe chars
+}
+
+function normalizeEmail(v) {
+  const s = String(v || '').trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) ? s : '';
+}
+
+function normalizePhone(v) {
+  let s = String(v || '').trim().replace(/[^\d+]/g, '');
+  if (!s) return '';
+  if (!/^\+/.test(s)) s = '+' + s;
+  return s.length >= 8 ? s : '';
+}
+
+function expiryFor(value, fromDate) {
+  const base = fromDate || new Date();
+  const parsed = value ? new Date(String(value)) : null;
+  if (parsed && !isNaN(parsed)) {
+    // Preserve the entered date at end-of-day in UTC.
+    parsed.setUTCHours(23, 59, 59, 999);
+    return parsed.toISOString();
+  }
+  const d = new Date(base.getTime() + DEFAULT_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+  d.setUTCHours(23, 59, 59, 999);
+  return d.toISOString();
 }
 
 // Keep a pasted link safe: require http(s), and tolerate a missing scheme.
@@ -105,12 +131,16 @@ function summary(round) {
   return {
     id: round.id,
     clientName: round.clientName,
+    clientEmail: round.clientEmail || '',
+    clientPhone: round.clientPhone || '',
     projectName: round.projectName,
     designPhase: round.designPhase,
     driveUrl: round.driveUrl || '',
     rooms: round.rooms || [],
     status: round.status,
     createdAt: round.createdAt,
+    reopenedAt: round.reopenedAt || null,
+    expiresAt: round.expiresAt || null,
     submittedAt: last ? last.submittedAt : null,
     itemCount: last ? last.itemCount : 0,
     reopenCount: round.reopenCount || 0
@@ -155,6 +185,14 @@ exports.handler = async (event) => {
       round.status = 'open';
       round.reopenedAt = new Date().toISOString();
       round.reopenCount = (round.reopenCount || 0) + 1;
+      round.expiresAt = expiryFor(body.expiresAt, round.reopenedAt);
+      if (body.clientEmail !== undefined) {
+        round.clientEmail = normalizeEmail(body.clientEmail) || round.clientEmail;
+      }
+      if (body.clientPhone !== undefined) {
+        round.clientPhone = normalizePhone(body.clientPhone) || round.clientPhone;
+      }
+      round.reminders = {}; // fresh reminder cycle for the reopened round
       await store.setJSON('round_' + round.id, round);
       await upsertIndex(store, round);
       return json(200, { ok: true, round: summary(round), link: '/clients/form.html?r=' + round.id });
@@ -174,6 +212,8 @@ exports.handler = async (event) => {
     const round = {
       id: newId(),
       clientName: String(body.clientName || '').trim(),
+      clientEmail: normalizeEmail(body.clientEmail),
+      clientPhone: normalizePhone(body.clientPhone),
       projectName: projectName,
       designPhase: String(body.designPhase || '').trim(),
       note: String(body.note || '').trim(),
@@ -181,7 +221,9 @@ exports.handler = async (event) => {
       rooms: rooms,
       status: 'open',
       createdAt: new Date().toISOString(),
+      expiresAt: expiryFor(body.expiresAt),
       submissions: [],
+      reminders: {},
       reopenCount: 0
     };
     await store.setJSON('round_' + round.id, round);

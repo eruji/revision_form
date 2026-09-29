@@ -77,6 +77,12 @@
         <div class="round-form">
           <div class="field"><label for="nrClient">Client name</label>
             <input id="nrClient" type="text" placeholder="e.g. Jane Doe" /></div>
+          <div class="field"><label for="nrEmail">Client email</label>
+            <input id="nrEmail" type="email" placeholder="jane@example.com" autocomplete="email" />
+            <p class="field__help">For the confirmation + 7-day reminder emails. Optional but recommended.</p></div>
+          <div class="field"><label for="nrPhone">Client WhatsApp number</label>
+            <input id="nrPhone" type="tel" placeholder="+1 555 123 4567" autocomplete="tel" />
+            <p class="field__help">Optional. Used for WhatsApp confirmations + reminders (needs Twilio or CallMeBot configured).</p></div>
           <div class="field"><label for="nrProject">Project name *</label>
             <input id="nrProject" type="text" placeholder="e.g. Maple Residence" /></div>
           <div class="field"><label for="nrPhase">Design phase</label>
@@ -85,6 +91,9 @@
             <input id="nrNote" type="text" placeholder="e.g. Please send all changes for this phase" /></div>
           <div class="field"><label for="nrDrive">Google Drive folder link (optional)</label>
             <input id="nrDrive" type="url" placeholder="https://drive.google.com/drive/folders/…" /></div>
+          <div class="field"><label for="nrExpires">Expiration date</label>
+            <input id="nrExpires" type="date" />
+            <p class="field__help">Defaults to 14 days from today if left blank. We remind clients who have not submitted after 7 days.</p></div>
         </div>
         <div class="field">
           <label>Rooms / areas in scope *</label>

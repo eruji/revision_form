@@ -477,7 +477,10 @@
         ),
         h('div', { class: 'round-card__meta' },
           r.designPhase ? h('span', { text: r.designPhase }) : null,
+          r.clientEmail ? h('span', { text: r.clientEmail }) : null,
+          r.clientPhone ? h('span', { text: '📱 ' + r.clientPhone }) : null,
           h('span', { text: 'Created ' + fmtDate(r.createdAt) }),
+          r.expiresAt ? h('span', { text: 'Expires ' + fmtDate(r.expiresAt) }) : null,
           r.submittedAt ? h('span', { text: '· ' + (r.itemCount || 0) + ' items submitted ' + fmtDate(r.submittedAt) }) : null,
           h('code', { class: 'code-chip', text: r.id })
         ),
@@ -501,10 +504,13 @@
         headers: { 'Content-Type': 'application/json', 'x-admin-key': getKey() },
         body: JSON.stringify({
           clientName: document.querySelector('#nrClient').value.trim(),
+          clientEmail: document.querySelector('#nrEmail').value.trim(),
+          clientPhone: document.querySelector('#nrPhone').value.trim(),
           projectName: projectName,
           designPhase: document.querySelector('#nrPhase').value.trim(),
           note: document.querySelector('#nrNote').value.trim(),
           driveUrl: document.querySelector('#nrDrive').value.trim(),
+          expiresAt: document.querySelector('#nrExpires').value,
           rooms: rooms
         })
       });
@@ -512,7 +518,7 @@
       if (!res.ok || !data.ok) throw new Error('create failed');
       document.querySelector('#newRoundLink').value = roundLink(data.round.id);
       document.querySelector('#newRoundResult').hidden = false;
-      ['nrClient', 'nrProject', 'nrPhase', 'nrNote', 'nrDrive'].forEach((id) => { document.querySelector('#' + id).value = ''; });
+      ['nrClient', 'nrEmail', 'nrPhone', 'nrProject', 'nrPhase', 'nrNote', 'nrDrive', 'nrExpires'].forEach((id) => { document.querySelector('#' + id).value = ''; });
       document.querySelector('#nrRooms').innerHTML = '';
       addRoomRow('');
       toast('Request link created');

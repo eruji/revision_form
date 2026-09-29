@@ -259,7 +259,7 @@
       input.value = value || '';
       input.addEventListener('change', () => onChange(input.value));
     } else {
-      const type = field.type === 'url' ? 'url' : field.type === 'date' ? 'date' : 'text';
+      const type = field.type === 'url' ? 'url' : field.type === 'date' ? 'date' : field.type === 'email' ? 'email' : 'text';
       input = h('input', { type: type, placeholder: field.placeholder || '' });
       input.value = value || '';
       input.addEventListener('input', () => onChange(input.value));
@@ -824,6 +824,13 @@
     // Snapshot only enabled fields, using labels at time of submission.
     const about = {};
     enabled(CFG.aboutFields).forEach((f) => { about[f.id] = state.about[f.id] || ''; });
+    const aboutLabels = labelMap(CFG.aboutFields);
+    // The context banner collects email for office-issued links even when the
+    // about section is hidden, so always carry it through.
+    if (state.about.email && !about.email) {
+      about.email = state.about.email;
+      aboutLabels.email = 'Client Email';
+    }
     const ack = {};
     enabled(CFG.ackFields).forEach((f) => { ack[f.id] = state.acknowledgment[f.id] || ''; });
     const rowFor = (item) => {
@@ -858,7 +865,7 @@
       acknowledgment: ack,
       _roundId: state.round ? state.round.id : undefined,
       _labels: {
-        about: labelMap(CFG.aboutFields),
+        about: aboutLabels,
         revision: labelMap(CFG.revisionFields),
         ack: labelMap(CFG.ackFields)
       }
@@ -1110,6 +1117,7 @@
     set('clientName', round.clientName);
     set('projectName', round.projectName);
     set('designPhase', round.designPhase);
+    if (!state.about.email) set('email', round.clientEmail);
     if (!state.about.dateSubmitted) state.about.dateSubmitted = todayISO();
 
     const banner = $('#contextBanner');
@@ -1135,6 +1143,28 @@
         } else {
           drive.hidden = true;
         }
+      }
+      const expiry = $('#contextExpiry');
+      if (expiry) {
+        if (round.expiresAt) {
+          expiry.textContent = 'Please submit by ' + fmtDateShort(round.expiresAt) + '.';
+          expiry.hidden = false;
+        } else {
+          expiry.hidden = true;
+        }
+      }
+      const emailWrap = $('#contextEmailWrap');
+      const emailInput = $('#contextEmail');
+      if (emailWrap && emailInput) {
+        emailInput.value = state.about.email || '';
+        if (!emailInput._emailBound) {
+          emailInput._emailBound = true;
+          emailInput.addEventListener('input', () => {
+            state.about.email = emailInput.value.trim();
+            scheduleDraftSave();
+          });
+        }
+        emailWrap.hidden = false;
       }
       banner.hidden = false;
     }

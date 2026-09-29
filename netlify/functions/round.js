@@ -41,6 +41,8 @@ exports.handler = async (event) => {
       round: {
         id: round.id,
         clientName: round.clientName,
+        clientEmail: round.clientEmail || '',
+        clientPhone: round.clientPhone || '',
         projectName: round.projectName,
         designPhase: round.designPhase,
         note: round.note,
@@ -48,6 +50,7 @@ exports.handler = async (event) => {
         rooms: round.rooms || [],
         status: round.status,
         reopenedAt: round.reopenedAt || null,
+        expiresAt: round.expiresAt || null,
         previousItems: round.previousItems || []
       }
     });
