@@ -232,9 +232,13 @@ WhatsApp *group* — use **TextMeBot** for groups:
 
 1. Sign up at <https://textmebot.com> and get a **premium API key**.
 2. Link it to the WhatsApp number that is a **member of the group**.
-3. Get the group's **recipient id** (looks like `1203630…@g.us`) from the
-   TextMeBot dashboard / API.
+3. **Groups are not self-serve** — email <support@textmebot.com> to enable group
+   sending and get the group's **recipient id** (looks like `1203630…@g.us`).
+   Until then you can point `TEXTMEBOT_RECIPIENT` at a single phone number.
 4. Set:
+
+> TextMeBot is a paid API (a 2-day free demo, then ~$6/month for unlimited
+> recipients).
 
 ```bash
 npx netlify-cli env:set TEXTMEBOT_APIKEY "<your-premium-apikey>" --context production

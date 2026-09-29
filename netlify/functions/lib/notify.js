@@ -30,6 +30,14 @@
 const EMAIL_FROM =
   process.env.EMAIL_FROM || 'Pepper & Olive Interiors <studio@pepperandolive.com>';
 
+// TextMeBot enforces a minimum ~8s between sends; space them out within a run.
+let lastTextMeBotAt = 0;
+async function textMeBotThrottle() {
+  const wait = lastTextMeBotAt + 9000 - Date.now();
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+  lastTextMeBotAt = Date.now();
+}
+
 function envList(name) {
   return String(process.env[name] || '')
     .split(',')
@@ -379,6 +387,7 @@ async function sendWhatsApp(text) {
   // 1) TextMeBot — can post into a WhatsApp GROUP the office number belongs to.
   if (process.env.TEXTMEBOT_APIKEY && process.env.TEXTMEBOT_RECIPIENT) {
     try {
+      await textMeBotThrottle();
       const url =
         'https://api.textmebot.com/send.php' +
         '?recipient=' + encodeURIComponent(process.env.TEXTMEBOT_RECIPIENT) +

@@ -16,6 +16,8 @@ TextMeBot). No client WhatsApp numbers are collected or used.
 | 1 | WhatsApp → office group | ✅ Done | `TEXTMEBOT_APIKEY` + `TEXTMEBOT_RECIPIENT` (e.g. `1203630…@g.us`). |
 | 2 | Removed client phone capture | ✅ Done | Dropped `nrPhone` field + `round.clientPhone` + client WhatsApp sends. |
 | 3 | Kept single-number fallbacks | ✅ Done | Twilio / CallMeBot / generic webhook still work (one recipient). |
+| 4 | TextMeBot 8s throttle | ✅ Done | Space sends to avoid TextMeBot's anti-spam delay error. |
+| 5 | Group caveat documented | ✅ Done | Group sending requires <support@textmebot.com>; demo is 2 days / ~$6/mo. |
 
 ### Files touched
 
