@@ -64,7 +64,6 @@
     $('#gateCard').hidden = false;
     $('#listWrap').hidden = true;
     $('#refreshBtn').hidden = true;
-    $('#signOutBtn').hidden = true;
     $('#gateError').hidden = !showError;
     if (showError) $('#adminKey').focus();
   }
@@ -73,7 +72,6 @@
     $('#gateCard').hidden = true;
     $('#listWrap').hidden = false;
     $('#refreshBtn').hidden = false;
-    $('#signOutBtn').hidden = false;
   }
 
   async function fetchRecords(key) {
@@ -558,6 +556,7 @@
     const phase = round.designPhase || '';
     const due = fmtDateOnly(round.expiresAt);
     const note = round.note || '';
+    const rooms = (round.rooms || []).map((r) => r && r.name).filter(Boolean).join(', ');
     const subject = 'Your revision request — ' + project;
     const lines = [];
     lines.push('Hi' + (client ? ' ' + client : '') + ',');
@@ -567,6 +566,7 @@
     lines.push('Please review everything in full and submit your one consolidated round of revisions' + (due ? ' by ' + due : '') + '.');
     lines.push('');
     lines.push('Open the form here: ' + link);
+    if (rooms) { lines.push(''); lines.push('Areas in scope: ' + rooms); }
     if (note) { lines.push(''); lines.push('Note: ' + note); }
     lines.push('');
     lines.push('Thank you,');
@@ -831,7 +831,6 @@
       load(key, true);
     });
     $('#refreshBtn').addEventListener('click', () => load(getKey(), false));
-    $('#signOutBtn').addEventListener('click', () => { setKey(''); $('#adminKey').value = ''; showGate(false); });
 
     // Submission detail overlay
     $('#detailCloseBtn').addEventListener('click', closeDetail);

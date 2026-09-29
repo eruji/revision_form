@@ -311,6 +311,7 @@ function defaultRoundInviteText(round, link) {
     ? new Date(round.expiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
     : '';
   const note = round.note || '';
+  const rooms = (round.rooms || []).map((r) => r && r.name).filter(Boolean).join(', ');
   const lines = [];
   lines.push('Hi' + (client ? ' ' + client : '') + ',');
   lines.push('');
@@ -319,6 +320,7 @@ function defaultRoundInviteText(round, link) {
   lines.push('Please review everything in full and submit your one consolidated round of revisions' + (expires ? ' by ' + expires : '') + '.');
   lines.push('');
   lines.push('Open the form here: ' + link);
+  if (rooms) { lines.push(''); lines.push('Areas in scope: ' + rooms); }
   if (note) { lines.push(''); lines.push('Note: ' + note); }
   lines.push('');
   lines.push('Thank you,');
