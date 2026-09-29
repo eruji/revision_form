@@ -93,14 +93,15 @@
     return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
 
-  function buildCsv(records) {
+  function cellText(v) {
+    if (Array.isArray(v)) return v.map((f) => (f && f.url) ? f.url : String(f)).filter(Boolean).join(' | ');
+    if (typeof v === 'string' && v.indexOf('data:image/') === 0) return 'Signed (drawn signature)';
+    return v == null ? '' : String(v);
+  }
+
+  function buildRows(records) {
     let header = null;
     const rows = [];
-    const cellText = (v) => {
-      if (Array.isArray(v)) return v.map((f) => (f && f.url) ? f.url : String(f)).filter(Boolean).join(' | ');
-      if (typeof v === 'string' && v.indexOf('data:image/') === 0) return 'Signed (drawn signature)';
-      return v == null ? '' : String(v);
-    };
     records.forEach((rec) => {
       const sub = rec.submission || {};
       const L = sub._labels || { about: {}, revision: {}, ack: {} };
@@ -137,8 +138,17 @@
         revs.forEach((rev) => rows.push([sub.submittedAt, ...aboutVals, '', '', ...revVals(rev), ...ackVals]));
       }
     });
-    const all = header ? [header, ...rows] : [];
-    return all.map((r) => r.map(csvCell).join(',')).join('\r\n');
+    return header ? [header, ...rows] : [];
+  }
+
+  function buildCsv(records) {
+    return buildRows(records).map((r) => r.map(csvCell).join(',')).join('\r\n');
+  }
+
+  // Tab-separated: paste straight into a Google Sheet (tabs = columns, lines = rows).
+  function buildTsv(records) {
+    const cell = (v) => String(v == null ? '' : v).replace(/[\t\r\n]+/g, ' ').trim();
+    return buildRows(records).map((r) => r.map(cell).join('\t')).join('\n');
   }
 
   function download(filename, content, type) {
@@ -414,6 +424,10 @@
 
   function exportRecordCsv(rec) {
     download(recordName(rec) + '.csv', buildCsv([rec]), 'text/csv;charset=utf-8');
+  }
+
+  function copyForSheet(rec, btn) {
+    copyText(buildTsv([rec]), btn);
   }
 
   // ── Office settings (Google Sheet work-queue URL) ────────────────────────
@@ -771,6 +785,7 @@
         h('div', { class: 'sub__actions' },
           h('button', { type: 'button', class: 'btn btn--ghost', text: 'View', onclick: () => openDetail(rec) }),
           h('button', { type: 'button', class: 'btn btn--ghost', text: 'CSV', onclick: () => exportRecordCsv(rec) }),
+          h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy for Sheet', onclick: (e) => copyForSheet(rec, e.currentTarget) }),
           canReopen ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Reopen', onclick: () => reopenRound(roundId) }) : null,
           driveUrl ? h('a', { class: 'btn btn--ghost', href: driveUrl, target: '_blank', rel: 'noopener', text: 'Drive' }) : null,
           workQueueSheetUrl ? h('a', { class: 'btn btn--ghost', href: workQueueSheetUrl, target: '_blank', rel: 'noopener', text: 'Sheet' }) : null,
@@ -846,6 +861,7 @@
     $('#detailOverlay').addEventListener('click', (e) => { if (e.target && e.target.id === 'detailOverlay') closeDetail(); });
     $('#detailPrintBtn').addEventListener('click', () => window.print());
     $('#detailCsvBtn').addEventListener('click', () => { if (detailRecord) exportRecordCsv(detailRecord); });
+    $('#detailSheetBtn').addEventListener('click', (e) => { if (detailRecord) copyForSheet(detailRecord, e.currentTarget); });
 
     // Round-created confirmation overlay
     $('#roundCreatedCloseBtn').addEventListener('click', closeRoundCreated);
