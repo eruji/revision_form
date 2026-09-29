@@ -190,6 +190,34 @@ exports.handler = async (event) => {
       }
     }
 
+    if (action === 'update') {
+      const round = await getRound(store, body.id || qs.id);
+      if (!round) return json(404, { ok: false, error: 'Not found' });
+      if (round.status !== 'open') return json(400, { ok: false, error: 'This request has already been submitted and can no longer be edited' });
+
+      ['clientName', 'projectName', 'designPhase', 'note'].forEach((f) => {
+        if (body[f] !== undefined) round[f] = String(body[f] || '').trim();
+      });
+      if (body.clientEmail !== undefined) round.clientEmail = normalizeEmail(body.clientEmail);
+      if (body.driveUrl !== undefined) round.driveUrl = cleanUrl(body.driveUrl);
+
+      if (body.createdAt) {
+        const d = new Date(String(body.createdAt));
+        if (!isNaN(d)) {
+          const prev = new Date(round.createdAt);
+          d.setHours(prev.getHours(), prev.getMinutes(), prev.getSeconds(), prev.getMilliseconds());
+          round.createdAt = d.toISOString();
+        }
+      }
+      if (body.expiresAt) round.expiresAt = expiryFor(body.expiresAt);
+
+      if (!round.projectName) return json(400, { ok: false, error: 'Project name is required' });
+
+      await store.setJSON('round_' + round.id, round);
+      await upsertIndex(store, round);
+      return json(200, { ok: true, round: summary(round) });
+    }
+
     if (action === 'reopen') {
       const round = await getRound(store, body.id || qs.id);
       if (!round) return json(404, { ok: false, error: 'Not found' });

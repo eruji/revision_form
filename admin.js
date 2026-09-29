@@ -63,6 +63,14 @@
     return d.toISOString();
   }
 
+  function dateInputValue(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+
   function showGate(showError) {
     $('#gateCard').hidden = false;
     $('#listWrap').hidden = true;
@@ -496,6 +504,7 @@
       const actions = h('div', { class: 'round-card__actions' },
         h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy link', onclick: (e) => copyText(link, e.currentTarget) }),
         h('a', { class: 'btn btn--ghost', href: link, target: '_blank', rel: 'noopener', text: 'Open' }),
+        r.status === 'open' ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Edit', onclick: () => openRoundEdit(r) }) : null,
         r.clientEmail ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Send email', onclick: () => showRoundCreated(r, roundsEmailFrom, { title: 'Send revision request', intro: 'Send this link to the client by email.' }) }) : null,
         r.driveUrl ? h('a', { class: 'btn btn--ghost', href: r.driveUrl, target: '_blank', rel: 'noopener', text: 'Drive' }) : null,
         h('button', { type: 'button', class: 'btn btn--danger', text: 'Delete', onclick: () => deleteRound(r.id, r.clientName) })
@@ -688,6 +697,85 @@
     }
   }
 
+  // ── Edit an open request (name + dates) until it is submitted ────────────
+  function editField(label, id, value, type) {
+    return h('div', { class: 'field' },
+      h('label', { for: id, text: label }),
+      h('input', { id: id, type: type || 'text', value: value }));
+  }
+
+  function openRoundEdit(round) {
+    const body = document.querySelector('#roundEditBody');
+    body.innerHTML = '';
+
+    const dateRow = h('div', { style: 'display:flex; gap:12px; flex-wrap:wrap' },
+      h('div', { class: 'field', style: 'flex:1 1 160px' },
+        h('label', { for: 'nrEditCreated', text: 'Created date' }),
+        h('input', { id: 'nrEditCreated', type: 'date', value: dateInputValue(round.createdAt) })),
+      h('div', { class: 'field', style: 'flex:1 1 160px' },
+        h('label', { for: 'nrEditExpires', text: 'Due date' }),
+        h('input', { id: 'nrEditExpires', type: 'date', value: dateInputValue(round.expiresAt) }))
+    );
+
+    body.append(
+      editField('Client name', 'nrEditClient', round.clientName || ''),
+      editField('Project name', 'nrEditProject', round.projectName || ''),
+      editField('Design phase', 'nrEditPhase', round.designPhase || ''),
+      editField('Client email', 'nrEditEmail', round.clientEmail || '', 'email'),
+      h('div', { class: 'field' },
+        h('label', { for: 'nrEditNote', text: 'Note' }),
+        h('textarea', { id: 'nrEditNote', rows: 3, value: round.note || '' })),
+      editField('Drive folder link', 'nrEditDrive', round.driveUrl || '', 'url'),
+      dateRow,
+      h('div', { class: 'modal__actions', style: 'justify-content:flex-start' },
+        h('button', { type: 'button', id: 'roundEditSaveBtn', class: 'btn btn--primary', text: 'Save changes', onclick: () => saveRoundEdit(round.id) }),
+        h('button', { type: 'button', class: 'btn btn--ghost', text: 'Cancel', onclick: closeRoundEdit })
+      )
+    );
+    document.querySelector('#roundEditOverlay').hidden = false;
+    document.body.classList.add('detail-open');
+  }
+
+  function closeRoundEdit() {
+    document.querySelector('#roundEditOverlay').hidden = true;
+    document.body.classList.remove('detail-open');
+  }
+
+  async function saveRoundEdit(id) {
+    const btn = document.querySelector('#roundEditSaveBtn');
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Saving…';
+    try {
+      const res = await fetch('/api/rounds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': getKey() },
+        body: JSON.stringify({
+          action: 'update',
+          id: id,
+          clientName: document.querySelector('#nrEditClient').value.trim(),
+          projectName: document.querySelector('#nrEditProject').value.trim(),
+          designPhase: document.querySelector('#nrEditPhase').value.trim(),
+          clientEmail: document.querySelector('#nrEditEmail').value.trim(),
+          note: document.querySelector('#nrEditNote').value.trim(),
+          driveUrl: document.querySelector('#nrEditDrive').value.trim(),
+          createdAt: document.querySelector('#nrEditCreated').value,
+          expiresAt: document.querySelector('#nrEditExpires').value
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'update failed');
+      closeRoundEdit();
+      toast('Request updated');
+      loadRounds(getKey());
+    } catch (e) {
+      toast(e && e.message ? e.message : 'Could not update the request');
+      btn.textContent = original;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
   // ── Rooms / areas list in the new-link form ──────────────────────────────
   function roomInputRow(value) {
     const input = h('input', { class: 'nr-room', type: 'text', placeholder: 'e.g. Kitchen', value: value || '' });
@@ -867,10 +955,15 @@
     $('#roundCreatedCloseBtn').addEventListener('click', closeRoundCreated);
     $('#roundCreatedOverlay').addEventListener('click', (e) => { if (e.target && e.target.id === 'roundCreatedOverlay') closeRoundCreated(); });
 
+    // Edit-open-request overlay
+    $('#roundEditCloseBtn').addEventListener('click', closeRoundEdit);
+    $('#roundEditOverlay').addEventListener('click', (e) => { if (e.target && e.target.id === 'roundEditOverlay') closeRoundEdit(); });
+
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
       if (!$('#detailOverlay').hidden) closeDetail();
       if (!$('#roundCreatedOverlay').hidden) closeRoundCreated();
+      if (!$('#roundEditOverlay').hidden) closeRoundEdit();
     });
 
     // Office-issued request links

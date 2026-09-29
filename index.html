@@ -171,6 +171,17 @@
     </div>
   </div>
 
+  <!-- Edit an open request (name + dates) -->
+  <div class="overlay" id="roundEditOverlay" hidden>
+    <div class="modal detail-modal round-created-modal" role="dialog" aria-modal="true" aria-labelledby="roundEditTitle">
+      <div class="detail-actions no-print">
+        <h2 id="roundEditTitle" style="margin:0">Edit request</h2>
+        <button type="button" class="iconbtn" id="roundEditCloseBtn" aria-label="Close">✕</button>
+      </div>
+      <div id="roundEditBody"></div>
+    </div>
+  </div>
+
   <script src="config.js?v=__BUILD__"></script>
   <script src="setup.js?v=__BUILD__"></script>
   <script src="admin.js?v=__BUILD__"></script>

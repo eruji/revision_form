@@ -4,7 +4,25 @@ Track changes to the revision form. Newest first.
 
 ---
 
-## Rev 5 — Email the client when a link is created (current)
+## Rev 6 — Edit open requests + copy-for-Sheet (current)
+
+### What changed
+
+| # | Item | Status |
+|---|---|---|
+| 1 | Edit open requests | ✅ Done | **Edit** button on each open round; can change name, project, phase, email, note, drive, created + due dates until submitted. |
+| 2 | Copy for Sheet | ✅ Done | **Copy for Sheet** on submission cards + detail view; copies tab-separated rows for pasting into Google Sheets. |
+| 3 | Fix email prefill | ✅ Done | admin `h()` helper now handles `value`/`checked`. |
+
+### Files touched
+
+- `netlify/functions/rounds.js` — `update` action (open rounds only).
+- `admin.js` — edit overlay + TSV copy; `h()` value/checked fix.
+- `index.html` — edit overlay + Copy-for-Sheet button.
+
+---
+
+## Rev 5 — Email the client when a link is created
 
 ### What changed
 
