@@ -16,6 +16,7 @@
   --ink:       #3d372f;
   --ink-soft:  #8b857a;
   --line:      #e6e0d4;
+  --stone-50: #fafaf9;
   --stone-400: #a8a29e;
   --stone-600: #57534e;
   --stone-700: #44403c;
@@ -67,15 +68,20 @@ h1, h2, h3 {
   position: sticky;
   top: 0;
   z-index: 40;
+  background: var(--sand);
+  color: var(--cream);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+.topbar__inner {
+  max-width: 1500px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 12px clamp(16px, 4vw, 40px);
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px 16px;
-  padding: 10px clamp(16px, 4vw, 40px);
-  background: var(--sand);
-  color: var(--cream);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  gap: 16px;
 }
 .topbar .btn--ghost {
   background: transparent;
@@ -99,15 +105,16 @@ h1, h2, h3 {
   color: rgba(253, 246, 234, 0.72);
   border-left: 1px solid rgba(253, 246, 234, 0.24);
   padding-left: 12px;
+  white-space: nowrap;
 }
-.topbar__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.topbar__actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
 /* ───────────────────────────── Layout ───────────────────────────── */
 .page {
   max-width: 860px;
   margin: 0 auto;
   padding: clamp(24px, 4vw, 48px) clamp(16px, 4vw, 24px) 80px;
-  background: var(--cream);
+  background: var(--stone-50);
 }
 
 /* ───────────────────────────── Review banner ───────────────────────────── */
@@ -676,7 +683,7 @@ input::placeholder, textarea::placeholder { color: #b3b0a4; }
 
 /* ── Narrow phones: put the top-bar actions on their own full-width row ── */
 @media (max-width: 600px) {
-  .topbar { padding: 10px 14px; }
+  .topbar__inner { padding: 10px 14px; }
   .topbar__actions { flex: 1 1 100%; }
   .topbar__actions .btn { flex: 1 1 auto; text-align: center; }
 }
