@@ -4,7 +4,25 @@ Track changes to the revision form. Newest first.
 
 ---
 
-## Rev 6 — Edit open requests + copy-for-Sheet (current)
+## Rev 7 — Brand restyle (match design-homework)
+
+### What changed
+
+| # | Item | Status |
+|---|---|---|
+| 1 | Square corners everywhere | ✅ Done | `--radius`/`--radius-sm` → `0`; reset block squares pills, chips, badges, modals and circles. |
+| 2 | Sand chrome + cream content | ✅ Done | Body + topbar are brand sand `#9e988e`; `.page` is cream. |
+| 3 | Sand header (was dark) | ✅ Done | Topbar sand with cream type; `.topbar .btn--ghost` cream-outline buttons. |
+| 4 | Brand typography | ✅ Done | Headings: Libre Baskerville 400, uppercase, display tracking; eyebrows/buttons use brand tracking. |
+| 5 | Brand buttons | ✅ Done | `.btn`/`.btn--lg`/`.add-btn` square, uppercase, letter-spaced; primary → `--stone-800`. |
+
+### Files touched
+
+- `styles.css` — tokens, chrome, headings, buttons, square-corner reset.
+
+---
+
+## Rev 6 — Edit open requests + copy-for-Sheet
 
 ### What changed
 
