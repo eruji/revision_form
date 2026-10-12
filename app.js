@@ -87,8 +87,10 @@
 
   // Only allow http(s) links (guards against javascript:/data: URLs).
   function safeUrl(u) {
+    const s = String(u == null ? '' : u).trim();
+    if (!s) return '';
     try {
-      const url = new URL(String(u), location.href);
+      const url = new URL(s, location.href);
       return (url.protocol === 'http:' || url.protocol === 'https:') ? url.href : '';
     } catch (e) { return ''; }
   }
