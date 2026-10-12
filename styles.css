@@ -121,6 +121,25 @@ h1, h2, h3 {
   color: var(--stone-800);
 }
 
+/* Setup drawer tabs (Revision form / Design homework) */
+.setup-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--stone-200, #e7e5e4); }
+.setup-tab {
+  appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  color: var(--stone-500, #78716c);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 8px 14px;
+  text-transform: uppercase;
+}
+.setup-tab:hover { color: var(--stone-800); }
+.setup-tab.is-active { color: var(--stone-800); border-bottom-color: var(--stone-800); }
+
 /* ───────────────────────────── Layout ───────────────────────────── */
 .page {
   max-width: 860px;

@@ -18,11 +18,15 @@
   'use strict';
 
   const KEY_CONFIG = 'po_revision_config_v1';
+  const HW_KEY_CONFIG = 'po_homework_config_v1';
   const DEFAULTS = JSON.parse(JSON.stringify(window.REVISION_FORM_CONFIG || {}));
+  const HW_DEFAULTS = JSON.parse(JSON.stringify(window.DESIGN_HOMEWORK_CONFIG || {}));
 
-  let CFG = loadConfig();       // effective, persisted configuration
-  let setupDraft = null;        // working copy while the panel is open
-  let onApply = null;           // optional callback after Save & apply
+  let CFG = loadConfig();            // effective, persisted revision configuration
+  let HW_CFG = loadHomeworkConfig(); // effective, persisted homework configuration
+  let setupDraft = null;             // working copy while the panel is open
+  let mode = 'revision';             // 'revision' | 'homework'
+  let onApply = null;                // optional callback after Save & apply
   let bound = false;
 
   function $(sel) { return document.querySelector(sel); }
@@ -110,9 +114,31 @@
     try { localStorage.setItem(KEY_CONFIG, JSON.stringify(CFG)); } catch (e) {}
   }
 
+  function loadHomeworkConfig() {
+    try {
+      const raw = localStorage.getItem(HW_KEY_CONFIG);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (saved && saved.schemaVersion === HW_DEFAULTS.schemaVersion) {
+          return Object.assign(deepClone(HW_DEFAULTS), saved);
+        }
+      }
+    } catch (e) { /* fall through to defaults */ }
+    return deepClone(HW_DEFAULTS);
+  }
+
+  function persistHomeworkConfig() {
+    try { localStorage.setItem(HW_KEY_CONFIG, JSON.stringify(HW_CFG)); } catch (e) {}
+  }
+
   // ── Panel ────────────────────────────────────────────────────────────────
+  function setMode(name) {
+    mode = name;
+    setupDraft = deepClone(mode === 'homework' ? HW_CFG : CFG);
+  }
+
   function open() {
-    setupDraft = deepClone(CFG);
+    setMode('revision');
     render();
     $('#setupDrawer').hidden = false;
     $('#setupScrim').hidden = false;
@@ -126,9 +152,15 @@
 
   function apply() {
     if (!setupDraft) return;
-    CFG = setupDraft;
-    persistConfig();
-    if (onApply) onApply(CFG);
+    if (mode === 'homework') {
+      HW_CFG = setupDraft;
+      persistHomeworkConfig();
+      if (onApply) onApply(HW_CFG);
+    } else {
+      CFG = setupDraft;
+      persistConfig();
+      if (onApply) onApply(CFG);
+    }
     close();
     toast('Setup applied');
   }
@@ -206,10 +238,30 @@
     return row;
   }
 
+  function tabButton(name, label) {
+    return h('button', {
+      type: 'button',
+      class: 'setup-tab' + (mode === name ? ' is-active' : ''),
+      onclick: () => { setMode(name); render(); }
+    }, label);
+  }
+
   function render() {
     const body = $('#setupBody');
     if (!body) return;
     body.innerHTML = '';
+
+    const tabs = h('div', { class: 'setup-tabs' },
+      tabButton('revision', 'Revision form'),
+      tabButton('homework', 'Design homework')
+    );
+    body.append(tabs);
+
+    if (mode === 'homework') renderHomework(body);
+    else renderRevision(body);
+  }
+
+  function renderRevision(body) {
     const cfg = setupDraft;
 
     // ── General ──
@@ -312,9 +364,40 @@
     body.append(ackGroup);
   }
 
+  function renderHomework(body) {
+    const cfg = setupDraft;
+    const welcome = cfg.welcome || {};
+    const closing = cfg.closing || {};
+
+    const opening = h('div', { class: 'setup-group' },
+      h('h3', { text: 'Opening page' }),
+      h('p', { text: 'The first screen a client sees when they open the Design Homework.' }),
+      h('div', { class: 'field' }, h('label', { text: 'Business name' }),
+        h('input', { type: 'text', value: cfg.business || '', oninput: (e) => { cfg.business = e.target.value; } })),
+      h('div', { class: 'field' }, h('label', { text: 'Form title' }),
+        h('input', { type: 'text', value: cfg.formTitle || '', oninput: (e) => { cfg.formTitle = e.target.value; } })),
+      h('div', { class: 'field' }, h('label', { text: 'Welcome heading' }),
+        h('input', { type: 'text', value: welcome.title || '', oninput: (e) => { welcome.title = e.target.value; } })),
+      h('div', { class: 'field' }, h('label', { text: 'Welcome body' }),
+        h('textarea', { class: 'setup-textarea', oninput: (e) => { welcome.body = e.target.value; } }, welcome.body || ''))
+    );
+    body.append(opening);
+
+    const closingGroup = h('div', { class: 'setup-group' },
+      h('h3', { text: 'Closing page' }),
+      h('p', { text: 'Shown on the final Next Steps screen.' }),
+      h('div', { class: 'field' }, h('label', { text: 'Closing heading' }),
+        h('input', { type: 'text', value: closing.title || '', oninput: (e) => { closing.title = e.target.value; } })),
+      h('div', { class: 'field' }, h('label', { text: 'Closing body' }),
+        h('textarea', { class: 'setup-textarea', oninput: (e) => { closing.body = e.target.value; } }, closing.body || ''))
+    );
+    body.append(closingGroup);
+  }
+
   function exportConfig() {
-    const cfg = setupDraft || CFG;
-    download('revision-form-config.json', JSON.stringify(cfg, null, 2), 'application/json');
+    const cfg = setupDraft || (mode === 'homework' ? HW_CFG : CFG);
+    const name = mode === 'homework' ? 'homework-config.json' : 'revision-form-config.json';
+    download(name, JSON.stringify(cfg, null, 2), 'application/json');
     toast('Config exported');
   }
 
@@ -323,9 +406,15 @@
     reader.onload = () => {
       try {
         const parsed = JSON.parse(reader.result);
-        if (!parsed || !Array.isArray(parsed.revisionFields)) throw new Error('bad shape');
-        parsed.schemaVersion = parsed.schemaVersion || DEFAULTS.schemaVersion;
-        setupDraft = parsed;
+        if (mode === 'homework') {
+          if (!parsed || !parsed.welcome) throw new Error('bad shape');
+          parsed.schemaVersion = parsed.schemaVersion || HW_DEFAULTS.schemaVersion;
+          setupDraft = Object.assign(deepClone(HW_DEFAULTS), parsed);
+        } else {
+          if (!parsed || !Array.isArray(parsed.revisionFields)) throw new Error('bad shape');
+          parsed.schemaVersion = parsed.schemaVersion || DEFAULTS.schemaVersion;
+          setupDraft = parsed;
+        }
         render();
         toast('Config loaded — review, then Save & apply');
       } catch (e) {
@@ -336,7 +425,7 @@
   }
 
   function resetToDefaults() {
-    setupDraft = deepClone(DEFAULTS);
+    setupDraft = deepClone(mode === 'homework' ? HW_DEFAULTS : DEFAULTS);
     render();
     toast('Defaults restored — click Save & apply');
   }
@@ -374,6 +463,7 @@
     },
     open: open,
     close: close,
-    getConfig() { return CFG; }
+    getConfig() { return CFG; },
+    getHomeworkConfig() { return HW_CFG; }
   };
 })();

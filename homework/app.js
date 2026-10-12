@@ -2,7 +2,9 @@
 (function () {
   'use strict';
 
-  const CFG = window.DESIGN_HOMEWORK_CONFIG;
+  const CFG = (window.TeamSetup && typeof window.TeamSetup.getHomeworkConfig === 'function')
+    ? window.TeamSetup.getHomeworkConfig()
+    : (window.DESIGN_HOMEWORK_CONFIG || {});
   const STORAGE_KEY = 'pno-design-homework-v2';
   const IMG = (id) => `assets/img/${id}.jpg`;
 
