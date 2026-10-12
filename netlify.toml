@@ -14,6 +14,10 @@
 [functions."reminders"]
   schedule = "0 9 * * *"
 
+# Same reminder cycle for open, unsubmitted Design Homework links (10am daily).
+[functions."homework-reminders"]
+  schedule = "0 10 * * *"
+
 # Office-only API — these sit behind Cloudflare Access at /api/*.
 [[redirects]]
   from = "/api/*"
@@ -67,6 +71,11 @@
 [[redirects]]
   from = "/homework/api/get"
   to = "/.netlify/functions/homework-get"
+  status = 200
+
+[[redirects]]
+  from = "/homework/api/round"
+  to = "/.netlify/functions/homework-round"
   status = 200
 
 # Old flat client URLs -> new /clients/ paths.

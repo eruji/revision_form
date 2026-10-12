@@ -765,6 +765,117 @@ async function onHomeworkSubmission(sub, opts) {
   return { emailSent };
 }
 
+// ── Client Design Homework — office-issued links + reminders ──────────────
+function homeworkDefaultInviteText(round, link) {
+  const client = round.clientName || '';
+  const project = round.projectName || 'your project';
+  const expires = round.expiresAt
+    ? new Date(round.expiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+    : '';
+  const note = round.note || '';
+  const lines = [];
+  lines.push('Hi' + (client ? ' ' + client : '') + ',');
+  lines.push('');
+  lines.push('We have prepared your Design Homework for ' + project + '.');
+  lines.push('');
+  lines.push('Please browse each section, make your selections, and submit it' + (expires ? ' by ' + expires : '') + '.');
+  lines.push('');
+  lines.push('Open the homework here: ' + link);
+  if (note) { lines.push(''); lines.push('Note: ' + note); }
+  lines.push('');
+  lines.push('Thank you,');
+  lines.push('Pepper & Olive Interiors');
+  return lines.join('\n');
+}
+
+function homeworkRoundInviteEmail(round, opts) {
+  opts = opts || {};
+  const project = round.projectName || 'your project';
+  const link = round.clientLink || opts.link || '';
+  const subject = opts.subject || ('Your Design Homework — ' + project);
+  const text = opts.message || homeworkDefaultInviteText(round, link);
+  return { subject: subject, text: text, html: textToHtml(text) };
+}
+
+async function onHomeworkRoundLink(round, opts) {
+  opts = opts || {};
+  const to = String(round.clientEmail || '').trim();
+  if (!to) return { sent: false, reason: 'no-email' };
+  const msg = homeworkRoundInviteEmail(round, opts);
+  const sent = await sendEmail({ to: to, subject: msg.subject, text: msg.text, html: msg.html, replyTo: fromEmail() });
+  if (!sent) throw new Error('Email provider is not configured');
+  return { sent: true, to: to };
+}
+
+function homeworkReminderEmails(round, kind) {
+  const client = round.clientName || '';
+  const project = round.projectName || 'your project';
+  const link = round.clientLink || '';
+  const expiresAt = round.expiresAt || '';
+  const expText = expiresAt
+    ? new Date(expiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+    : '';
+  const clientSubject =
+    (kind === 'expiring' ? 'Reminder: ' : '') + 'Your Design Homework for ' + project +
+    (kind === 'expiring' ? ' expires soon' : ' is waiting for you');
+
+  let clientText;
+  if (kind === 'expiring') {
+    clientText = [
+      'Hi' + (client ? ' ' + client : '') + ',',
+      '',
+      'A gentle reminder — we still have not received your Design Homework for ' + project + ', and it expires on ' + expText + '.',
+      '',
+      link ? 'Complete it here: ' + link : '',
+      '',
+      'If you have already submitted, please disregard this note.',
+      '',
+      '— Pepper & Olive Interiors'
+    ].join('\n');
+  } else {
+    clientText = [
+      'Hi' + (client ? ' ' + client : '') + ',',
+      '',
+      'A quick reminder — we sent you your Design Homework for ' + project + ' a week ago and have not received it yet.',
+      '',
+      'Please complete and submit it' + (expText ? ' by ' + expText : '') + '.',
+      '',
+      link ? 'Open it here: ' + link : '',
+      '',
+      '— Pepper & Olive Interiors'
+    ].join('\n');
+  }
+
+  const officeText =
+    (kind === 'expiring' ? 'Design Homework expiring soon' : 'Design Homework still not submitted') +
+    ' — ' + client + ' · ' + project + '\n' + (link || '');
+
+  return {
+    client: { subject: clientSubject, text: clientText, html: textToHtml(clientText) },
+    office: { subject: clientSubject, text: officeText, html: textToHtml(officeText) }
+  };
+}
+
+async function onHomeworkReminder(round, kind) {
+  const msgs = homeworkReminderEmails(round, kind);
+  const office = officeRecipients();
+  let emailSent = false;
+
+  if (office.length) {
+    try { emailSent = !!(await sendEmail({ to: office, subject: msgs.office.subject, text: msgs.office.text, html: msgs.office.html })); }
+    catch (e) { console.error('homework reminder office email failed:', e && e.message); }
+  }
+  if (round.clientEmail) {
+    try { emailSent = !!(await sendEmail({ to: round.clientEmail, subject: msgs.client.subject, text: msgs.client.text, html: msgs.client.html })) || emailSent; }
+    catch (e) { console.error('homework reminder client email failed:', e && e.message); }
+  }
+
+  const officeText = msgs.office.subject + '\n' + msgs.office.text;
+  await sendDiscord(officeText);
+  await sendWhatsApp(officeText);
+  return { emailSent };
+}
+
 module.exports = {
   sendEmail,
   sendDiscord,
@@ -781,5 +892,9 @@ module.exports = {
   discordSubmissionText,
   onHomeworkSubmission,
   homeworkOfficeEmail,
-  homeworkClientEmail
+  homeworkClientEmail,
+  onHomeworkRoundLink,
+  homeworkRoundInviteEmail,
+  onHomeworkReminder,
+  homeworkReminderEmails
 };

@@ -132,6 +132,44 @@
 
     <!-- Design Homework tab -->
     <section id="homeworkWrap" hidden>
+      <section class="card new-round">
+        <div class="card__head">
+          <span class="step">🔗</span>
+          <div>
+            <h2>New homework link</h2>
+            <p>Generate a personalized link to send a client their Design Homework.</p>
+          </div>
+        </div>
+        <div class="round-form">
+          <div class="field"><label for="hwClient">Client name</label>
+            <input id="hwClient" type="text" placeholder="e.g. Jane Doe" /></div>
+          <div class="field"><label for="hwEmail">Client email</label>
+            <input id="hwEmail" type="email" placeholder="jane@example.com" autocomplete="email" />
+            <p class="field__help">For the confirmation + reminder emails. Optional but recommended.</p></div>
+          <div class="field"><label for="hwProject">Project name *</label>
+            <input id="hwProject" type="text" placeholder="e.g. Maple Residence" /></div>
+          <div class="field"><label for="hwNote">Note to the client (optional)</label>
+            <input id="hwNote" type="text" placeholder="e.g. Focus on the kitchen and lighting sections" /></div>
+          <div class="field"><label for="hwDrive">Google Drive folder link (optional)</label>
+            <input id="hwDrive" type="url" placeholder="https://drive.google.com/drive/folders/…" /></div>
+          <div class="field"><label for="hwExpires">Expiration date</label>
+            <input id="hwExpires" type="date" />
+            <p class="field__help">Defaults to 14 days from today if left blank. We remind clients who have not submitted after 7 days.</p></div>
+        </div>
+        <div class="new-round__actions">
+          <button type="button" class="btn btn--primary" id="createHomeworkBtn">Create link</button>
+          <span class="new-round__error" id="newHomeworkError" hidden></span>
+        </div>
+        <div class="new-round__result" id="newHomeworkResult" hidden>
+          <input type="text" id="newHomeworkLink" readonly />
+          <button type="button" class="btn btn--ghost" id="copyNewHomeworkBtn">Copy link</button>
+        </div>
+      </section>
+
+      <h2 class="admin-heading">Homework links</h2>
+      <p class="admin-hint">Send a link to start a client's homework. A link disappears from the open list once submitted — use <b>Reopen</b> to bring it back.</p>
+      <div id="homeworkRoundsList"></div>
+
       <h2 class="admin-heading">Design homework submissions <span class="admin-heading__note" id="homeworkCount"></span></h2>
       <p class="admin-hint">Completed homework forms. Use <b>CSV</b> to export, or open the client's private link from the submission email.</p>
       <div id="homeworkList"></div>

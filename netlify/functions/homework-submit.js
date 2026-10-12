@@ -86,6 +86,23 @@ exports.handler = async (event) => {
   const key = 'hw_' + hashToken(token);
   const viewUrl = '/homework/view.html?token=' + encodeURIComponent(token);
 
+  // If this came from an office-issued homework link, pull the round context
+  // and stamp it onto the submission (authoritative, not client-supplied).
+  let round = null;
+  const roundId = sub._roundId;
+  try {
+    if (roundId) {
+      const roundStore = openStore('homework-rounds');
+      round = await roundStore.get('round_' + roundId, { type: 'json' });
+      if (round) {
+        sub.client = sub.client || {};
+        if (round.clientName) sub.client.name = sub.client.name || round.clientName;
+        sub.client.project = round.projectName || sub.client.project || '';
+        if (round.clientEmail) sub.client.email = sub.client.email || round.clientEmail;
+      }
+    }
+  } catch (e) { /* non-fatal */ }
+
   const client = sub.client || {};
   const record = {
     id: key.slice(3, 15),
@@ -111,6 +128,33 @@ exports.handler = async (event) => {
       selectionCount: flatRows(sub).filter((r) => r.selection && r.selection.indexOf('skipped') === -1).length
     });
     await store.setJSON('__index__', index);
+
+    // Update the office-issued round, if this came from one.
+    if (round) {
+      try {
+        const roundStore = openStore('homework-rounds');
+        round.status = 'submitted';
+        round.submittedAt = record.submittedAt;
+        round.submissions = round.submissions || [];
+        const selCount = flatRows(sub).filter((r) => r.selection && r.selection.indexOf('skipped') === -1).length;
+        round.submissions.push({ id: record.id, submittedAt: record.submittedAt, selectionCount: selCount });
+        round.draftCode = null;
+        await roundStore.setJSON('round_' + round.id, round);
+
+        let rIdx = [];
+        try { rIdx = (await roundStore.get('__rounds_index__', { type: 'json' })) || []; } catch (e) { rIdx = []; }
+        rIdx = rIdx.filter((r) => r && r.id !== round.id);
+        const last = round.submissions[round.submissions.length - 1];
+        rIdx.unshift({
+          id: round.id, clientName: round.clientName, clientEmail: round.clientEmail || '',
+          projectName: round.projectName, note: round.note || '', driveUrl: round.driveUrl || '',
+          status: round.status, createdAt: round.createdAt, reopenedAt: round.reopenedAt || null,
+          expiresAt: round.expiresAt || null, submittedAt: last.submittedAt,
+          selectionCount: last.selectionCount, reopenCount: round.reopenCount || 0
+        });
+        await roundStore.setJSON('__rounds_index__', rIdx);
+      } catch (e) { /* non-fatal */ }
+    }
 
     // Notifications: robust email first, then the Sheet webhook (which skips its
     // own email when we already sent one).

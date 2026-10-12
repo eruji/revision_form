@@ -36,7 +36,7 @@ A real form needs to grow with the client. That's what this POC does.
 | `config.js` | **The revision questions and policy copy your team will iterate on** |
 | `homework/index.html`, `homework/app.js`, `homework/config.js`, `homework/view.html`, `homework/view.js` | Client Design Homework (public `/homework/`), self-contained like `/clients/` |
 | `homework/assets/` | Homework option images + brand logos (public, immutable-cached) |
-| `netlify/functions/*` | API — office (`admin`, `rounds`, `homework-admin`) + public client (`submit`, `get`, `draft`, `round`, `upload`, `file`, `homework-submit`, `homework-get`, `homework-draft`), scheduled `cleanup-drafts` + `reminders`, with `lib/notify.js` for email/Discord/WhatsApp |
+| `netlify/functions/*` | API — office (`admin`, `rounds`, `homework-admin`, `homework-rounds`) + public client (`submit`, `get`, `draft`, `round`, `upload`, `file`, `homework-submit`, `homework-get`, `homework-draft`, `homework-round`), scheduled `cleanup-drafts` + `reminders` + `homework-reminders`, with `lib/notify.js` for email/Discord/WhatsApp |
 | `google_apps_script.gs` | Apps Script bridge: Google Sheet work queue + email notification |
 | `netlify.toml` | Publish dir, functions dir, `/api/*` routing, headers |
 | `.github/workflows/deploy.yml` | CI: install deps → stage files → deploy on push |
@@ -50,14 +50,14 @@ functions.
 | URL | What it is |
 |---|---|
 | `/` | Office dashboard (revision + design homework tabs) — **behind Cloudflare Access** |
-| `/api/admin`, `/api/rounds`, `/api/homework-admin` | Office APIs — **behind Cloudflare Access** |
+| `/api/admin`, `/api/rounds`, `/api/homework-admin`, `/api/homework-rounds` | Office APIs — **behind Cloudflare Access** |
 | `/clients/form.html?r=…` | Client revision form, opened from a generated request link (public) |
 | `/clients/form.html?resume=…` | Client form restored from a saved draft code (public) |
 | `/clients/view.html?token=…` | Private read-only copy of a submission (public) |
 | `/clients/api/*` | Public client API (submit, get, draft, round, upload, file) |
 | `/homework/` | Client Design Homework (public) |
 | `/homework/view.html?token=…` | Private read-only copy of a homework (public) |
-| `/homework/api/*` | Public homework API (submit, draft, get) |
+| `/homework/api/*` | Public homework API (submit, draft, get, round) |
 
 Clients only ever reach `/clients/…` or `/homework/…` through a link the
 dashboard generates; the root and the office APIs are gated by Cloudflare Zero

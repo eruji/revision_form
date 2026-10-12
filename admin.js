@@ -945,10 +945,137 @@
     });
   }
 
+  function homeworkRoundLink(id) { return location.origin + '/homework/?r=' + id; }
+
+  async function loadHomeworkRounds(key) {
+    const list = $('#homeworkRoundsList');
+    if (!list) return;
+    list.innerHTML = '';
+    list.append(h('p', { class: 'admin-empty', text: 'Loading…' }));
+    try {
+      const res = await fetch('/api/homework-rounds', { headers: { 'x-admin-key': key }, cache: 'no-store' });
+      if (res.status === 401) { setKey(''); showGate(true); return; }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Request failed');
+      renderHomeworkRounds(data.rounds || []);
+    } catch (e) {
+      list.innerHTML = '';
+      list.append(h('p', { class: 'admin-empty', text: 'Could not load homework links. ' + (e.message || '') }));
+    }
+  }
+
+  function renderHomeworkRounds(rounds) {
+    const list = $('#homeworkRoundsList');
+    if (!list) return;
+    list.innerHTML = '';
+    if (!rounds.length) {
+      list.append(h('p', { class: 'admin-empty', text: 'No homework links yet.' }));
+      return;
+    }
+
+    const renderOne = (r) => {
+      const link = homeworkRoundLink(r.id);
+      const head = h('div', { class: 'sub__head' },
+        h('strong', { text: (r.clientName || '—') + (r.projectName ? ' · ' + r.projectName : '') }),
+        h('span', { class: 'badge', text: r.status === 'open' ? 'open' : 'submitted' }),
+        r.expiresAt ? h('span', { text: 'due ' + fmtDateOnly(r.expiresAt) }) : null
+      );
+      const meta = h('div', { class: 'sub__item' },
+        r.clientEmail ? h('small', { text: r.clientEmail }) : null,
+        r.submittedAt ? h('small', { text: 'submitted ' + fmtDate(r.submittedAt) + (r.selectionCount ? ' · ' + r.selectionCount + ' selections' : '') }) : null
+      );
+      const actions = h('div', { class: 'sub__actions' },
+        h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy link', onclick: (e) => copyText(link, e.currentTarget) }),
+        r.status === 'open' && r.clientEmail ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Send email', onclick: () => sendHomeworkEmail(r.id) }) : null,
+        r.status === 'open' ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Delete', onclick: () => deleteHomeworkRound(r.id, r.clientName) }) : null,
+        r.status !== 'open' ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Reopen', onclick: () => reopenHomeworkRound(r.id) }) : null,
+        r.status !== 'open' ? h('button', { type: 'button', class: 'btn btn--danger', text: 'Delete', onclick: () => deleteHomeworkRound(r.id, r.clientName) }) : null
+      );
+      return h('div', { class: 'sub' }, head, meta, actions);
+    };
+
+    const open = rounds.filter((r) => r.status === 'open');
+    const done = rounds.filter((r) => r.status !== 'open');
+    open.concat(done).forEach((r) => list.append(renderOne(r)));
+  }
+
+  async function createHomeworkRound() {
+    const err = $('#newHomeworkError');
+    err.hidden = true;
+    const body = {
+      clientName: $('#hwClient').value.trim(),
+      clientEmail: $('#hwEmail').value.trim(),
+      projectName: $('#hwProject').value.trim(),
+      note: $('#hwNote').value.trim(),
+      driveUrl: $('#hwDrive').value.trim(),
+      expiresAt: $('#hwExpires').value
+    };
+    if (!body.projectName) { err.textContent = 'Project name is required.'; err.hidden = false; return; }
+    try {
+      const res = await fetch('/api/homework-rounds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': getKey() },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not create the link');
+      $('#newHomeworkLink').value = location.origin + (data.link || '/homework/?r=' + data.round.id);
+      $('#newHomeworkResult').hidden = false;
+      ['hwClient', 'hwEmail', 'hwProject', 'hwNote', 'hwDrive', 'hwExpires'].forEach((id) => { $('#' + id).value = ''; });
+      toast('Homework link created');
+      loadHomeworkRounds(getKey());
+    } catch (e) {
+      err.textContent = e.message || 'Could not create the link';
+      err.hidden = false;
+    }
+  }
+
+  async function sendHomeworkEmail(id) {
+    try {
+      const res = await fetch('/api/homework-rounds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': getKey() },
+        body: JSON.stringify({ action: 'send', id: id })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not send');
+      toast('Email sent to ' + (data.to || 'the client'));
+    } catch (e) { toast('Could not send: ' + (e.message || '')); }
+  }
+
+  async function reopenHomeworkRound(id) {
+    if (!window.confirm('Reopen this homework link for another round?')) return;
+    try {
+      const res = await fetch('/api/homework-rounds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': getKey() },
+        body: JSON.stringify({ action: 'reopen', id: id })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not reopen');
+      toast('Homework link reopened');
+      loadHomeworkRounds(getKey());
+    } catch (e) { toast('Could not reopen: ' + (e.message || '')); }
+  }
+
+  async function deleteHomeworkRound(id, name) {
+    if (!window.confirm('Delete the homework link for ' + (name || 'this client') + '?')) return;
+    try {
+      const res = await fetch('/api/homework-rounds?id=' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: { 'x-admin-key': getKey() }
+      });
+      if (!res.ok) throw new Error('delete failed');
+      toast('Homework link deleted');
+      loadHomeworkRounds(getKey());
+    } catch (e) { toast('Could not delete the link'); }
+  }
+
   async function loadHomework(key) {
     const list = $('#homeworkList');
     list.innerHTML = '';
     list.append(h('p', { class: 'admin-empty', text: 'Loading…' }));
+    loadHomeworkRounds(key);
     try {
       const res = await fetch('/api/homework-admin', { headers: { 'x-admin-key': key }, cache: 'no-store' });
       if (res.status === 401) { setKey(''); showGate(true); return; }
@@ -1028,6 +1155,10 @@
     // Dashboard section tabs (revision requests / design homework)
     $('#tabRevisions').addEventListener('click', () => showTab('revisions'));
     $('#tabHomework').addEventListener('click', () => showTab('homework'));
+
+    // Design homework links
+    $('#createHomeworkBtn').addEventListener('click', createHomeworkRound);
+    $('#copyNewHomeworkBtn').addEventListener('click', (e) => copyText($('#newHomeworkLink').value, e.currentTarget));
   }
 
   function init() {

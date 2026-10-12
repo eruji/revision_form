@@ -470,6 +470,41 @@ body {
 }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* Office-issued link context banner (appears when opened via ?r=) */
+.context-banner {
+  background: var(--stone-800);
+  color: var(--cream);
+  padding: 14px clamp(16px, 4vw, 24px);
+}
+.context-banner__inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.context-banner__main h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 400;
+}
+.context-banner__main p {
+  margin: 2px 0;
+  font-size: 13px;
+  color: rgba(253, 246, 234, 0.72);
+}
+.context-banner .btn-outline {
+  border-color: rgba(253, 246, 234, 0.4);
+  color: var(--cream);
+}
+.context-banner .btn-outline:hover {
+  background: rgba(253, 246, 234, 0.14);
+  border-color: var(--cream);
+  color: var(--cream);
+}
+
 /* ── Drawer / summary ───────────────────────────────────────────────────── */
 .drawer-scrim {
   position: fixed; inset: 0; background: rgba(61,55,47,0.4);

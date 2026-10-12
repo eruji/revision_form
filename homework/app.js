@@ -15,8 +15,11 @@
     budget: {},       // budgetCatId -> { tier: index|null, note: '' }
     focusOn: {},      // categoryId -> bool (default true)
     step: 'welcome',
-    expanded: []      // sidebar expanded keys ('s:ID' / 'g:SECTION:GROUP')
+    expanded: [],     // sidebar expanded keys ('s:ID' / 'g:SECTION:GROUP')
+    _roundId: null    // office-issued homework link id, if opened via ?r= or resume
   };
+
+  let activeRound = null;  // full round context (banner + client prefill), not persisted
 
   function load() {
     try {
@@ -299,13 +302,17 @@
       <div class="budget-list">${cards}</div>`;
   }
 
-  function renderReview() {
+  function clientDetailsCard() {
+    if (activeRound) {
+      return `
+      <div class="cat-card">
+        <h2 class="cat-title">Your details</h2>
+        <p class="cat-help">Prepared by our team — no need to fill anything in.</p>
+        <div class="sum-item"><strong>${esc(state.client.name || '—')}</strong> · ${esc(state.client.project || '')}</div>
+        ${state.client.email ? `<div class="sum-item" style="color:var(--stone-600)">${esc(state.client.email)}</div>` : ''}
+      </div>`;
+    }
     return `
-      <div class="section-head">
-        <p class="kicker">17 · ${esc(CFG.closing.title)}</p>
-        <h1 class="section-title">${esc(CFG.closing.title)}</h1>
-        <p class="section-intro">${esc(CFG.closing.body)}</p>
-      </div>
       <div class="cat-card">
         <h2 class="cat-title">Your details</h2>
         <p class="cat-help">So we know whose homework this is.</p>
@@ -314,7 +321,17 @@
           <div class="field"><label for="c-project">Project / address</label><input id="c-project" data-client="project" value="${esc(state.client.project)}" /></div>
           <div class="field full"><label for="c-email">Email</label><input id="c-email" type="email" data-client="email" value="${esc(state.client.email)}" /></div>
         </div>
+      </div>`;
+  }
+
+  function renderReview() {
+    return `
+      <div class="section-head">
+        <p class="kicker">17 · ${esc(CFG.closing.title)}</p>
+        <h1 class="section-title">${esc(CFG.closing.title)}</h1>
+        <p class="section-intro">${esc(CFG.closing.body)}</p>
       </div>
+      ${clientDetailsCard()}
       <div class="cat-card" style="text-align:center;padding:28px;">
         <p style="margin:0 0 16px;color:var(--stone-600)">Review everything you’ve selected, then send it to our team — or save and finish later.</p>
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
@@ -330,7 +347,8 @@
   function draftData() {
     return {
       client: state.client, selections: state.selections, notes: state.notes,
-      omitted: state.omitted, budget: state.budget, focusOn: state.focusOn, step: state.step
+      omitted: state.omitted, budget: state.budget, focusOn: state.focusOn, step: state.step,
+      _roundId: state._roundId || undefined
     };
   }
 
@@ -356,6 +374,7 @@
       formTitle: CFG.formTitle,
       submittedAt: new Date().toISOString(),
       client: { name: state.client.name || '', project: state.client.project || '', email: state.client.email || '' },
+      _roundId: state._roundId || undefined,
       sections: sections,
       budget: budget
     };
@@ -411,6 +430,56 @@
     }
   }
 
+  async function loadRoundContext(idOverride) {
+    let id = idOverride || '';
+    if (!id) { try { id = new URLSearchParams(location.search).get('r') || ''; } catch (e) {} }
+    if (!id) return;
+    try {
+      const r = await api('/homework/api/round?id=' + encodeURIComponent(id));
+      if (r.ok && r.data && r.data.round) applyRound(r.data.round);
+    } catch (e) { /* offline: keep the bare form */ }
+  }
+
+  function applyRound(round) {
+    activeRound = round;
+    state._roundId = round.id;
+    state.client = state.client || {};
+    if (round.clientName) state.client.name = round.clientName;
+    if (round.projectName) state.client.project = round.projectName;
+    if (round.clientEmail && !state.client.email) state.client.email = round.clientEmail;
+
+    const banner = document.getElementById('context-banner');
+    if (banner) {
+      const title = document.getElementById('context-title');
+      const meta = document.getElementById('context-meta');
+      const note = document.getElementById('context-note');
+      const expiry = document.getElementById('context-expiry');
+      const drive = document.getElementById('context-drive');
+      if (title) title.textContent = round.projectName || 'Design Homework';
+      if (meta) {
+        const bits = [];
+        if (round.clientName) bits.push('Prepared for ' + round.clientName);
+        if (round.reopenedAt) bits.push('Reopened ' + new Date(round.reopenedAt).toLocaleDateString());
+        if (round.previousSubmittedAt) bits.push('Previously submitted ' + new Date(round.previousSubmittedAt).toLocaleDateString());
+        meta.textContent = bits.join(' · ');
+      }
+      if (note) { note.textContent = round.note || ''; note.hidden = !round.note; }
+      if (expiry) {
+        if (round.expiresAt) {
+          expiry.textContent = 'Please submit by ' + new Date(round.expiresAt).toLocaleDateString() + '.';
+          expiry.hidden = false;
+        } else expiry.hidden = true;
+      }
+      if (drive) {
+        if (round.driveUrl) { drive.href = round.driveUrl; drive.hidden = false; }
+        else drive.hidden = true;
+      }
+      banner.hidden = false;
+    }
+    save();
+    render();
+  }
+
   async function checkResume() {
     let code = '';
     try { code = new URLSearchParams(location.search).get('resume') || ''; } catch (e) { code = ''; }
@@ -420,6 +489,7 @@
       if (r.ok && r.data.data) {
         Object.assign(state, r.data.data);
         state._draftCode = code;
+        if (state._roundId && !activeRound) loadRoundContext(state._roundId);
         save();
         render();
         setStatus('Resumed your saved homework (' + esc(code) + ').');
@@ -691,6 +761,7 @@
   load();
   bindGlobal();
   render();
+  loadRoundContext();
   checkResume();
 
   // Public API (used by the future submit/backend + for testing)
