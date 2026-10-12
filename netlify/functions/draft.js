@@ -11,6 +11,7 @@
  */
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
+const { sendEmail, resumeDraftEmail } = require('./lib/notify');
 
 // Blobs needs an explicit siteID + token when functions are deployed outside
 // Netlify's own build (e.g. via `netlify deploy` from CI). When Netlify injects
@@ -34,6 +35,13 @@ function json(statusCode, body) {
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     body: JSON.stringify(body)
   };
+}
+function absUrl(event, path) {
+  try {
+    const host = (event.headers && (event.headers.host || event.headers.Host)) || '';
+    const proto = (event.headers && (event.headers['x-forwarded-proto'] || event.headers['X-Forwarded-Proto'])) || 'https';
+    return host ? proto + '://' + host + path : path;
+  } catch (e) { return path; }
 }
 
 function newCode() {
@@ -88,12 +96,27 @@ exports.handler = async (event) => {
 
     let code = String(body.code || '').trim().toUpperCase();
     if (code && !CODE_RE.test(code)) return json(400, { ok: false, error: 'Invalid code' });
+    const isNew = !code;
     if (!code) code = newCode();
 
     const savedAt = new Date().toISOString();
     const expiresAt = new Date(Date.now() + TTL_MS).toISOString();
     await store.setJSON(draftKey(code), { code: code, data: data, savedAt: savedAt, expiresAt: expiresAt });
     await updateIndex(store, summaryFrom(code, data, savedAt, expiresAt), false);
+
+    // Email the client their resume link on the first save (the resume link
+    // differs from the office-issued ?r= link, so don't leave them stranded).
+    if (isNew) {
+      try {
+        const about = data.about || {};
+        const email = String(about.email || '').trim();
+        if (email) {
+          const resumeUrl = absUrl(event, '/clients/form.html?resume=' + encodeURIComponent(code));
+          const msg = resumeDraftEmail({ name: about.clientName || '', project: about.projectName || '', resumeUrl: resumeUrl, app: 'revision request' });
+          await sendEmail({ to: email, subject: msg.subject, text: msg.text, html: msg.html });
+        }
+      } catch (e) { /* never break the save */ }
+    }
 
     return json(200, { ok: true, code: code, resumeUrl: '/clients/form.html?resume=' + encodeURIComponent(code), expiresAt: expiresAt });
   }

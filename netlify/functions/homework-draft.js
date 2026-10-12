@@ -9,6 +9,7 @@
  */
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
+const { sendEmail, resumeDraftEmail } = require('./lib/notify');
 
 function openStore(name) {
   const siteID = process.env.BLOBS_SITE_ID || process.env.NETLIFY_SITE_ID;
@@ -29,6 +30,13 @@ function json(statusCode, body) {
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     body: JSON.stringify(body)
   };
+}
+function absUrl(event, path) {
+  try {
+    const host = (event.headers && (event.headers.host || event.headers.Host)) || '';
+    const proto = (event.headers && (event.headers['x-forwarded-proto'] || event.headers['X-Forwarded-Proto'])) || 'https';
+    return host ? proto + '://' + host + path : path;
+  } catch (e) { return path; }
 }
 function newCode() {
   const bytes = crypto.randomBytes(8);
@@ -71,12 +79,28 @@ exports.handler = async (event) => {
 
     let code = String(body.code || '').trim().toUpperCase();
     if (code && !CODE_RE.test(code)) return json(400, { ok: false, error: 'Invalid code' });
+    const isNew = !code;
     if (!code) code = newCode();
 
     const savedAt = new Date().toISOString();
     const expiresAt = new Date(Date.now() + TTL_MS).toISOString();
     await store.setJSON(draftKey(code), { code, data, savedAt, expiresAt });
     await updateIndex(store, summaryFrom(code, data, savedAt, expiresAt), false);
+
+    // Email the client their resume link on the first save (the resume link
+    // differs from the office-issued ?r= link, so don't leave them stranded).
+    if (isNew) {
+      try {
+        const c = data.client || {};
+        const email = String(c.email || '').trim();
+        if (email) {
+          const resumeUrl = absUrl(event, '/homework/index.html?resume=' + encodeURIComponent(code));
+          const msg = resumeDraftEmail({ name: c.name || '', project: c.project || '', resumeUrl: resumeUrl, app: 'Design Homework' });
+          await sendEmail({ to: email, subject: msg.subject, text: msg.text, html: msg.html });
+        }
+      } catch (e) { /* never break the save */ }
+    }
+
     return json(200, { ok: true, code, resumeUrl: '/homework/index.html?resume=' + encodeURIComponent(code), expiresAt });
   }
 

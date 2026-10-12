@@ -876,6 +876,25 @@ async function onHomeworkReminder(round, kind) {
   return { emailSent };
 }
 
+function resumeDraftEmail(opts) {
+  opts = opts || {};
+  const name = opts.name || '';
+  const project = opts.project || 'your project';
+  const resumeUrl = opts.resumeUrl || '';
+  const app = opts.app || 'form';
+  const subject = 'Your ' + app + ' draft — resume when you are ready';
+  const text = [
+    'Hi' + (name ? ' ' + name : '') + ',',
+    '',
+    'We saved your ' + app + ' for ' + project + ' so you can pick up where you left off.',
+    '',
+    'Resume it here (drafts are kept for 30 days): ' + resumeUrl,
+    '',
+    '— Pepper & Olive Interiors'
+  ].join('\n');
+  return { subject: subject, text: text, html: textToHtml(text) };
+}
+
 module.exports = {
   sendEmail,
   sendDiscord,
@@ -896,5 +915,6 @@ module.exports = {
   onHomeworkRoundLink,
   homeworkRoundInviteEmail,
   onHomeworkReminder,
-  homeworkReminderEmails
+  homeworkReminderEmails,
+  resumeDraftEmail
 };
