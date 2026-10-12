@@ -197,6 +197,14 @@ exports.handler = async (event) => {
       });
       if (body.clientEmail !== undefined) round.clientEmail = normalizeEmail(body.clientEmail);
       if (body.driveUrl !== undefined) round.driveUrl = cleanUrl(body.driveUrl);
+      if (body.createdAt) {
+        const d = new Date(String(body.createdAt));
+        if (!isNaN(d)) {
+          const prev = new Date(round.createdAt);
+          d.setHours(prev.getHours(), prev.getMinutes(), prev.getSeconds(), prev.getMilliseconds());
+          round.createdAt = d.toISOString();
+        }
+      }
       if (body.expiresAt) round.expiresAt = expiryFor(body.expiresAt);
 
       if (!round.projectName) return json(400, { ok: false, error: 'Project name is required' });

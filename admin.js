@@ -987,6 +987,7 @@
       const actions = h('div', { class: 'sub__actions' },
         h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy link', onclick: (e) => copyText(link, e.currentTarget) }),
         r.status === 'open' && r.clientEmail ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Send email', onclick: () => sendHomeworkEmail(r.id) }) : null,
+        r.status === 'open' ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Edit', onclick: () => openHomeworkEdit(r) }) : null,
         r.status === 'open' ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Delete', onclick: () => deleteHomeworkRound(r.id, r.clientName) }) : null,
         r.status !== 'open' ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Reopen', onclick: () => reopenHomeworkRound(r.id) }) : null,
         r.status !== 'open' ? h('button', { type: 'button', class: 'btn btn--danger', text: 'Delete', onclick: () => deleteHomeworkRound(r.id, r.clientName) }) : null
@@ -1071,6 +1072,76 @@
     } catch (e) { toast('Could not delete the link'); }
   }
 
+  function openHomeworkEdit(round) {
+    const body = document.querySelector('#hwEditBody');
+    body.innerHTML = '';
+
+    const dateRow = h('div', { style: 'display:flex; gap:12px; flex-wrap:wrap' },
+      h('div', { class: 'field', style: 'flex:1 1 160px' },
+        h('label', { for: 'hwEditCreated', text: 'Created date' }),
+        h('input', { id: 'hwEditCreated', type: 'date', value: dateInputValue(round.createdAt) })),
+      h('div', { class: 'field', style: 'flex:1 1 160px' },
+        h('label', { for: 'hwEditExpires', text: 'Due date' }),
+        h('input', { id: 'hwEditExpires', type: 'date', value: dateInputValue(round.expiresAt) }))
+    );
+
+    body.append(
+      editField('Client name', 'hwEditClient', round.clientName || ''),
+      editField('Project name', 'hwEditProject', round.projectName || ''),
+      editField('Client email', 'hwEditEmail', round.clientEmail || '', 'email'),
+      h('div', { class: 'field' },
+        h('label', { for: 'hwEditNote', text: 'Note' }),
+        h('textarea', { id: 'hwEditNote', rows: 3, value: round.note || '' })),
+      editField('Drive folder link', 'hwEditDrive', round.driveUrl || '', 'url'),
+      dateRow,
+      h('div', { class: 'modal__actions', style: 'justify-content:flex-start' },
+        h('button', { type: 'button', id: 'hwEditSaveBtn', class: 'btn btn--primary', text: 'Save changes', onclick: () => saveHomeworkEdit(round.id) }),
+        h('button', { type: 'button', class: 'btn btn--ghost', text: 'Cancel', onclick: closeHomeworkEdit })
+      )
+    );
+    document.querySelector('#hwEditOverlay').hidden = false;
+    document.body.classList.add('detail-open');
+  }
+
+  function closeHomeworkEdit() {
+    document.querySelector('#hwEditOverlay').hidden = true;
+    document.body.classList.remove('detail-open');
+  }
+
+  async function saveHomeworkEdit(id) {
+    const btn = document.querySelector('#hwEditSaveBtn');
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Saving…';
+    try {
+      const res = await fetch('/api/homework-rounds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': getKey() },
+        body: JSON.stringify({
+          action: 'update',
+          id: id,
+          clientName: document.querySelector('#hwEditClient').value.trim(),
+          projectName: document.querySelector('#hwEditProject').value.trim(),
+          clientEmail: document.querySelector('#hwEditEmail').value.trim(),
+          note: document.querySelector('#hwEditNote').value.trim(),
+          driveUrl: document.querySelector('#hwEditDrive').value.trim(),
+          createdAt: document.querySelector('#hwEditCreated').value,
+          expiresAt: document.querySelector('#hwEditExpires').value
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'update failed');
+      closeHomeworkEdit();
+      toast('Homework link updated');
+      loadHomeworkRounds(getKey());
+    } catch (e) {
+      toast(e && e.message ? e.message : 'Could not update the link');
+      btn.textContent = original;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
   async function loadHomework(key) {
     const list = $('#homeworkList');
     list.innerHTML = '';
@@ -1134,11 +1205,16 @@
     $('#roundEditCloseBtn').addEventListener('click', closeRoundEdit);
     $('#roundEditOverlay').addEventListener('click', (e) => { if (e.target && e.target.id === 'roundEditOverlay') closeRoundEdit(); });
 
+    // Edit-open-homework-link overlay
+    $('#hwEditCloseBtn').addEventListener('click', closeHomeworkEdit);
+    $('#hwEditOverlay').addEventListener('click', (e) => { if (e.target && e.target.id === 'hwEditOverlay') closeHomeworkEdit(); });
+
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
       if (!$('#detailOverlay').hidden) closeDetail();
       if (!$('#roundCreatedOverlay').hidden) closeRoundCreated();
       if (!$('#roundEditOverlay').hidden) closeRoundEdit();
+      if (!$('#hwEditOverlay').hidden) closeHomeworkEdit();
     });
 
     // Office-issued request links
