@@ -11,6 +11,7 @@
   let lastRecords = [];
   let roundsById = {};
   let roundsEmailFrom = '';
+  let homeworkEmailFrom = '';
   let activeTab = 'revisions';
   let homeworkLoaded = false;
 
@@ -957,6 +958,7 @@
       if (res.status === 401) { setKey(''); showGate(true); return; }
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || 'Request failed');
+      homeworkEmailFrom = data.emailFrom || '';
       renderHomeworkRounds(data.rounds || []);
     } catch (e) {
       list.innerHTML = '';
@@ -986,7 +988,7 @@
       );
       const actions = h('div', { class: 'sub__actions' },
         h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy link', onclick: (e) => copyText(link, e.currentTarget) }),
-        r.status === 'open' && r.clientEmail ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Send email', onclick: () => sendHomeworkEmail(r.id) }) : null,
+        r.status === 'open' && r.clientEmail ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Send email', onclick: () => showHomeworkCreated(r, homeworkEmailFrom, { title: 'Send homework link', intro: 'Send this link to the client by email.' }) }) : null,
         r.status === 'open' ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Edit', onclick: () => openHomeworkEdit(r) }) : null,
         r.status === 'open' ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Delete', onclick: () => deleteHomeworkRound(r.id, r.clientName) }) : null,
         r.status !== 'open' ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Reopen', onclick: () => reopenHomeworkRound(r.id) }) : null,
@@ -1020,10 +1022,8 @@
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || 'Could not create the link');
-      $('#newHomeworkLink').value = location.origin + (data.link || '/homework/?r=' + data.round.id);
-      $('#newHomeworkResult').hidden = false;
       ['hwClient', 'hwEmail', 'hwProject', 'hwNote', 'hwDrive', 'hwExpires'].forEach((id) => { $('#' + id).value = ''; });
-      toast('Homework link created');
+      showHomeworkCreated(data.round, data.emailFrom || '');
       loadHomeworkRounds(getKey());
     } catch (e) {
       err.textContent = e.message || 'Could not create the link';
@@ -1031,17 +1031,118 @@
     }
   }
 
+  function defaultHomeworkEmail(round, link) {
+    const client = round.clientName || '';
+    const project = round.projectName || 'your project';
+    const due = fmtDateOnly(round.expiresAt);
+    const note = round.note || '';
+    const subject = 'Your Design Homework — ' + project;
+    const lines = [];
+    lines.push('Hi' + (client ? ' ' + client : '') + ',');
+    lines.push('');
+    lines.push('We have prepared your Design Homework for ' + project + '.');
+    lines.push('');
+    lines.push('Please browse each section, make your selections, and submit it' + (due ? ' by ' + due : '') + '.');
+    lines.push('');
+    lines.push('Open the homework here: ' + link);
+    if (note) { lines.push(''); lines.push('Note: ' + note); }
+    lines.push('');
+    lines.push('Thank you,');
+    lines.push('Pepper & Olive Interiors');
+    return { subject: subject, message: lines.join('\n') };
+  }
+
+  function showHomeworkCreated(round, emailFrom, opts) {
+    opts = opts || {};
+    const title = opts.title || 'Homework link created';
+    const intro = opts.intro || 'The link is ready. Copy it, or email it to the client below.';
+    const from = emailFrom || homeworkEmailFrom || '';
+    const link = homeworkRoundLink(round.id);
+    const body = document.querySelector('#hwCreatedBody');
+    body.innerHTML = '';
+    const email = defaultHomeworkEmail(round, link);
+    const hasEmail = !!round.clientEmail;
+
+    const linkRow = h('div', { class: 'round-card__link', style: 'margin:14px 0' },
+      h('input', { type: 'text', readonly: true, value: link }),
+      h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy link', onclick: (e) => copyText(link, e.currentTarget) })
+    );
+
+    const kv = h('dl', { class: 'kv' },
+      kvRow('Client', round.clientName || '—'),
+      kvRow('Project', round.projectName || '—'),
+      round.driveUrl ? kvRow('Drive folder', round.driveUrl) : null
+    );
+
+    const dates = h('div', { class: 'rc-dates' },
+      dateChip('Created', round.createdAt),
+      dateChip('Reminder', addDaysISO(round.createdAt, 7)),
+      dateChip('Due', round.expiresAt)
+    );
+
+    const emailCard = h('section', { class: 'card' },
+      h('div', { class: 'card__head' }, h('div', {},
+        h('h3', { class: 'rc-email-title', text: 'Send the link by email' }),
+        h('p', { text: 'Sent from ' + (from || 'your email address') + '.' })
+      )),
+      hasEmail ? h('p', { class: 'rc-to', text: 'To: ' + round.clientEmail }) : null,
+      h('div', { class: 'field' },
+        h('label', { for: 'hwEmailSubject', text: 'Subject' }),
+        h('input', { id: 'hwEmailSubject', type: 'text', value: email.subject })
+      ),
+      h('div', { class: 'field' },
+        h('label', { for: 'hwEmailMessage', text: 'Message' }),
+        h('textarea', { id: 'hwEmailMessage', rows: 12, value: email.message })
+      ),
+      hasEmail
+        ? h('div', { class: 'modal__actions', style: 'justify-content:flex-start; margin-bottom:0' },
+            h('button', { type: 'button', id: 'hwEmailSendBtn', class: 'btn btn--primary', text: 'Send email', onclick: () => sendHomeworkEmail(round.id) }))
+        : h('p', { class: 'rc-note', text: 'No client email was entered on this link, so it cannot be emailed. Add an email and reopen to send it later.' })
+    );
+
+    document.querySelector('#hwCreatedTitle').textContent = title;
+    body.append(
+      h('p', { class: 'view-head__meta', text: intro }),
+      linkRow,
+      kv,
+      dates,
+      emailCard
+    );
+    document.querySelector('#hwCreatedOverlay').hidden = false;
+    document.body.classList.add('detail-open');
+  }
+
+  function closeHomeworkCreated() {
+    document.querySelector('#hwCreatedOverlay').hidden = true;
+    document.body.classList.remove('detail-open');
+  }
+
   async function sendHomeworkEmail(id) {
+    const subjectInput = document.querySelector('#hwEmailSubject');
+    const messageInput = document.querySelector('#hwEmailMessage');
+    const btn = document.querySelector('#hwEmailSendBtn');
+    const subject = subjectInput ? subjectInput.value.trim() : '';
+    const message = messageInput ? messageInput.value.trim() : '';
+    if (!message) { toast('Message is empty'); return; }
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Sending…';
     try {
       const res = await fetch('/api/homework-rounds', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-key': getKey() },
-        body: JSON.stringify({ action: 'send', id: id })
+        body: JSON.stringify({ action: 'send', id: id, subject: subject, message: message })
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not send');
+      if (!res.ok || !data.ok) throw new Error(data.error || 'send failed');
+      btn.textContent = '✓ Sent';
       toast('Email sent to ' + (data.to || 'the client'));
-    } catch (e) { toast('Could not send: ' + (e.message || '')); }
+    } catch (e) {
+      toast(e && e.message ? e.message : 'Could not send the email');
+      btn.textContent = original;
+    } finally {
+      btn.disabled = false;
+    }
   }
 
   async function reopenHomeworkRound(id) {
@@ -1209,12 +1310,17 @@
     $('#hwEditCloseBtn').addEventListener('click', closeHomeworkEdit);
     $('#hwEditOverlay').addEventListener('click', (e) => { if (e.target && e.target.id === 'hwEditOverlay') closeHomeworkEdit(); });
 
+    // Homework-link created / send-email overlay
+    $('#hwCreatedCloseBtn').addEventListener('click', closeHomeworkCreated);
+    $('#hwCreatedOverlay').addEventListener('click', (e) => { if (e.target && e.target.id === 'hwCreatedOverlay') closeHomeworkCreated(); });
+
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
       if (!$('#detailOverlay').hidden) closeDetail();
       if (!$('#roundCreatedOverlay').hidden) closeRoundCreated();
       if (!$('#roundEditOverlay').hidden) closeRoundEdit();
       if (!$('#hwEditOverlay').hidden) closeHomeworkEdit();
+      if (!$('#hwCreatedOverlay').hidden) closeHomeworkCreated();
     });
 
     // Office-issued request links
