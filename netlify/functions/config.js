@@ -83,6 +83,16 @@ function json(statusCode, body) {
   };
 }
 
+// Guard against cross-app pollution (e.g. a homework config stored under the
+// revision key, or vice versa). Revision configs have revisionFields and no
+// welcome; homework configs have welcome and no revisionFields.
+function validFor(app, config) {
+  if (!config || typeof config !== 'object') return false;
+  if (app === KEY_HOMEWORK) return !!config.welcome;
+  if (app === KEY_REVISION) return Array.isArray(config.revisionFields) && !config.welcome;
+  return false;
+}
+
 exports.handler = async (event) => {
   const path = event.path || '';
   const isOffice = /\/api\/config$/.test(path);
@@ -95,8 +105,8 @@ exports.handler = async (event) => {
     try {
       const store = openStore(STORE);
       const key = isHomeworkPublic ? KEY_HOMEWORK : KEY_REVISION;
-      const config = (await store.get(key, { type: 'json' })) || null;
-      return json(200, { ok: true, config: config });
+      const raw = (await store.get(key, { type: 'json' })) || null;
+      return json(200, { ok: true, config: validFor(key, raw) ? raw : null });
     } catch (e) {
       return json(200, { ok: true, config: null }); // fall back to shipped defaults
     }
@@ -112,8 +122,8 @@ exports.handler = async (event) => {
     if (event.httpMethod === 'GET') {
       try {
         const store = openStore(STORE);
-        const config = (await store.get(app, { type: 'json' })) || null;
-        return json(200, { ok: true, app: qs.app || 'revision', config: config });
+        const raw = (await store.get(app, { type: 'json' })) || null;
+        return json(200, { ok: true, app: qs.app || 'revision', config: validFor(app, raw) ? raw : null });
       } catch (e) {
         return json(500, { ok: false, error: 'Could not load config' });
       }
@@ -123,10 +133,14 @@ exports.handler = async (event) => {
       let body;
       try { body = JSON.parse(event.body || '{}'); } catch (e) { return json(400, { ok: false, error: 'Invalid body' }); }
       if (!body.config || typeof body.config !== 'object') return json(400, { ok: false, error: 'Missing config' });
+      const appKey = body.app === 'homework' ? KEY_HOMEWORK : KEY_REVISION;
+      if (!validFor(appKey, body.config)) {
+        return json(400, { ok: false, error: appKey === KEY_HOMEWORK ? 'Config shape does not match Design Homework' : 'Config shape does not match revision form' });
+      }
       try {
         const store = openStore(STORE);
-        await store.setJSON(app, body.config);
-        return json(200, { ok: true, app: body.app || (app === KEY_HOMEWORK ? 'homework' : 'revision'), config: body.config });
+        await store.setJSON(appKey, body.config);
+        return json(200, { ok: true, app: body.app || 'revision', config: body.config });
       } catch (e) {
         return json(500, { ok: false, error: 'Could not save config' });
       }
