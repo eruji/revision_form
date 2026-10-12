@@ -1292,9 +1292,33 @@
   }
 
   // ── Boot ─────────────────────────────────────────────────────────────────
-  function init() {
+  function mergeConfig(base, over) {
+    const out = Object.assign({}, base, over);
+    ['aboutFields', 'revisionFields', 'ackFields'].forEach((key) => {
+      const b = base[key] || [];
+      const o = over[key];
+      if (!Array.isArray(o)) return;
+      const ids = new Set(o.map((f) => f && f.id).filter(Boolean));
+      out[key] = o.filter((f) => f && f.id).concat(b.filter((f) => f && !ids.has(f.id)));
+    });
+    return out;
+  }
+
+  async function loadServerConfig() {
+    try {
+      const res = await fetch('/clients/api/config', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.ok && data.config) {
+        CFG = mergeConfig(CFG, data.config);
+      }
+    } catch (e) { /* keep defaults + local */ }
+  }
+
+  async function init() {
     if (booted) return;
     booted = true;
+    await loadServerConfig();
     hydrateState();
     renderHero();
     renderAbout();

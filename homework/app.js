@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  const CFG = (window.TeamSetup && typeof window.TeamSetup.getHomeworkConfig === 'function')
+  let CFG = (window.TeamSetup && typeof window.TeamSetup.getHomeworkConfig === 'function')
     ? window.TeamSetup.getHomeworkConfig()
     : (window.DESIGN_HOMEWORK_CONFIG || {});
   const STORAGE_KEY = 'pno-design-homework-v2';
@@ -760,11 +760,37 @@
     });
   }
 
-  load();
-  bindGlobal();
-  render();
-  loadRoundContext();
-  checkResume();
+  function deepMerge(base, over) {
+    if (Array.isArray(over)) return over;
+    if (over && typeof over === 'object') {
+      const out = (base && typeof base === 'object' && !Array.isArray(base)) ? Object.assign({}, base) : {};
+      Object.keys(over).forEach((k) => { out[k] = deepMerge(out[k], over[k]); });
+      return out;
+    }
+    return over === undefined ? base : over;
+  }
+
+  async function loadServerConfig() {
+    try {
+      const res = await fetch('/homework/api/config', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.ok && data.config) {
+        CFG = deepMerge(window.DESIGN_HOMEWORK_CONFIG || {}, data.config);
+      }
+    } catch (e) { /* keep defaults + local */ }
+  }
+
+  async function boot() {
+    await loadServerConfig();
+    load();
+    bindGlobal();
+    render();
+    loadRoundContext();
+    checkResume();
+  }
+
+  boot();
 
   // Public API (used by the future submit/backend + for testing)
   window.DesignHomework = {

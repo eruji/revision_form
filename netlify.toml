@@ -57,6 +57,11 @@
   to = "/.netlify/functions/round"
   status = 200
 
+[[redirects]]
+  from = "/clients/api/config"
+  to = "/.netlify/functions/config"
+  status = 200
+
 # Public Design Homework API under /homework/api/* (outside the Access zone).
 [[redirects]]
   from = "/homework/api/submit"
@@ -76,6 +81,11 @@
 [[redirects]]
   from = "/homework/api/round"
   to = "/.netlify/functions/homework-round"
+  status = 200
+
+[[redirects]]
+  from = "/homework/api/config"
+  to = "/.netlify/functions/config"
   status = 200
 
 # Old flat client URLs -> new /clients/ paths.

@@ -131,6 +131,32 @@
     try { localStorage.setItem(HW_KEY_CONFIG, JSON.stringify(HW_CFG)); } catch (e) {}
   }
 
+  function adminKey() {
+    try { return sessionStorage.getItem('po_admin_key') || ''; } catch (e) { return ''; }
+  }
+
+  async function fetchServerConfig(app) {
+    try {
+      const res = await fetch('/api/config?app=' + encodeURIComponent(app), {
+        headers: { 'x-admin-key': adminKey() },
+        cache: 'no-store'
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return (data && data.ok && data.config) ? data.config : null;
+    } catch (e) { return null; }
+  }
+
+  async function saveServerConfig(app, config) {
+    const res = await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey() },
+      body: JSON.stringify({ app: app, config: config })
+    });
+    if (!res.ok) throw new Error('server save failed');
+    return res.json();
+  }
+
   // ── Panel ────────────────────────────────────────────────────────────────
   function setMode(name) {
     mode = name;
@@ -142,6 +168,18 @@
     render();
     $('#setupDrawer').hidden = false;
     $('#setupScrim').hidden = false;
+    syncFromServer('revision');
+  }
+
+  async function syncFromServer(app) {
+    const remote = await fetchServerConfig(app);
+    if (!remote || mode !== app) return;
+    if (app === 'homework') {
+      setupDraft = Object.assign(deepClone(HW_DEFAULTS), remote);
+    } else {
+      setupDraft = mergeDefaultFields(Object.assign(deepClone(DEFAULTS), remote));
+    }
+    render();
   }
 
   function close() {
@@ -150,8 +188,9 @@
     setupDraft = null;
   }
 
-  function apply() {
+  async function apply() {
     if (!setupDraft) return;
+    const app = mode === 'homework' ? 'homework' : 'revision';
     if (mode === 'homework') {
       HW_CFG = setupDraft;
       persistHomeworkConfig();
@@ -161,8 +200,13 @@
       persistConfig();
       if (onApply) onApply(CFG);
     }
+    try {
+      await saveServerConfig(app, setupDraft);
+      toast('Setup applied and saved to the server');
+    } catch (e) {
+      toast('Setup applied locally — could not save to the server');
+    }
     close();
-    toast('Setup applied');
   }
 
   function fieldRow(field, list, opts) {
@@ -242,7 +286,7 @@
     return h('button', {
       type: 'button',
       class: 'setup-tab' + (mode === name ? ' is-active' : ''),
-      onclick: () => { setMode(name); render(); }
+      onclick: () => { setMode(name); render(); syncFromServer(name); }
     }, label);
   }
 
