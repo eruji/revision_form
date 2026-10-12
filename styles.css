@@ -108,6 +108,18 @@ h1, h2, h3 {
   white-space: nowrap;
 }
 .topbar__actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.topbar__tabs { display: flex; align-items: center; gap: 4px; }
+.topbar__tabs .btn { border-radius: 4px; padding: 7px 12px; }
+.topbar__tabs .btn.is-active {
+  background: var(--cream);
+  border-color: var(--cream);
+  color: var(--stone-800);
+}
+.topbar__tabs .btn.is-active:hover {
+  background: var(--cream);
+  border-color: var(--cream);
+  color: var(--stone-800);
+}
 
 /* ───────────────────────────── Layout ───────────────────────────── */
 .page {

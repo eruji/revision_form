@@ -11,6 +11,8 @@
   let lastRecords = [];
   let roundsById = {};
   let roundsEmailFrom = '';
+  let activeTab = 'revisions';
+  let homeworkLoaded = false;
 
   function $(sel) { return document.querySelector(sel); }
 
@@ -74,6 +76,8 @@
   function showGate(showError) {
     $('#gateCard').hidden = false;
     $('#listWrap').hidden = true;
+    $('#homeworkWrap').hidden = true;
+    $('#tabNav').hidden = true;
     $('#refreshBtn').hidden = true;
     $('#gateError').hidden = !showError;
     if (showError) $('#adminKey').focus();
@@ -81,8 +85,18 @@
 
   function showList() {
     $('#gateCard').hidden = true;
-    $('#listWrap').hidden = false;
+    $('#tabNav').hidden = false;
     $('#refreshBtn').hidden = false;
+    showTab(activeTab);
+  }
+
+  function showTab(name) {
+    activeTab = name;
+    $('#listWrap').hidden = (name !== 'revisions');
+    $('#homeworkWrap').hidden = (name !== 'homework');
+    $('#tabRevisions').classList.toggle('is-active', name === 'revisions');
+    $('#tabHomework').classList.toggle('is-active', name === 'homework');
+    if (name === 'homework' && !homeworkLoaded) loadHomework(getKey());
   }
 
   async function fetchRecords(key) {
@@ -885,6 +899,69 @@
     }
   }
 
+  function homeworkPrivateViewPrompt() {
+    const url = window.prompt("Paste the client's private read-only link (from the submission email), or leave blank.");
+    if (url) window.open(url, '_blank');
+  }
+
+  function renderHomework(data) {
+    const subs = data.submissions || [];
+    const drafts = data.drafts || [];
+    const list = $('#homeworkList');
+    const draftsEl = $('#homeworkDrafts');
+    const count = $('#homeworkCount');
+    if (count) count.textContent = subs.length ? '(' + subs.length + ')' : '';
+
+    list.innerHTML = '';
+    if (!subs.length) list.append(h('p', { class: 'admin-empty', text: 'No homework submissions yet.' }));
+    subs.forEach((s) => {
+      list.append(h('div', { class: 'sub' },
+        h('div', { class: 'sub__head' },
+          h('strong', { text: (s.clientName || '—') + (s.projectName ? ' · ' + s.projectName : '') }),
+          h('span', { text: fmtDate(s.submittedAt) }),
+          h('span', { class: 'badge', text: (s.selectionCount || 0) + ' selections' })
+        ),
+        s.email ? h('div', { class: 'sub__item' }, h('small', { text: s.email })) : null,
+        h('div', { class: 'sub__actions' },
+          h('button', { type: 'button', class: 'btn btn--ghost', text: 'Private view', onclick: () => homeworkPrivateViewPrompt() }),
+          h('a', { class: 'btn btn--ghost', href: '/api/homework-admin?format=csv&key=' + encodeURIComponent(s.key), text: 'CSV' })
+        )
+      ));
+    });
+
+    draftsEl.innerHTML = '';
+    if (!drafts.length) draftsEl.append(h('p', { class: 'admin-empty', text: 'No saved homework drafts.' }));
+    drafts.forEach((d) => {
+      const resumeLink = location.origin + '/homework/index.html?resume=' + encodeURIComponent(d.code);
+      draftsEl.append(h('div', { class: 'sub' },
+        h('div', { class: 'sub__head' },
+          h('strong', { text: (d.clientName || '—') + (d.projectName ? ' · ' + d.projectName : '') }),
+          h('span', { text: 'saved ' + fmtDate(d.savedAt) + ' · expires ' + fmtDateOnly(d.expiresAt) })
+        ),
+        h('div', { class: 'sub__actions' },
+          h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy resume link', onclick: (e) => copyText(resumeLink, e.currentTarget) })
+        )
+      ));
+    });
+  }
+
+  async function loadHomework(key) {
+    const list = $('#homeworkList');
+    list.innerHTML = '';
+    list.append(h('p', { class: 'admin-empty', text: 'Loading…' }));
+    try {
+      const res = await fetch('/api/homework-admin', { headers: { 'x-admin-key': key }, cache: 'no-store' });
+      if (res.status === 401) { setKey(''); showGate(true); return; }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Request failed');
+      renderHomework(data);
+      homeworkLoaded = true;
+    } catch (e) {
+      list.innerHTML = '';
+      list.append(h('p', { class: 'admin-empty', text: 'Could not load homework. ' + (e.message || '') }));
+    }
+  }
+
   async function load(key, showErrorOnFail) {
     try {
       const data = await fetchRecords(key);
@@ -911,7 +988,10 @@
       if (!key) return;
       load(key, true);
     });
-    $('#refreshBtn').addEventListener('click', () => load(getKey(), false));
+    $('#refreshBtn').addEventListener('click', () => {
+      if (activeTab === 'homework') loadHomework(getKey());
+      else load(getKey(), false);
+    });
 
     // Submission detail overlay
     $('#detailCloseBtn').addEventListener('click', closeDetail);
@@ -944,6 +1024,10 @@
 
     // Rooms / areas in the new-link form
     $('#nrAddRoomBtn').addEventListener('click', () => addRoomRow(''));
+
+    // Dashboard section tabs (revision requests / design homework)
+    $('#tabRevisions').addEventListener('click', () => showTab('revisions'));
+    $('#tabHomework').addEventListener('click', () => showTab('homework'));
   }
 
   function init() {

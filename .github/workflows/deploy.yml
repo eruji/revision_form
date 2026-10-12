@@ -32,11 +32,13 @@ jobs:
       # This keeps .git, README, and the legacy .gs script off the live site.
       - name: Stage static site
         run: |
-          mkdir -p dist/clients
+          mkdir -p dist/clients dist/homework
           cp index.html styles.css config.js setup.js app.js view.js admin.js netlify.toml dist/
           cp clients/* dist/clients/
+          cp homework/index.html homework/styles.css homework/config.js homework/app.js homework/view.html homework/view.js dist/homework/
+          cp -r homework/assets dist/homework/
           # Cache-bust assets (Cloudflare overrides our no-cache with a 4h browser TTL)
-          sed -i "s/__BUILD__/${GITHUB_SHA}/g" dist/index.html dist/clients/form.html dist/clients/view.html
+          sed -i "s/__BUILD__/${GITHUB_SHA}/g" dist/index.html dist/clients/form.html dist/clients/view.html dist/homework/index.html dist/homework/view.html
 
       - name: Deploy to Netlify (production)
         run: npx --yes netlify-cli@latest deploy --prod --dir=dist

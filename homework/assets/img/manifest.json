@@ -1,0 +1,1559 @@
+{
+  "style-midcentury": {
+    "file": "style-midcentury.jpg",
+    "page": 5,
+    "src_xref": 237,
+    "src_ext": "png",
+    "src_w": 576,
+    "src_h": 411,
+    "out_size": [
+      576,
+      411
+    ],
+    "note": "matched from p005 overview grid"
+  },
+  "style-quirky": {
+    "file": "style-quirky.jpg",
+    "page": 5,
+    "src_xref": 238,
+    "src_ext": "png",
+    "src_w": 464,
+    "src_h": 465,
+    "out_size": [
+      464,
+      465
+    ],
+    "note": "matched from p005 overview grid"
+  },
+  "style-rustic": {
+    "file": "style-rustic.jpg",
+    "page": 5,
+    "src_xref": 239,
+    "src_ext": "png",
+    "src_w": 395,
+    "src_h": 483,
+    "out_size": [
+      395,
+      483
+    ],
+    "note": "matched from p005 overview grid"
+  },
+  "style-mountain": {
+    "file": "style-mountain.jpg",
+    "page": 5,
+    "src_xref": 240,
+    "src_ext": "png",
+    "src_w": 395,
+    "src_h": 472,
+    "out_size": [
+      395,
+      472
+    ],
+    "note": "matched from p005 overview grid"
+  },
+  "style-scandinavian": {
+    "file": "style-scandinavian.jpg",
+    "page": 5,
+    "src_xref": 241,
+    "src_ext": "png",
+    "src_w": 338,
+    "src_h": 519,
+    "out_size": [
+      338,
+      519
+    ],
+    "note": "matched from p005 overview grid"
+  },
+  "style-organic": {
+    "file": "style-organic.jpg",
+    "page": 5,
+    "src_xref": 242,
+    "src_ext": "png",
+    "src_w": 395,
+    "src_h": 511,
+    "out_size": [
+      395,
+      511
+    ],
+    "note": "matched from p005 overview grid"
+  },
+  "style-european": {
+    "file": "style-european.jpg",
+    "page": 5,
+    "src_xref": 243,
+    "src_ext": "png",
+    "src_w": 317,
+    "src_h": 402,
+    "out_size": [
+      317,
+      402
+    ],
+    "note": "matched from p005 overview grid"
+  },
+  "style-cali": {
+    "file": "style-cali.jpg",
+    "page": 5,
+    "src_xref": 244,
+    "src_ext": "png",
+    "src_w": 282,
+    "src_h": 423,
+    "out_size": [
+      282,
+      423
+    ],
+    "note": "matched from p005 overview grid"
+  },
+  "style-spanish": {
+    "file": "style-spanish.jpg",
+    "page": 5,
+    "src_xref": 245,
+    "src_ext": "png",
+    "src_w": 395,
+    "src_h": 592,
+    "out_size": [
+      395,
+      592
+    ],
+    "note": "matched from p005 overview grid"
+  },
+  "fin-brass": {
+    "file": "fin-brass.jpg",
+    "page": 17,
+    "src_xref": 434,
+    "src_ext": "png",
+    "src_w": 516,
+    "src_h": 773,
+    "note": "matched from overview/positions"
+  },
+  "fin-nickel": {
+    "file": "fin-nickel.jpg",
+    "page": 17,
+    "src_xref": 439,
+    "src_ext": "png",
+    "src_w": 427,
+    "src_h": 602,
+    "note": "matched from overview/positions"
+  },
+  "fin-bronze": {
+    "file": "fin-bronze.jpg",
+    "page": 17,
+    "src_xref": 438,
+    "src_ext": "png",
+    "src_w": 563,
+    "src_h": 845,
+    "note": "matched from overview/positions"
+  },
+  "dh-brass": {
+    "file": "dh-brass.jpg",
+    "page": 22,
+    "src_xref": 504,
+    "src_ext": "png",
+    "src_w": 375,
+    "src_h": 396,
+    "note": "matched from overview"
+  },
+  "dh-nickel": {
+    "file": "dh-nickel.jpg",
+    "page": 22,
+    "src_xref": 503,
+    "src_ext": "png",
+    "src_w": 375,
+    "src_h": 396,
+    "note": "matched from overview"
+  },
+  "dh-bronze": {
+    "file": "dh-bronze.jpg",
+    "page": 22,
+    "src_xref": 505,
+    "src_ext": "png",
+    "src_w": 375,
+    "src_h": 396,
+    "note": "matched from overview"
+  },
+  "dh-square": {
+    "file": "dh-square.jpg",
+    "page": 24,
+    "src_xref": 523,
+    "src_ext": "png",
+    "src_w": 316,
+    "src_h": 390,
+    "note": "matched from overview"
+  },
+  "dh-rect": {
+    "file": "dh-rect.jpg",
+    "page": 24,
+    "src_xref": 524,
+    "src_ext": "png",
+    "src_w": 238,
+    "src_h": 408,
+    "note": "matched from overview"
+  },
+  "dh-round": {
+    "file": "dh-round.jpg",
+    "page": 24,
+    "src_xref": 525,
+    "src_ext": "png",
+    "src_w": 350,
+    "src_h": 320,
+    "note": "matched from overview"
+  },
+  "dh-unique": {
+    "file": "dh-unique.jpg",
+    "page": 24,
+    "src_xref": 522,
+    "src_ext": "png",
+    "src_w": 276,
+    "src_h": 384,
+    "note": "matched from overview"
+  },
+  "bp-wall-mount": {
+    "file": "bp-wall-mount.jpg",
+    "page": 27,
+    "src_xref": 547,
+    "src_ext": "png",
+    "src_w": 395,
+    "src_h": 591,
+    "out_size": [
+      395,
+      591
+    ],
+    "note": "full room photo"
+  },
+  "bp-vanity-mount": {
+    "file": "bp-vanity-mount.jpg",
+    "page": 28,
+    "src_xref": 557,
+    "src_ext": "png",
+    "src_w": 451,
+    "src_h": 676,
+    "out_size": [
+      451,
+      676
+    ],
+    "note": "full room photo"
+  },
+  "bp-single-hole": {
+    "file": "bp-single-hole.jpg",
+    "page": 30,
+    "src_xref": 576,
+    "src_ext": "png",
+    "src_w": 360,
+    "src_h": 540,
+    "note": "matched from overview/positions"
+  },
+  "bp-widespread": {
+    "file": "bp-widespread.jpg",
+    "page": 30,
+    "src_xref": 578,
+    "src_ext": "png",
+    "src_w": 360,
+    "src_h": 540,
+    "note": "matched from overview/positions"
+  },
+  "bs-stone-front": {
+    "file": "bs-stone-front.jpg",
+    "page": 34,
+    "src_xref": 615,
+    "src_ext": "png",
+    "src_w": 564,
+    "src_h": 844,
+    "note": "matched from overview"
+  },
+  "bs-vessel": {
+    "file": "bs-vessel.jpg",
+    "page": 34,
+    "src_xref": 617,
+    "src_ext": "png",
+    "src_w": 589,
+    "src_h": 589,
+    "note": "matched from overview"
+  },
+  "bs-trough": {
+    "file": "bs-trough.jpg",
+    "page": 34,
+    "src_xref": 619,
+    "src_ext": "png",
+    "src_w": 516,
+    "src_h": 773,
+    "note": "matched from overview"
+  },
+  "bs-integrated": {
+    "file": "bs-integrated.jpg",
+    "page": 34,
+    "src_xref": 621,
+    "src_ext": "png",
+    "src_w": 564,
+    "src_h": 846,
+    "note": "matched from overview"
+  },
+  "bs-undermount": {
+    "file": "bs-undermount.jpg",
+    "page": 34,
+    "src_xref": 623,
+    "src_ext": "png",
+    "src_w": 564,
+    "src_h": 846,
+    "note": "matched from overview"
+  },
+  "kf-std-widespread": {
+    "file": "kf-std-widespread.jpg",
+    "page": 42,
+    "src_xref": 715,
+    "src_ext": "jpg",
+    "src_w": 630,
+    "src_h": 945,
+    "note": "from faucet detail page (alpha-composited)"
+  },
+  "kf-widespread-spray": {
+    "file": "kf-widespread-spray.jpg",
+    "page": 42,
+    "src_xref": 714,
+    "src_ext": "jpg",
+    "src_w": 450,
+    "src_h": 675,
+    "note": "from faucet detail page (alpha-composited)"
+  },
+  "kf-bridge": {
+    "file": "kf-bridge.jpg",
+    "page": 43,
+    "src_xref": 723,
+    "src_ext": "jpg",
+    "src_w": 540,
+    "src_h": 810,
+    "note": "from faucet detail page (alpha-composited)"
+  },
+  "kf-bridge-spray": {
+    "file": "kf-bridge-spray.jpg",
+    "page": 43,
+    "src_xref": 724,
+    "src_ext": "jpg",
+    "src_w": 540,
+    "src_h": 810,
+    "note": "from faucet detail page (alpha-composited)"
+  },
+  "kf-gooseneck-2hole": {
+    "file": "kf-gooseneck-2hole.jpg",
+    "page": 44,
+    "src_xref": 733,
+    "src_ext": "jpg",
+    "src_w": 450,
+    "src_h": 675,
+    "note": "from faucet detail page (alpha-composited)"
+  },
+  "kf-gooseneck-integrated": {
+    "file": "kf-gooseneck-integrated.jpg",
+    "page": 44,
+    "src_xref": 732,
+    "src_ext": "jpg",
+    "src_w": 540,
+    "src_h": 810,
+    "note": "from faucet detail page (alpha-composited)"
+  },
+  "ks-farmhouse": {
+    "file": "ks-farmhouse.jpg",
+    "page": 46,
+    "src_xref": 758,
+    "src_ext": "png",
+    "src_w": 425,
+    "src_h": 231,
+    "note": "matched from overview"
+  },
+  "ks-undermount": {
+    "file": "ks-undermount.jpg",
+    "page": 46,
+    "src_xref": 768,
+    "src_ext": "png",
+    "src_w": 507,
+    "src_h": 700,
+    "note": "matched from overview"
+  },
+  "ks-slab-front": {
+    "file": "ks-slab-front.jpg",
+    "page": 46,
+    "src_xref": 766,
+    "src_ext": "png",
+    "src_w": 452,
+    "src_h": 677,
+    "note": "matched from overview"
+  },
+  "ks-slate": {
+    "file": "ks-slate.jpg",
+    "page": 46,
+    "src_xref": 761,
+    "src_ext": "png",
+    "src_w": 375,
+    "src_h": 396,
+    "note": "matched from overview"
+  },
+  "ks-copper": {
+    "file": "ks-copper.jpg",
+    "page": 46,
+    "src_xref": 763,
+    "src_ext": "png",
+    "src_w": 468,
+    "src_h": 495,
+    "note": "matched from overview"
+  },
+  "divider": {
+    "file": "divider.jpg",
+    "page": 53,
+    "src_xref": 833,
+    "src_ext": "png",
+    "src_w": 700,
+    "src_h": 888,
+    "note": "matched from overview/positions"
+  },
+  "no-divider": {
+    "file": "no-divider.jpg",
+    "page": 53,
+    "src_xref": 832,
+    "src_ext": "png",
+    "src_w": 400,
+    "src_h": 400,
+    "note": "matched from overview/positions"
+  },
+  "app-stacked": {
+    "file": "app-stacked.jpg",
+    "page": 56,
+    "src_xref": 854,
+    "src_ext": "png",
+    "src_w": 507,
+    "src_h": 617,
+    "note": "matched from overview"
+  },
+  "app-side-by-side": {
+    "file": "app-side-by-side.jpg",
+    "page": 56,
+    "src_xref": 855,
+    "src_ext": "png",
+    "src_w": 508,
+    "src_h": 682,
+    "note": "matched from overview"
+  },
+  "app-non-paneled": {
+    "file": "app-non-paneled.jpg",
+    "page": 57,
+    "src_xref": 863,
+    "src_ext": "png",
+    "src_w": 452,
+    "src_h": 564,
+    "note": "matched from overview/positions"
+  },
+  "app-paneled": {
+    "file": "app-paneled.jpg",
+    "page": 57,
+    "src_xref": 865,
+    "src_ext": "png",
+    "src_w": 474,
+    "src_h": 711,
+    "note": "matched from overview/positions"
+  },
+  "app-range": {
+    "file": "app-range.jpg",
+    "page": 61,
+    "src_xref": 898,
+    "src_ext": "png",
+    "src_w": 380,
+    "src_h": 568,
+    "note": "matched from overview"
+  },
+  "app-cooktop": {
+    "file": "app-cooktop.jpg",
+    "page": 61,
+    "src_xref": 901,
+    "src_ext": "png",
+    "src_w": 564,
+    "src_h": 846,
+    "note": "matched from overview"
+  },
+  "app-none-island": {
+    "file": "app-none-island.jpg",
+    "page": 65,
+    "src_xref": 940,
+    "src_ext": "png",
+    "src_w": 474,
+    "src_h": 574,
+    "note": "matched from overview"
+  },
+  "app-sink-island": {
+    "file": "app-sink-island.jpg",
+    "page": 65,
+    "src_xref": 941,
+    "src_ext": "png",
+    "src_w": 473,
+    "src_h": 618,
+    "note": "matched from overview"
+  },
+  "app-range-island": {
+    "file": "app-range-island.jpg",
+    "page": 65,
+    "src_xref": 938,
+    "src_ext": "png",
+    "src_w": 320,
+    "src_h": 448,
+    "note": "matched from overview"
+  },
+  "app-wine": {
+    "file": "app-wine.jpg",
+    "page": 70,
+    "src_xref": 989,
+    "src_ext": "png",
+    "src_w": 452,
+    "src_h": 696,
+    "note": "matched from overview"
+  },
+  "app-ice": {
+    "file": "app-ice.jpg",
+    "page": 70,
+    "src_xref": 990,
+    "src_ext": "png",
+    "src_w": 372,
+    "src_h": 362,
+    "note": "matched from overview"
+  },
+  "app-bev-drawers": {
+    "file": "app-bev-drawers.jpg",
+    "page": 70,
+    "src_xref": 991,
+    "src_ext": "png",
+    "src_w": 452,
+    "src_h": 676,
+    "note": "matched from overview"
+  },
+  "laundry-hanging": {
+    "file": "laundry-hanging.jpg",
+    "note": "re-extracted"
+  },
+  "cab-all-wood": {
+    "file": "cab-all-wood.jpg",
+    "page": 77,
+    "src_xref": 1043,
+    "src_ext": "png",
+    "src_w": 284,
+    "src_h": 345,
+    "note": "matched from overview/positions"
+  },
+  "cab-light": {
+    "file": "cab-light.jpg",
+    "page": 77,
+    "src_xref": 1046,
+    "src_ext": "png",
+    "src_w": 285,
+    "src_h": 427,
+    "note": "matched from overview/positions"
+  },
+  "cab-dark": {
+    "file": "cab-dark.jpg",
+    "page": 77,
+    "src_xref": 1048,
+    "src_ext": "png",
+    "src_w": 395,
+    "src_h": 593,
+    "note": "matched from overview/positions"
+  },
+  "cab-color": {
+    "file": "cab-color.jpg",
+    "page": 77,
+    "src_xref": 1052,
+    "src_ext": "png",
+    "src_w": 427,
+    "src_h": 553,
+    "note": "matched from overview/positions"
+  },
+  "cab-mix-light-dark": {
+    "file": "cab-mix-light-dark.jpg",
+    "page": 77,
+    "src_xref": 1050,
+    "src_ext": "png",
+    "src_w": 320,
+    "src_h": 400,
+    "note": "matched from overview/positions"
+  },
+  "cab-mix-paint-stain": {
+    "file": "cab-mix-paint-stain.jpg",
+    "page": 83,
+    "src_xref": 1112,
+    "src_ext": "png",
+    "src_w": 750,
+    "src_h": 1000,
+    "note": "matched from overview/positions"
+  },
+  "stor-glass-grid": {
+    "file": "stor-glass-grid.jpg",
+    "page": 85,
+    "src_xref": 1137,
+    "src_ext": "png",
+    "src_w": 452,
+    "src_h": 564,
+    "note": "matched from overview/positions"
+  },
+  "stor-integrated-open-shelving": {
+    "file": "stor-integrated-open-shelving.jpg",
+    "page": 85,
+    "src_xref": 1136,
+    "src_ext": "png",
+    "src_w": 380,
+    "src_h": 500,
+    "note": "matched from overview/positions"
+  },
+  "stor-ribbed-fluted": {
+    "file": "stor-ribbed-fluted.jpg",
+    "page": 85,
+    "src_xref": 1138,
+    "src_ext": "png",
+    "src_w": 332,
+    "src_h": 498,
+    "note": "matched from overview/positions"
+  },
+  "stor-standard-glass": {
+    "file": "stor-standard-glass.jpg",
+    "page": 85,
+    "src_xref": 1139,
+    "src_ext": "png",
+    "src_w": 427,
+    "src_h": 639,
+    "note": "matched from overview/positions"
+  },
+  "stor-open-shelving": {
+    "file": "stor-open-shelving.jpg",
+    "page": 85,
+    "src_xref": 1140,
+    "src_ext": "png",
+    "src_w": 474,
+    "src_h": 585,
+    "note": "matched from overview/positions"
+  },
+  "stor-pullout": {
+    "file": "stor-pullout.jpg",
+    "page": 86,
+    "src_xref": 1152,
+    "src_ext": "png",
+    "src_w": 474,
+    "src_h": 805,
+    "out_size": [
+      474,
+      805
+    ]
+  },
+  "spice-vertical": {
+    "file": "spice-vertical.jpg",
+    "page": 87,
+    "src_xref": 1158,
+    "src_ext": "png",
+    "src_w": 451,
+    "src_h": 602,
+    "note": "matched from overview"
+  },
+  "spice-lay-flat": {
+    "file": "spice-lay-flat.jpg",
+    "page": 87,
+    "src_xref": 1159,
+    "src_ext": "png",
+    "src_w": 483,
+    "src_h": 662,
+    "note": "matched from overview"
+  },
+  "spice-niche": {
+    "file": "spice-niche.jpg",
+    "page": 87,
+    "src_xref": 1160,
+    "src_ext": "png",
+    "src_w": 423,
+    "src_h": 694,
+    "note": "matched from overview"
+  },
+  "hood-plaster": {
+    "file": "hood-plaster.jpg",
+    "page": 90,
+    "src_xref": 1200,
+    "src_ext": "png",
+    "src_w": 380,
+    "src_h": 569,
+    "note": "matched from overview/positions"
+  },
+  "hood-paneled": {
+    "file": "hood-paneled.jpg",
+    "page": 90,
+    "src_xref": 1201,
+    "src_ext": "png",
+    "src_w": 563,
+    "src_h": 418,
+    "note": "matched from overview/positions"
+  },
+  "hood-millwork": {
+    "file": "hood-millwork.jpg",
+    "page": 90,
+    "src_xref": 1203,
+    "src_ext": "png",
+    "src_w": 452,
+    "src_h": 602,
+    "note": "matched from overview/positions"
+  },
+  "hood-architectural-trim": {
+    "file": "hood-architectural-trim.jpg",
+    "page": 90,
+    "src_xref": 1202,
+    "src_ext": "png",
+    "src_w": 474,
+    "src_h": 579,
+    "note": "matched from overview/positions"
+  },
+  "hood-tiled": {
+    "file": "hood-tiled.jpg",
+    "page": 89,
+    "src_xref": 1187,
+    "src_ext": "png",
+    "src_w": 427,
+    "src_h": 532,
+    "note": "matched from overview/positions"
+  },
+  "hood-stone-slab": {
+    "file": "hood-stone-slab.jpg",
+    "page": 89,
+    "src_xref": 1190,
+    "src_ext": "png",
+    "src_w": 451,
+    "src_h": 676,
+    "note": "matched from overview/positions"
+  },
+  "hood-zinc": {
+    "file": "hood-zinc.jpg",
+    "page": 89,
+    "src_xref": 1188,
+    "src_ext": "png",
+    "src_w": 380,
+    "src_h": 572,
+    "note": "matched from overview/positions"
+  },
+  "hood-reclaimed-wood": {
+    "file": "hood-reclaimed-wood.jpg",
+    "page": 89,
+    "src_xref": 1189,
+    "src_ext": "png",
+    "src_w": 474,
+    "src_h": 580,
+    "note": "matched from overview/positions"
+  },
+  "hoodapp-wall": {
+    "file": "hoodapp-wall.jpg",
+    "page": 92,
+    "src_xref": 1236,
+    "src_ext": "png",
+    "src_w": 427,
+    "src_h": 640,
+    "note": "matched from overview"
+  },
+  "hoodapp-alcove": {
+    "file": "hoodapp-alcove.jpg",
+    "page": 92,
+    "src_xref": 1237,
+    "src_ext": "png",
+    "src_w": 473,
+    "src_h": 580,
+    "note": "matched from overview"
+  },
+  "pot-filler": {
+    "file": "pot-filler.jpg",
+    "page": 96,
+    "src_xref": 1274,
+    "src_ext": "png",
+    "src_w": 474,
+    "src_h": 594,
+    "out_size": [
+      474,
+      594
+    ]
+  },
+  "nat-marble": {
+    "file": "nat-marble.jpg",
+    "page": 97,
+    "src_xref": 1282,
+    "src_ext": "png",
+    "src_w": 380,
+    "src_h": 674,
+    "note": "matched from overview"
+  },
+  "nat-quartzite": {
+    "file": "nat-quartzite.jpg",
+    "page": 97,
+    "src_xref": 1281,
+    "src_ext": "png",
+    "src_w": 427,
+    "src_h": 640,
+    "note": "matched from overview"
+  },
+  "nat-soapstone": {
+    "file": "nat-soapstone.jpg",
+    "page": 97,
+    "src_xref": 1287,
+    "src_ext": "png",
+    "src_w": 600,
+    "src_h": 600,
+    "note": "matched from overview"
+  },
+  "manu-porcelain": {
+    "file": "manu-porcelain.jpg",
+    "page": 102,
+    "src_xref": 1338,
+    "src_ext": "png",
+    "src_w": 600,
+    "src_h": 600,
+    "note": "matched from overview/positions"
+  },
+  "manu-quartz": {
+    "file": "manu-quartz.jpg",
+    "page": 102,
+    "src_xref": 1339,
+    "src_ext": "png",
+    "src_w": 409,
+    "src_h": 639,
+    "note": "matched from overview/positions"
+  },
+  "manu-concrete": {
+    "file": "manu-concrete.jpg",
+    "page": 105,
+    "src_xref": 1365,
+    "src_ext": "png",
+    "src_w": 1250,
+    "src_h": 966,
+    "note": "matched from overview/positions"
+  },
+  "manu-terrazzo": {
+    "file": "manu-terrazzo.jpg",
+    "page": 105,
+    "src_xref": 1366,
+    "src_ext": "png",
+    "src_w": 181,
+    "src_h": 183,
+    "note": "matched from overview/positions"
+  },
+  "fireplace-plaster": {
+    "file": "fireplace-plaster.jpg",
+    "page": 108,
+    "src_xref": 1410,
+    "src_ext": "png",
+    "src_w": 282,
+    "src_h": 423,
+    "note": "matched from overview/positions"
+  },
+  "fireplace-slab": {
+    "file": "fireplace-slab.jpg",
+    "page": 108,
+    "src_xref": 1415,
+    "src_ext": "png",
+    "src_w": 339,
+    "src_h": 508,
+    "note": "matched from overview/positions"
+  },
+  "fireplace-tile": {
+    "file": "fireplace-tile.jpg",
+    "page": 108,
+    "src_xref": 1411,
+    "src_ext": "png",
+    "src_w": 282,
+    "src_h": 423,
+    "note": "matched from overview/positions"
+  },
+  "fireplace-stone-brick": {
+    "file": "fireplace-stone-brick.jpg",
+    "page": 108,
+    "src_xref": 1412,
+    "src_ext": "png",
+    "src_w": 324,
+    "src_h": 576,
+    "note": "matched from overview/positions"
+  },
+  "fireplace-millwork": {
+    "file": "fireplace-millwork.jpg",
+    "page": 108,
+    "src_xref": 1413,
+    "src_ext": "png",
+    "src_w": 339,
+    "src_h": 508,
+    "note": "matched from overview/positions"
+  },
+  "fireplace-mix": {
+    "file": "fireplace-mix.jpg",
+    "page": 108,
+    "src_xref": 1414,
+    "src_ext": "png",
+    "src_w": 282,
+    "src_h": 423,
+    "note": "matched from overview/positions"
+  },
+  "edge-miter": {
+    "file": "edge-miter.jpg",
+    "page": 116,
+    "src_xref": 1487,
+    "src_ext": "png",
+    "src_w": 395,
+    "src_h": 593,
+    "note": "matched from overview"
+  },
+  "edge-trim": {
+    "file": "edge-trim.jpg",
+    "page": 116,
+    "src_xref": 1486,
+    "src_ext": "png",
+    "src_w": 395,
+    "src_h": 593,
+    "note": "matched from overview"
+  },
+  "edge-double-drywall": {
+    "file": "edge-double-drywall.jpg",
+    "page": 116,
+    "src_xref": 1488,
+    "src_ext": "jpeg",
+    "src_w": 413,
+    "src_h": 779,
+    "note": "matched from overview"
+  },
+  "color-colorful": {
+    "file": "color-colorful.jpg",
+    "note": "re-extracted"
+  },
+  "color-neutral": {
+    "file": "color-neutral.jpg",
+    "page": 122,
+    "src_xref": 1546,
+    "src_ext": "png",
+    "src_w": 427,
+    "src_h": 640,
+    "note": "matched from overview"
+  },
+  "wallpaper-modern": {
+    "file": "wallpaper-modern.jpg",
+    "page": 126,
+    "src_xref": 1587,
+    "src_ext": "png",
+    "src_w": 525,
+    "src_h": 525,
+    "note": "matched from overview"
+  },
+  "wallpaper-calming": {
+    "file": "wallpaper-calming.jpg",
+    "page": 126,
+    "src_xref": 1586,
+    "src_ext": "png",
+    "src_w": 613,
+    "src_h": 613,
+    "note": "matched from overview"
+  },
+  "wallpaper-colorful": {
+    "file": "wallpaper-colorful.jpg",
+    "page": 126,
+    "src_xref": 1585,
+    "src_ext": "png",
+    "src_w": 640,
+    "src_h": 640,
+    "note": "matched from overview"
+  },
+  "tg-vertical": {
+    "file": "tg-vertical.jpg",
+    "page": 132,
+    "src_xref": 1648,
+    "src_ext": "png",
+    "src_w": 474,
+    "src_h": 592,
+    "note": "matched from overview/positions"
+  },
+  "tg-horizontal": {
+    "file": "tg-horizontal.jpg",
+    "page": 132,
+    "src_xref": 1647,
+    "src_ext": "png",
+    "src_w": 564,
+    "src_h": 705,
+    "note": "matched from overview/positions"
+  },
+  "paint-standard": {
+    "file": "paint-standard.jpg",
+    "page": 136,
+    "src_xref": 1687,
+    "src_ext": "png",
+    "src_w": 474,
+    "src_h": 474,
+    "note": "matched from overview"
+  },
+  "paint-limewash": {
+    "file": "paint-limewash.jpg",
+    "page": 136,
+    "src_xref": 1688,
+    "src_ext": "png",
+    "src_w": 473,
+    "src_h": 618,
+    "note": "matched from overview"
+  },
+  "light-recessed": {
+    "file": "light-recessed.jpg",
+    "page": 140,
+    "src_xref": 1723,
+    "src_ext": "png",
+    "src_w": 473,
+    "src_h": 631,
+    "note": "matched from overview"
+  },
+  "light-semiflush": {
+    "file": "light-semiflush.jpg",
+    "page": 140,
+    "src_xref": 1724,
+    "src_ext": "png",
+    "src_w": 474,
+    "src_h": 711,
+    "note": "matched from overview"
+  },
+  "bl-pendant": {
+    "file": "bl-pendant.jpg",
+    "page": 144,
+    "src_xref": 1764,
+    "src_ext": "png",
+    "src_w": 473,
+    "src_h": 691,
+    "note": "matched from overview"
+  },
+  "bl-sconce": {
+    "file": "bl-sconce.jpg",
+    "page": 144,
+    "src_xref": 1765,
+    "src_ext": "png",
+    "src_w": 474,
+    "src_h": 611,
+    "note": "matched from overview"
+  },
+  "bed-fan": {
+    "file": "bed-fan.jpg",
+    "page": 148,
+    "src_xref": 1801,
+    "src_ext": "png",
+    "src_w": 476,
+    "src_h": 792,
+    "note": "matched from overview"
+  },
+  "bed-fixture": {
+    "file": "bed-fixture.jpg",
+    "page": 148,
+    "src_xref": 1800,
+    "src_ext": "png",
+    "src_w": 451,
+    "src_h": 676,
+    "note": "matched from overview"
+  },
+  "floor-real-hardwood": {
+    "file": "floor-real-hardwood.jpg",
+    "page": 152,
+    "src_xref": 1831,
+    "src_ext": "png",
+    "src_w": 427,
+    "src_h": 593,
+    "note": "matched from overview"
+  },
+  "floor-engineered-hardwood": {
+    "file": "floor-engineered-hardwood.jpg",
+    "page": 152,
+    "src_xref": 1830,
+    "src_ext": "png",
+    "src_w": 474,
+    "src_h": 474,
+    "note": "matched from overview"
+  },
+  "tone-light": {
+    "file": "tone-light.jpg",
+    "page": 153,
+    "src_xref": 1843,
+    "src_ext": "png",
+    "src_w": 474,
+    "src_h": 605,
+    "note": "matched from overview"
+  },
+  "tone-medium": {
+    "file": "tone-medium.jpg",
+    "page": 153,
+    "src_xref": 1842,
+    "src_ext": "png",
+    "src_w": 392,
+    "src_h": 560,
+    "note": "matched from overview"
+  },
+  "tone-dark": {
+    "file": "tone-dark.jpg",
+    "page": 153,
+    "src_xref": 1844,
+    "src_ext": "png",
+    "src_w": 474,
+    "src_h": 605,
+    "note": "matched from overview"
+  },
+  "install-herringbone": {
+    "file": "install-herringbone.jpg",
+    "page": 158,
+    "src_xref": 1888,
+    "src_ext": "png",
+    "src_w": 474,
+    "src_h": 474,
+    "note": "matched from overview"
+  },
+  "install-standard": {
+    "file": "install-standard.jpg",
+    "page": 158,
+    "src_xref": 1889,
+    "src_ext": "png",
+    "src_w": 438,
+    "src_h": 432,
+    "note": "matched from overview"
+  },
+  "ceil-wood-beams": {
+    "file": "ceil-wood-beams.jpg",
+    "page": 162,
+    "src_xref": 1927,
+    "src_ext": "png",
+    "src_w": 332,
+    "src_h": 498,
+    "note": "matched from overview/positions"
+  },
+  "ceil-wood-paneling": {
+    "file": "ceil-wood-paneling.jpg",
+    "page": 162,
+    "src_xref": 1929,
+    "src_ext": "png",
+    "src_w": 395,
+    "src_h": 527,
+    "note": "matched from overview/positions"
+  },
+  "ceil-paint-beams": {
+    "file": "ceil-paint-beams.jpg",
+    "page": 162,
+    "src_xref": 1930,
+    "src_ext": "png",
+    "src_w": 395,
+    "src_h": 580,
+    "note": "matched from overview/positions"
+  },
+  "ceil-paint-tg": {
+    "file": "ceil-paint-tg.jpg",
+    "page": 162,
+    "src_xref": 1928,
+    "src_ext": "png",
+    "src_w": 380,
+    "src_h": 472,
+    "note": "matched from overview/positions"
+  },
+  "crown-traditional": {
+    "file": "crown-traditional.jpg",
+    "page": 168,
+    "src_xref": 1980,
+    "src_ext": "png",
+    "src_w": 452,
+    "src_h": 564,
+    "note": "matched from overview"
+  },
+  "crown-modern": {
+    "file": "crown-modern.jpg",
+    "page": 168,
+    "src_xref": 1982,
+    "src_ext": "png",
+    "src_w": 395,
+    "src_h": 593,
+    "note": "matched from overview"
+  },
+  "crown-none": {
+    "file": "crown-none.jpg",
+    "page": 168,
+    "src_xref": 1981,
+    "src_ext": "png",
+    "src_w": 380,
+    "src_h": 569,
+    "note": "matched from overview"
+  },
+  "baseboard-traditional": {
+    "file": "baseboard-traditional.jpg",
+    "page": 173,
+    "src_xref": 2024,
+    "src_ext": "png",
+    "src_w": 395,
+    "src_h": 494,
+    "note": "matched from overview/positions"
+  },
+  "baseboard-modern": {
+    "file": "baseboard-modern.jpg",
+    "page": 173,
+    "src_xref": 2025,
+    "src_ext": "png",
+    "src_w": 452,
+    "src_h": 679,
+    "note": "matched from overview/positions"
+  },
+  "baseboard-contrast": {
+    "file": "baseboard-contrast.jpg",
+    "page": 174,
+    "src_xref": 2033,
+    "src_ext": "png",
+    "src_w": 485,
+    "src_h": 659,
+    "note": "matched from overview"
+  },
+  "baseboard-stain": {
+    "file": "baseboard-stain.jpg",
+    "page": 174,
+    "src_xref": 2034,
+    "src_ext": "png",
+    "src_w": 395,
+    "src_h": 593,
+    "note": "matched from overview"
+  },
+  "baseboard-white": {
+    "file": "baseboard-white.jpg",
+    "page": 174,
+    "src_xref": 2035,
+    "src_ext": "png",
+    "src_w": 380,
+    "src_h": 571,
+    "note": "matched from overview"
+  },
+  "idoor-stain": {
+    "file": "idoor-stain.jpg",
+    "page": 175,
+    "src_xref": 2043,
+    "src_ext": "png",
+    "src_w": 337,
+    "src_h": 609,
+    "note": "matched from overview/positions"
+  },
+  "idoor-paint": {
+    "file": "idoor-paint.jpg",
+    "page": 175,
+    "src_xref": 2041,
+    "src_ext": "png",
+    "src_w": 296,
+    "src_h": 524,
+    "note": "matched from overview/positions"
+  },
+  "fd-french": {
+    "file": "fd-french.jpg",
+    "page": 176,
+    "src_xref": 2058,
+    "src_ext": "png",
+    "src_w": 294,
+    "src_h": 365,
+    "note": "matched from overview/positions"
+  },
+  "fd-dutch": {
+    "file": "fd-dutch.jpg",
+    "page": 176,
+    "src_xref": 2050,
+    "src_ext": "png",
+    "src_w": 295,
+    "src_h": 442,
+    "note": "matched from overview/positions"
+  },
+  "fd-pivot": {
+    "file": "fd-pivot.jpg",
+    "page": 176,
+    "src_xref": 2051,
+    "src_ext": "png",
+    "src_w": 442,
+    "src_h": 548,
+    "note": "matched from overview/positions"
+  },
+  "fd-sidelites": {
+    "file": "fd-sidelites.jpg",
+    "page": 176,
+    "src_xref": 2056,
+    "src_ext": "png",
+    "src_w": 294,
+    "src_h": 429,
+    "note": "matched from overview/positions"
+  },
+  "fd-single-swing": {
+    "file": "fd-single-swing.jpg",
+    "page": 176,
+    "src_xref": 2057,
+    "src_ext": "png",
+    "src_w": 294,
+    "src_h": 503,
+    "note": "matched from overview/positions"
+  },
+  "fd-arched": {
+    "file": "fd-arched.jpg",
+    "page": 176,
+    "src_xref": 2053,
+    "src_ext": "png",
+    "src_w": 380,
+    "src_h": 476,
+    "note": "matched from overview/positions"
+  },
+  "fd-with-glass": {
+    "file": "fd-with-glass.jpg",
+    "page": 177,
+    "src_xref": 2065,
+    "src_ext": "png",
+    "src_w": 473,
+    "src_h": 500,
+    "note": "matched from overview/positions"
+  },
+  "fd-without-glass": {
+    "file": "fd-without-glass.jpg",
+    "page": 177,
+    "src_xref": 2064,
+    "src_ext": "png",
+    "src_w": 589,
+    "src_h": 785,
+    "note": "matched from overview/positions"
+  },
+  "fd-stain": {
+    "file": "fd-stain.jpg",
+    "page": 178,
+    "src_xref": 2072,
+    "src_ext": "png",
+    "src_w": 368,
+    "src_h": 654,
+    "note": "matched from overview"
+  },
+  "fd-paint": {
+    "file": "fd-paint.jpg",
+    "page": 178,
+    "src_xref": 2071,
+    "src_ext": "png",
+    "src_w": 442,
+    "src_h": 663,
+    "note": "matched from overview"
+  },
+  "fd-metal-glass": {
+    "file": "fd-metal-glass.jpg",
+    "page": 178,
+    "src_xref": 2073,
+    "src_ext": "png",
+    "src_w": 736,
+    "src_h": 1102,
+    "note": "matched from overview"
+  },
+  "spindle-iron": {
+    "file": "spindle-iron.jpg",
+    "page": 183,
+    "src_xref": 2120,
+    "src_ext": "jpeg",
+    "src_w": 702,
+    "src_h": 779,
+    "note": "matched from overview"
+  },
+  "spindle-wood": {
+    "file": "spindle-wood.jpg",
+    "page": 183,
+    "src_xref": 2121,
+    "src_ext": "png",
+    "src_w": 544,
+    "src_h": 786,
+    "note": "matched from overview"
+  },
+  "spindle-plaster": {
+    "file": "spindle-plaster.jpg",
+    "page": 183,
+    "src_xref": 2119,
+    "src_ext": "png",
+    "src_w": 640,
+    "src_h": 986,
+    "note": "matched from overview"
+  },
+  "stair-wood-wood": {
+    "file": "stair-wood-wood.jpg",
+    "page": 188,
+    "src_xref": 2158,
+    "src_ext": "jpeg",
+    "src_w": 702,
+    "src_h": 779,
+    "note": "matched from overview/positions"
+  },
+  "stair-wood-white": {
+    "file": "stair-wood-white.jpg",
+    "page": 188,
+    "src_xref": 2159,
+    "src_ext": "png",
+    "src_w": 564,
+    "src_h": 846,
+    "note": "matched from overview/positions"
+  },
+  "stair-wood-carpet": {
+    "file": "stair-wood-carpet.jpg",
+    "page": 188,
+    "src_xref": 2160,
+    "src_ext": "png",
+    "src_w": 508,
+    "src_h": 762,
+    "note": "matched from overview/positions"
+  },
+  "dh-knob": {
+    "file": "dh-knob.jpg",
+    "page": 23,
+    "src_ext": "jpg",
+    "src_w": 1141,
+    "src_h": 396,
+    "note": "knob in all 3 finishes (full images)"
+  },
+  "dh-lever": {
+    "file": "dh-lever.jpg",
+    "page": 23,
+    "src_ext": "jpg",
+    "src_w": 1129,
+    "src_h": 262,
+    "note": "lever in all 3 finishes (bronze mirrored to match direction)"
+  },
+  "laundry-flat-dry-pullouts": {
+    "file": "laundry-flat-dry-pullouts.jpg",
+    "note": "re-extracted"
+  },
+  "no-pot-filler": {
+    "file": "no-pot-filler.jpg",
+    "note": "re-extracted"
+  },
+  "switch-brass": {
+    "file": "switch-brass.jpg",
+    "note": "re-extracted"
+  },
+  "switch-oil-rubbed-bronze": {
+    "file": "switch-oil-rubbed-bronze.jpg",
+    "note": "re-extracted"
+  },
+  "edge-eased": {
+    "file": "edge-eased.jpg",
+    "src_xref": 1394,
+    "src_ext": "jpg",
+    "src_w": 105,
+    "src_h": 65,
+    "note": "edge profile: eased"
+  },
+  "edge-half-bullnose": {
+    "file": "edge-half-bullnose.jpg",
+    "src_xref": 1394,
+    "src_ext": "jpg",
+    "src_w": 104,
+    "src_h": 64,
+    "note": "edge profile: half bullnose"
+  },
+  "edge-ogee": {
+    "file": "edge-ogee.jpg",
+    "src_xref": 1394,
+    "src_ext": "jpg",
+    "src_w": 105,
+    "src_h": 64,
+    "note": "edge profile: ogee"
+  },
+  "edge-waterfall": {
+    "file": "edge-waterfall.jpg",
+    "src_xref": 1394,
+    "src_ext": "jpg",
+    "src_w": 105,
+    "src_h": 65,
+    "note": "edge profile: waterfall"
+  },
+  "edge-rounded-top-bottom": {
+    "file": "edge-rounded-top-bottom.jpg",
+    "src_xref": 1394,
+    "src_ext": "jpg",
+    "src_w": 106,
+    "src_h": 65,
+    "note": "edge profile: rounded top & bottom"
+  },
+  "edge-quarter-round": {
+    "file": "edge-quarter-round.jpg",
+    "src_xref": 1394,
+    "src_ext": "jpg",
+    "src_w": 105,
+    "src_h": 65,
+    "note": "edge profile: 1/4\" round"
+  },
+  "edge-matched-bevel": {
+    "file": "edge-matched-bevel.jpg",
+    "src_xref": 1394,
+    "src_ext": "jpg",
+    "src_w": 104,
+    "src_h": 64,
+    "note": "edge profile: matched bevel"
+  },
+  "edge-quarter-bevel": {
+    "file": "edge-quarter-bevel.jpg",
+    "src_xref": 1394,
+    "src_ext": "jpg",
+    "src_w": 104,
+    "src_h": 64,
+    "note": "edge profile: 1/4\" bevel"
+  },
+  "edge-half-bevel": {
+    "file": "edge-half-bevel.jpg",
+    "src_xref": 1394,
+    "src_ext": "jpg",
+    "src_w": 104,
+    "src_h": 65,
+    "note": "edge profile: 1/2\" bevel"
+  },
+  "edge-flat-ogee": {
+    "file": "edge-flat-ogee.jpg",
+    "src_xref": 1394,
+    "src_ext": "jpg",
+    "src_w": 105,
+    "src_h": 64,
+    "note": "edge profile: flat ogee"
+  },
+  "edge-bullnose-ogee": {
+    "file": "edge-bullnose-ogee.jpg",
+    "src_xref": 1394,
+    "src_ext": "jpg",
+    "src_w": 105,
+    "src_h": 65,
+    "note": "edge profile: bullnose ogee"
+  },
+  "edge-cove-ogee": {
+    "file": "edge-cove-ogee.jpg",
+    "src_xref": 1394,
+    "src_ext": "jpg",
+    "src_w": 105,
+    "src_h": 65,
+    "note": "edge profile: cove ogee"
+  },
+  "edge-cove": {
+    "file": "edge-cove.jpg",
+    "src_xref": 1394,
+    "src_ext": "jpg",
+    "src_w": 105,
+    "src_h": 65,
+    "note": "edge profile: cove"
+  },
+  "edge-cove-dupont": {
+    "file": "edge-cove-dupont.jpg",
+    "src_xref": 1394,
+    "src_ext": "jpg",
+    "src_w": 105,
+    "src_h": 65,
+    "note": "edge profile: cove dupont"
+  },
+  "edge-demi-bullnose": {
+    "file": "edge-demi-bullnose.jpg",
+    "src_xref": 1394,
+    "src_ext": "jpg",
+    "src_w": 104,
+    "src_h": 64,
+    "note": "edge profile: demi bullnose"
+  },
+  "edge-full-bullnose": {
+    "file": "edge-full-bullnose.jpg",
+    "src_xref": 1394,
+    "src_ext": "jpg",
+    "src_w": 104,
+    "src_h": 64,
+    "note": "edge profile: full bullnose"
+  },
+  "edge-hollywood-bevel": {
+    "file": "edge-hollywood-bevel.jpg",
+    "src_xref": 1394,
+    "src_ext": "jpg",
+    "src_w": 110,
+    "src_h": 64,
+    "note": "edge profile: hollywood bevel"
+  },
+  "edge-dupont": {
+    "file": "edge-dupont.jpg",
+    "src_xref": 1394,
+    "src_ext": "jpg",
+    "src_w": 105,
+    "src_h": 65,
+    "note": "edge profile: dupont"
+  }
+}

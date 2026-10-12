@@ -23,6 +23,10 @@
         <span class="topbar__sub">Revision requests — office dashboard</span>
       </div>
       <div class="topbar__actions">
+        <nav class="topbar__tabs" id="tabNav" hidden aria-label="Dashboard section">
+          <button type="button" class="btn btn--ghost is-active" id="tabRevisions" data-tab="revisions">Revision requests</button>
+          <button type="button" class="btn btn--ghost" id="tabHomework" data-tab="homework">Design homework</button>
+        </nav>
         <a class="btn btn--ghost" id="sheetBtn" href="#" target="_blank" rel="noopener" hidden>Work queue sheet</a>
         <button type="button" class="btn btn--ghost" id="teamSetupBtn">Setup</button>
         <button type="button" class="btn btn--ghost" id="refreshBtn" hidden>Refresh</button>
@@ -124,6 +128,16 @@
       <h2 class="admin-heading">Archived requests <span class="admin-heading__note" id="archivedCount"></span></h2>
       <p class="admin-hint">Archived requests are hidden from the main list but kept in full. <b>Unarchive</b> to restore, or <b>Delete</b> to remove permanently.</p>
       <div id="archivedList"></div>
+    </section>
+
+    <!-- Design Homework tab -->
+    <section id="homeworkWrap" hidden>
+      <h2 class="admin-heading">Design homework submissions <span class="admin-heading__note" id="homeworkCount"></span></h2>
+      <p class="admin-hint">Completed homework forms. Use <b>CSV</b> to export, or open the client's private link from the submission email.</p>
+      <div id="homeworkList"></div>
+      <h2 class="admin-heading">Saved homework drafts</h2>
+      <p class="admin-hint">Drafts are still in progress. <b>Copy resume link</b> to send the client back to finish.</p>
+      <div id="homeworkDrafts"></div>
     </section>
   </main>
 

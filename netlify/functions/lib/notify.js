@@ -607,6 +607,164 @@ async function onReminder(round, kind) {
   return { emailSent: emailSent };
 }
 
+// ── Client Design Homework — notification templates ──────────────────────
+function homeworkClient(sub) {
+  const c = (sub && sub.client) || {};
+  return { name: c.name || '', project: c.project || '', email: c.email || '' };
+}
+
+function homeworkSelectionCount(sub) {
+  let n = 0;
+  (sub.sections || []).forEach((s) => {
+    if (s.skipped) return;
+    (s.items || []).forEach((it) => { n += (it.options || []).length; });
+  });
+  return n;
+}
+
+function homeworkCompletedSections(sub) {
+  return (sub.sections || []).filter((s) => !s.skipped && (s.items || []).some((it) => (it.options || []).length || it.note)).length;
+}
+
+function homeworkSectionBlocks(sub, html) {
+  const blocks = [];
+  (sub.sections || []).forEach((s) => {
+    if (s.skipped) {
+      blocks.push((html ? '<p style="color:#999;margin:6px 0;"><em>' : '') + esc(s.number + ' · ' + s.title) + (html ? ' — skipped (not applicable)</em></p>' : ' — skipped (not applicable)'));
+      return;
+    }
+    const items = (s.items || []).filter((it) => (it.options && it.options.length) || it.note);
+    if (!items.length) return;
+    if (html) {
+      let h = '<p style="margin:10px 0 2px;"><strong>' + esc(s.number + ' · ' + s.title) + '</strong></p><ul style="margin:0 0 6px 18px;padding:0;">';
+      items.forEach((it) => {
+        let line = '<strong>' + esc(it.category) + '</strong>';
+        if (it.options && it.options.length) line += ': ' + esc(it.options.join(', '));
+        if (it.note) line += ' <span style="color:#777;">— note: ' + esc(it.note) + '</span>';
+        h += '<li style="margin:2px 0;">' + line + '</li>';
+      });
+      blocks.push(h + '</ul>');
+    } else {
+      const lines = items.map((it) => {
+        let line = '  • ' + it.category;
+        if (it.options && it.options.length) line += ': ' + it.options.join(', ');
+        if (it.note) line += ' — note: ' + it.note;
+        return line;
+      });
+      blocks.push(s.number + ' · ' + s.title + '\n' + lines.join('\n'));
+    }
+  });
+
+  const budget = (sub.budget || []).filter((b) => b.tier || b.note);
+  if (budget.length) {
+    if (html) {
+      let h = '<p style="margin:10px 0 2px;"><strong>Budget Definition</strong></p><ul style="margin:0 0 6px 18px;padding:0;">';
+      budget.forEach((b) => {
+        h += '<li style="margin:2px 0;"><strong>' + esc(b.label) + '</strong>: ' + esc(b.tier || '—') +
+          (b.note ? ' <span style="color:#777;">— ' + esc(b.note) + '</span>' : '') + '</li>';
+      });
+      blocks.push(h + '</ul>');
+    } else {
+      blocks.push('Budget Definition\n' + budget.map((b) => '  • ' + b.label + ': ' + (b.tier || '—') + (b.note ? ' — ' + b.note : '')).join('\n'));
+    }
+  }
+
+  return blocks;
+}
+
+function homeworkOfficeEmail(sub, viewUrl) {
+  const c = homeworkClient(sub);
+  const n = homeworkSelectionCount(sub);
+  const subject = 'Design Homework — ' + (c.name || 'A client') + ' · ' + (c.project || 'a project') + ' (' + n + ' selections)';
+  const text = [
+    'A Design Homework has been submitted.',
+    '',
+    'Client:    ' + (c.name || '—'),
+    'Project:   ' + (c.project || '—'),
+    c.email ? 'Email:     ' + c.email : '',
+    'Selections: ' + n,
+    'Sections answered: ' + homeworkCompletedSections(sub),
+    '',
+    homeworkSectionBlocks(sub, false).join('\n\n'),
+    '',
+    viewUrl ? 'Read-only copy: ' + viewUrl : '',
+    '',
+    '— ' + (sub.business || 'Pepper & Olive Interiors') + ' · Design Homework'
+  ].filter((l) => l !== false).join('\n');
+
+  const html =
+    '<div style="font-family:Georgia,serif;color:#2b2b2b;max-width:680px;margin:0 auto;">' +
+    '<h2 style="font-weight:normal;margin:0 0 4px;">Design Homework received</h2>' +
+    '<p style="margin:0 0 14px;color:#666;">' + esc(c.project || '') + '</p>' +
+    '<table cellpadding="4" style="border-collapse:collapse;font-size:14px;">' +
+    '<tr><td style="color:#888;">Client</td><td>' + esc(c.name || '—') + '</td></tr>' +
+    '<tr><td style="color:#888;">Project</td><td>' + esc(c.project || '—') + '</td></tr>' +
+    (c.email ? '<tr><td style="color:#888;">Email</td><td>' + link('mailto:' + c.email, c.email) + '</td></tr>' : '') +
+    '<tr><td style="color:#888;">Selections</td><td>' + n + '</td></tr>' +
+    '</table>' +
+    '<div style="font-size:14px;line-height:1.5;">' + homeworkSectionBlocks(sub, true).join('') + '</div>' +
+    (viewUrl ? '<p style="margin:16px 0;">' + link(viewUrl, 'Open the read-only copy') + '</p>' : '') +
+    '<p style="color:#999;font-size:12px;margin-top:24px;">Sent automatically by the Design Homework.</p>' +
+    '</div>';
+
+  return { subject: subject, text: text, html: html };
+}
+
+function homeworkClientEmail(sub, viewUrl) {
+  const c = homeworkClient(sub);
+  const project = c.project || 'your project';
+  const subject = 'Your Design Homework — ' + project;
+  const text = [
+    'Hi' + (c.name ? ' ' + c.name : '') + ',',
+    '',
+    'Thank you — we received your Design Homework for ' + project + '.',
+    'Our team will review everything you selected and follow up with any questions.',
+    '',
+    viewUrl ? 'Your private read-only copy (print/save as PDF): ' + viewUrl : '',
+    '',
+    '— Pepper & Olive Interiors'
+  ].join('\n');
+  const html =
+    '<div style="font-family:Georgia,serif;color:#2b2b2b;max-width:640px;margin:0 auto;">' +
+    '<h2 style="font-weight:normal;">Design Homework received</h2>' +
+    '<p>Hi' + (c.name ? ' ' + esc(c.name) : '') + ',</p>' +
+    '<p>Thank you — we received your Design Homework for <strong>' + esc(project) + '</strong>.</p>' +
+    '<p>Our team will review everything you selected and follow up with any questions.</p>' +
+    (viewUrl ? '<p>' + link(viewUrl, 'Open your private read-only copy') + '</p>' : '') +
+    '<p style="color:#999;font-size:12px;margin-top:24px;">— Pepper & Olive Interiors</p></div>';
+  return { subject: subject, text: text, html: html };
+}
+
+function homeworkDiscordText(sub, viewUrl) {
+  const c = homeworkClient(sub);
+  return '📥 **Design Homework** — ' + (c.name || 'A client') + ' · ' + (c.project || 'a project') + '\n' +
+    homeworkSelectionCount(sub) + ' selections across ' + homeworkCompletedSections(sub) + ' sections' +
+    (viewUrl ? '\n' + viewUrl : '');
+}
+
+async function onHomeworkSubmission(sub, opts) {
+  opts = opts || {};
+  const office = officeRecipients();
+  const client = homeworkClient(sub);
+  const officeMsg = homeworkOfficeEmail(sub, opts.viewUrl || '');
+  const clientMsg = homeworkClientEmail(sub, opts.viewUrl || '');
+  let emailSent = false;
+
+  if (office.length && emailConfigured()) {
+    try { emailSent = !!(await sendEmail({ to: office, subject: officeMsg.subject, text: officeMsg.text, html: officeMsg.html })); }
+    catch (e) { console.error('homework office email failed:', e && e.message); }
+  }
+  if (client.email) {
+    try { emailSent = !!(await sendEmail({ to: client.email, subject: clientMsg.subject, text: clientMsg.text, html: clientMsg.html, replyTo: fromEmail() })) || emailSent; }
+    catch (e) { console.error('homework client email failed:', e && e.message); }
+  }
+
+  const text = homeworkDiscordText(sub, opts.viewUrl || '');
+  await sendDiscord(text);
+  await sendWhatsApp(text.replace(/\*\*/g, ''));
+  return { emailSent };
+}
+
 module.exports = {
   sendEmail,
   sendDiscord,
@@ -620,5 +778,8 @@ module.exports = {
   officeSubmissionEmail,
   clientSubmissionEmail,
   reminderEmails,
-  discordSubmissionText
+  discordSubmissionText,
+  onHomeworkSubmission,
+  homeworkOfficeEmail,
+  homeworkClientEmail
 };

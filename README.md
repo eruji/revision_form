@@ -33,8 +33,10 @@ A real form needs to grow with the client. That's what this POC does.
 | `setup.js` | Team setup panel (configurable wording), opened from the dashboard |
 | `styles.css` | Styling — brand palette + fonts matched to pepperandolive.com |
 | `clients/logo-*.svg`, `clients/favicon.ico` | Brand assets from the main site (served under public `/clients/`) |
-| `config.js` | **The questions and policy copy your team will iterate on** |
-| `netlify/functions/*` | API — office (`admin`, `rounds`) + public client (`submit`, `get`, `draft`, `round`, `upload`, `file`), scheduled `cleanup-drafts` + `reminders`, with `lib/notify.js` for email/Discord/WhatsApp |
+| `config.js` | **The revision questions and policy copy your team will iterate on** |
+| `homework/index.html`, `homework/app.js`, `homework/config.js`, `homework/view.html`, `homework/view.js` | Client Design Homework (public `/homework/`), self-contained like `/clients/` |
+| `homework/assets/` | Homework option images + brand logos (public, immutable-cached) |
+| `netlify/functions/*` | API — office (`admin`, `rounds`, `homework-admin`) + public client (`submit`, `get`, `draft`, `round`, `upload`, `file`, `homework-submit`, `homework-get`, `homework-draft`), scheduled `cleanup-drafts` + `reminders`, with `lib/notify.js` for email/Discord/WhatsApp |
 | `google_apps_script.gs` | Apps Script bridge: Google Sheet work queue + email notification |
 | `netlify.toml` | Publish dir, functions dir, `/api/*` routing, headers |
 | `.github/workflows/deploy.yml` | CI: install deps → stage files → deploy on push |
@@ -47,15 +49,19 @@ functions.
 
 | URL | What it is |
 |---|---|
-| `/` | Office dashboard — **behind Cloudflare Access** |
-| `/api/admin`, `/api/rounds` | Office APIs — **behind Cloudflare Access** |
+| `/` | Office dashboard (revision + design homework tabs) — **behind Cloudflare Access** |
+| `/api/admin`, `/api/rounds`, `/api/homework-admin` | Office APIs — **behind Cloudflare Access** |
 | `/clients/form.html?r=…` | Client revision form, opened from a generated request link (public) |
 | `/clients/form.html?resume=…` | Client form restored from a saved draft code (public) |
 | `/clients/view.html?token=…` | Private read-only copy of a submission (public) |
 | `/clients/api/*` | Public client API (submit, get, draft, round, upload, file) |
+| `/homework/` | Client Design Homework (public) |
+| `/homework/view.html?token=…` | Private read-only copy of a homework (public) |
+| `/homework/api/*` | Public homework API (submit, draft, get) |
 
-Clients only ever reach `/clients/…` through a link the dashboard generates; the
-root and the office APIs are gated by Cloudflare Zero Trust.
+Clients only ever reach `/clients/…` or `/homework/…` through a link the
+dashboard generates; the root and the office APIs are gated by Cloudflare Zero
+Trust.
 
 ## Run it (10 seconds)
 
@@ -293,9 +299,10 @@ email, so the old path keeps working.
 
 ## Custom domain + Cloudflare Zero Trust (revision.pepperandolive.com)
 
-The dashboard (`/`) and the office APIs (`/api/admin`, `/api/rounds`) sit behind
-**Cloudflare Access**. The client pages and APIs under `/clients/` are public, so
-request links work for clients who don't have a Cloudflare account.
+The dashboard (`/`) and the office APIs (`/api/admin`, `/api/rounds`,
+`/api/homework-admin`) sit behind **Cloudflare Access**. The client pages and
+APIs under `/clients/` and `/homework/` are public, so request links work for
+clients who don't have a Cloudflare account.
 
 1. **Netlify:** Project configuration → Domain management → Add a domain →
    `revision.pepperandolive.com`.
@@ -309,8 +316,10 @@ request links work for clients who don't have a Cloudflare account.
    `revision.pepperandolive.com/clients` with policy **Bypass → Everyone**.
    Because the client pages load shared assets from the root, add these as extra
    public hostnames on this same app: `/styles.css`, `/config.js`, `/setup.js`,
-   `/app.js`, `/view.js`. (Access matches the most specific path, so `/clients/*`
-   wins over the whole-site app.)
+   `/app.js`, `/view.js`. Also add **`/homework`** as a public hostname on this
+   app — the Design Homework is self-contained under `/homework/` (its own
+   CSS/JS/images and `/homework/api/*`). (Access matches the most specific path,
+   so `/clients/*` and `/homework/*` win over the whole-site app.)
 5. **Netlify env vars:** set `CF_ACCESS_TEAM_DOMAIN` (e.g.
    `pepperandolive.cloudflareaccess.com`) and `CF_ACCESS_AUD` (the Audience tag
    shown on the Access application). Redeploy. The office functions now accept
@@ -324,8 +333,9 @@ Access certs, matching the app `aud`) and reject anything that didn't come
 through Cloudflare.
 
 **Verify:** in a private window, `/` should prompt for Access (no password),
-`/clients/form.html?r=…` should load with no prompt, and hitting
-`https://<your-site>.netlify.app/api/admin` directly should return `401`.
+`/clients/form.html?r=…` and `/homework/` should load with no prompt, and
+hitting `https://<your-site>.netlify.app/api/admin` directly should return
+`401`.
 
 > If your Cloudflare plan doesn't do path-specific bypass the way you expect, the
 > fallback is to keep the dashboard at a path instead of the root: redirect `/` →

@@ -53,6 +53,22 @@
   to = "/.netlify/functions/round"
   status = 200
 
+# Public Design Homework API under /homework/api/* (outside the Access zone).
+[[redirects]]
+  from = "/homework/api/submit"
+  to = "/.netlify/functions/homework-submit"
+  status = 200
+
+[[redirects]]
+  from = "/homework/api/draft"
+  to = "/.netlify/functions/homework-draft"
+  status = 200
+
+[[redirects]]
+  from = "/homework/api/get"
+  to = "/.netlify/functions/homework-get"
+  status = 200
+
 # Old flat client URLs -> new /clients/ paths.
 [[redirects]]
   from = "/form.html"
@@ -100,6 +116,27 @@
 
 [[headers]]
   for = "/clients/view.html"
+  [headers.values]
+    Cache-Control = "no-store"
+
+# Design Homework: cache the brand images forever, never cache client pages.
+[[headers]]
+  for = "/homework/assets/img/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/homework/assets/logo/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/homework/index.html"
+  [headers.values]
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/homework/view.html"
   [headers.values]
     Cache-Control = "no-store"
 

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#9e988e" />
+  <title>Client Design Homework — Pepper & Olive Interiors</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Raleway:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="assets/logo/leaves.svg" />
+  <link rel="stylesheet" href="styles.css?v=__BUILD__" />
+</head>
+<body>
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="header-inner">
+      <button class="icon-btn sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Toggle navigation">☰</button>
+      <div class="header-brand">
+        <a class="brand" href="#" aria-label="Pepper & Olive Interiors — home">
+          <img src="assets/logo/logo-long.svg" alt="Pepper & Olive Interiors" class="brand-logo brand-logo--long" />
+          <img src="assets/logo/logo-short.svg" alt="Pepper & Olive Interiors" class="brand-logo brand-logo--short" />
+        </a>
+        <span class="header-sub">Client Design Homework</span>
+      </div>
+      <div class="header-actions">
+        <span id="save-state" class="save-state" aria-live="polite"></span>
+        <button class="btn btn-ghost" id="summary-btn" type="button">
+          <span class="btn-dot"></span> View summary
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Progress rail ──────────────────────────────────────────────────── -->
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar-aside" aria-label="Sections and groups">
+      <div class="sidebar-inner" id="sidebar"></div>
+    </aside>
+
+  <!-- ── Main ───────────────────────────────────────────────────────────── -->
+    <main id="main" class="main">
+      <div class="content" id="content"></div>
+    </main>
+  </div>
+
+  <!-- ── Footer nav ─────────────────────────────────────────────────────── -->
+  <footer class="steps-footer">
+    <div class="steps-inner">
+      <button class="btn btn-outline" id="prev-btn" type="button">← Back</button>
+      <div class="steps-hint" id="steps-hint"></div>
+      <button class="btn btn-solid" id="next-btn" type="button">Next →</button>
+    </div>
+  </footer>
+
+  <!-- ── Summary drawer ─────────────────────────────────────────────────── -->
+  <!-- ── Mood board slide-over ─────────────────────────────────────── -->
+  <div class="mood-overlay" id="mood-overlay" aria-hidden="true">
+    <div class="mood-sheet" role="dialog" aria-modal="true" aria-label="Image preview">
+      <div class="mood-sheet-head">
+        <h3 id="mood-sheet-title">Mood board</h3>
+        <button class="icon-btn" id="mood-sheet-close" type="button" aria-label="Close mood board">×</button>
+      </div>
+      <div class="mood-sheet-body">
+        <img id="mood-sheet-img" src="" alt="Mood board" />
+      </div>
+    </div>
+  </div>
+
+  <div class="drawer-scrim" id="summary-scrim" hidden></div>
+  <aside class="drawer" id="summary-drawer" aria-hidden="true" aria-label="Summary">
+    <div class="drawer-head">
+      <h2>Your Design Homework</h2>
+      <button class="icon-btn" id="summary-close" type="button" aria-label="Close summary">×</button>
+    </div>
+    <div class="drawer-body" id="summary-body"></div>
+    <div class="drawer-foot">
+      <button class="btn btn-outline" id="print-btn" type="button">Print / Save PDF</button>
+    </div>
+  </aside>
+
+  <script src="config.js?v=__BUILD__"></script>
+  <script src="app.js?v=__BUILD__"></script>
+</body>
+</html>
