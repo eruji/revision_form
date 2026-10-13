@@ -440,11 +440,11 @@ body {
   background: var(--stone-50);
 }
 .amount-field:focus { outline: none; border-color: var(--olive); background: #fff; }
-.budget-total {
-  margin-top: 20px;
-  padding: 18px 20px;
-  border: 1px solid var(--line);
-  background: var(--stone-50);
+.budget-total { border-bottom: 1px solid var(--line); }
+.budget-total__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 10px 24px;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -460,9 +460,11 @@ body {
 }
 .budget-total__value {
   font-family: var(--serif);
-  font-size: 1.4rem;
+  font-size: 1.15rem;
   color: var(--ink);
 }
+/* Keep the last room card clear of the (now taller) fixed footer. */
+body.budget-total-open .main { padding-bottom: 210px; }
 
 /* ── Footer nav ─────────────────────────────────────────────────────────── */
 .steps-footer {

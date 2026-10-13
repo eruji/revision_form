@@ -146,6 +146,15 @@
     const el = document.querySelector('[data-budget-total]');
     if (el) el.textContent = budgetTotalLabel();
   }
+  // Show the floating total only while the (room) budget step is on screen.
+  function syncBudgetTotalBar(stepId) {
+    const bar = document.getElementById('budget-total-bar');
+    if (!bar) return;
+    const show = stepId === 'budget' && isRoomsBudget();
+    bar.hidden = !show;
+    if (document.body) document.body.classList.toggle('budget-total-open', show);
+    if (show) updateBudgetTotal();
+  }
 
   // ── Render ────────────────────────────────────────────────────────────────
   function render() {
@@ -158,6 +167,7 @@
     else if (st.id === 'review') content.innerHTML = renderReview();
     else content.innerHTML = renderSection(CFG.sections.find((s) => s.id === st.id));
     bindStepUI();
+    syncBudgetTotalBar(st.id);
     updateNav();
     scrollTop();
   }
@@ -420,11 +430,7 @@
         </div>`;
     }).join('');
     return budgetHead() + `
-      <div class="budget-list">${cards}</div>
-      <div class="budget-total">
-        <span class="budget-total__label">Estimated total budget</span>
-        <span class="budget-total__value" data-budget-total>${esc(budgetTotalLabel())}</span>
-      </div>`;
+      <div class="budget-list">${cards}</div>`;
   }
 
   function clientDetailsCard() {
