@@ -15,6 +15,15 @@
   let activeTab = 'revisions';
   let homeworkLoaded = false;
 
+  // Public domain for every client-facing link this dashboard builds. Keep it
+  // in sync with the PUBLIC_BASE_URL env var. The previous subdomain stays live
+  // as an alias, so links already sent to clients keep working.
+  const LINK_BASE = 'https://forms.pepperandolive.com';
+  function baseUrl() {
+    const host = location.hostname;
+    return (host === 'localhost' || host === '127.0.0.1') ? location.origin : LINK_BASE;
+  }
+
   function $(sel) { return document.querySelector(sel); }
 
   function h(tag, attrs, ...children) {
@@ -199,8 +208,8 @@
     toast._t = setTimeout(() => { t.hidden = true; }, 2400);
   }
 
-  function clientLink(code) { return location.origin + '/clients/form.html?resume=' + encodeURIComponent(code); }
-  function draftViewLink(code) { return location.origin + '/clients/view.html?draft=' + encodeURIComponent(code); }
+  function clientLink(code) { return baseUrl() + '/clients/form.html?resume=' + encodeURIComponent(code); }
+  function draftViewLink(code) { return baseUrl() + '/clients/view.html?draft=' + encodeURIComponent(code); }
 
   async function deleteDraft(code, name) {
     if (!window.confirm('Delete the saved draft for ' + (name || 'this client') + '? This cannot be undone.')) return;
@@ -454,7 +463,7 @@
   }
 
   // ── Office-issued request links (rounds) ────────────────────────────────
-  function roundLink(id) { return location.origin + '/clients/form.html?r=' + id; }
+  function roundLink(id) { return baseUrl() + '/clients/form.html?r=' + id; }
 
   async function loadRounds(key) {
     try {
@@ -945,7 +954,7 @@
     draftsEl.innerHTML = '';
     if (!drafts.length) draftsEl.append(h('p', { class: 'admin-empty', text: 'No saved homework drafts.' }));
     drafts.forEach((d) => {
-      const resumeLink = location.origin + '/homework/index.html?resume=' + encodeURIComponent(d.code);
+      const resumeLink = baseUrl() + '/homework/index.html?resume=' + encodeURIComponent(d.code);
       draftsEl.append(h('div', { class: 'sub' },
         h('div', { class: 'sub__head' },
           h('strong', { text: (d.clientName || '—') + (d.projectName ? ' · ' + d.projectName : '') }),
@@ -1004,7 +1013,7 @@
     }
   }
 
-  function homeworkRoundLink(id) { return location.origin + '/homework/?r=' + id; }
+  function homeworkRoundLink(id) { return baseUrl() + '/homework/?r=' + id; }
 
   async function loadHomeworkRounds(key) {
     const list = $('#homeworkRoundsList');

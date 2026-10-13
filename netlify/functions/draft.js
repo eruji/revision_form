@@ -37,6 +37,8 @@ function json(statusCode, body) {
   };
 }
 function absUrl(event, path) {
+  const base = String(process.env.PUBLIC_BASE_URL || process.env.URL || process.env.DEPLOY_PRIME_URL || '').replace(/\/+$/, '');
+  if (base) return base + path;
   try {
     const host = (event.headers && (event.headers.host || event.headers.Host)) || '';
     const proto = (event.headers && (event.headers['x-forwarded-proto'] || event.headers['X-Forwarded-Proto'])) || 'https';

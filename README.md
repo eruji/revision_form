@@ -304,6 +304,14 @@ The dashboard (`/`) and the office APIs (`/api/admin`, `/api/rounds`,
 APIs under `/clients/` and `/homework/` are public, so request links work for
 clients who don't have a Cloudflare account.
 
+**Public domain.** Client-facing links use `forms.pepperandolive.com`;
+`revision.pepperandolive.com` is kept as a domain alias so existing links keep
+working. In Netlify, add `forms.pepperandolive.com` alongside the old domain and
+set it as the **primary** domain, then add it to **both** Cloudflare Access
+applications below (adding it to the same apps keeps the `aud` unchanged, so the
+function JWT check still passes). Set `PUBLIC_BASE_URL` in Netlify if you want
+the server-side links pinned explicitly.
+
 1. **Netlify:** Project configuration → Domain management → Add a domain →
    `revision.pepperandolive.com`.
 2. **DNS (Cloudflare):** add `CNAME revision → <your-site>.netlify.app`, set to
@@ -342,9 +350,12 @@ hitting `https://<your-site>.netlify.app/api/admin` directly should return
 > `/admin` (Netlify), and protect only `/admin*` + `/api/admin*` + `/api/rounds*`.
 > No Bypass app needed then.
 
-Request links are built from the browser's current origin, so once the subdomain
-is live the generated links automatically use
-`https://revision.pepperandolive.com/clients/…`.
+Request links are built from `LINK_BASE` in `admin.js` (currently
+`https://forms.pepperandolive.com`), so every new link points at the public
+domain no matter which subdomain the dashboard is opened from. Server-generated
+links (round links, reminders, read-only copies) use `PUBLIC_BASE_URL`, falling
+back to Netlify's `URL`. The old `revision.pepperandolive.com` domain stays live
+as an alias, so links already sent to clients keep working.
 
 ## Share for review
 

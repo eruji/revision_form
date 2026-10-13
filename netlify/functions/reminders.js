@@ -26,7 +26,7 @@ const REMIND_AFTER_DAYS = 7;
 const EXPIRING_WITHIN_MS = 48 * 60 * 60 * 1000;
 
 function siteBase() {
-  return String(process.env.URL || process.env.DEPLOY_PRIME_URL || '').replace(/\/+$/, '');
+  return String(process.env.PUBLIC_BASE_URL || process.env.URL || process.env.DEPLOY_PRIME_URL || '').replace(/\/+$/, '');
 }
 
 function summary(round) {

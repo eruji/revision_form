@@ -163,7 +163,9 @@ exports.handler = async (event) => {
       try {
         const host = (event.headers && (event.headers.host || event.headers.Host)) || '';
         const proto = (event.headers && (event.headers['x-forwarded-proto'] || event.headers['X-Forwarded-Proto'])) || 'https';
-        if (host) absView = proto + '://' + host + viewUrl;
+        const base = String(process.env.PUBLIC_BASE_URL || process.env.URL || process.env.DEPLOY_PRIME_URL || '').replace(/\/+$/, '');
+        if (base) absView = base + viewUrl;
+        else if (host) absView = proto + '://' + host + viewUrl;
       } catch (e) { /* keep relative */ }
 
       await onHomeworkSubmission(sub, { viewUrl: absView });
