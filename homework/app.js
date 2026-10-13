@@ -14,7 +14,8 @@
     selections: {},   // categoryId -> optionId (single) | optionIds[] (multi)
     notes: {},        // categoryId -> string
     omitted: {},      // sectionId -> bool
-    budget: {},       // budgetCatId -> { tier: index|null, note: '' }
+    budget: {},       // budgetCatId -> { tier: index|null, note: '' }   (mode: 'tiers')
+    budgetRooms: {},  // roomId -> { tier: index|null, amount: '', note: '' }  (mode: 'rooms')
     focusOn: {},      // categoryId -> bool (default true)
     step: 'welcome',
     expanded: [],     // sidebar expanded keys ('s:ID' / 'g:SECTION:GROUP')
@@ -42,7 +43,7 @@
     const list = [
       { id: 'welcome', num: '01', title: 'Welcome' },
       ...CFG.sections.map((s) => ({ id: s.id, num: s.index, title: s.title })),
-      { id: 'budget', num: CFG.budget.index, title: CFG.budget.title },
+      { id: 'budget', num: CFG.budget.index, title: budgetTitle() },
       { id: 'review', num: '17', title: 'Next Steps' }
     ];
     return list;
@@ -66,6 +67,16 @@
     const main = document.querySelector('.main');
     if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
     else window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function isRoomsBudget() {
+    return !!(CFG.budget && CFG.budget.mode === 'rooms' && Array.isArray(CFG.budget.rooms));
+  }
+  function budgetTitle() {
+    const b = CFG.budget || {};
+    return isRoomsBudget() ? (b.title || 'Budget by Room') : (b.originalTitle || b.title || 'Budget Definition');
+  }
+  function roomTiers(r) {
+    return (r && r.tiers) || (CFG.budget && CFG.budget.roomTiers) || [];
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -115,6 +126,14 @@
 
   function stepProgress(stepId) {
     if (stepId === 'budget') {
+      if (isRoomsBudget()) {
+        const rooms = CFG.budget.rooms || [];
+        const done = rooms.filter((r) => {
+          const cur = state.budgetRooms[r.id];
+          return !!(cur && (cur.tier != null || (cur.amount && cur.amount.trim())));
+        }).length;
+        return { total: rooms.length, done };
+      }
       const total = CFG.budget.categories.length;
       const done = CFG.budget.categories.filter((c) => state.budget[c.id] && state.budget[c.id].tier != null).length;
       return { total, done };
@@ -281,6 +300,20 @@
   }
 
   function renderBudget() {
+    return isRoomsBudget() ? renderBudgetRooms() : renderBudgetTiers();
+  }
+
+  function budgetHead() {
+    const b = CFG.budget;
+    return `
+      <div class="section-head">
+        <p class="kicker">${esc(b.index)} · ${esc(budgetTitle())}</p>
+        <h1 class="section-title">${esc(budgetTitle())}</h1>
+        ${b.intro ? `<p class="section-intro">${esc(b.intro)}</p>` : ''}
+      </div>`;
+  }
+
+  function renderBudgetTiers() {
     const b = CFG.budget;
     const cards = b.categories.map((c) => {
       const cur = state.budget[c.id] || { tier: null, note: '' };
@@ -295,12 +328,30 @@
           <textarea class="note-field" id="bnote-${c.id}" data-bnote="${c.id}" placeholder="Optional">${esc(cur.note)}</textarea>
         </div>`;
     }).join('');
-    return `
-      <div class="section-head">
-        <p class="kicker">${esc(b.index)} · ${esc(b.title)}</p>
-        <h1 class="section-title">${esc(b.title)}</h1>
-        ${b.intro ? `<p class="section-intro">${esc(b.intro)}</p>` : ''}
-      </div>
+    return budgetHead() + `
+      <div class="budget-list">${cards}</div>`;
+  }
+
+  function renderBudgetRooms() {
+    const b = CFG.budget;
+    const cards = (b.rooms || []).map((r) => {
+      const cur = state.budgetRooms[r.id] || { tier: null, amount: '', note: '' };
+      const tiers = roomTiers(r).map((t, i) =>
+        `<button type="button" class="tier ${cur.tier === i ? 'selected' : ''}" data-broom="${r.id}" data-tier="${i}">${esc(t)}</button>`
+      ).join('');
+      return `
+        <div class="budget-card" data-broom-card="${r.id}">
+          <h3>${esc(r.label)}</h3>
+          <div class="tier-row">${tiers}</div>
+          <div class="room-amount">
+            <label class="note-label" for="bamt-${r.id}">Or type an amount</label>
+            <input class="amount-field" id="bamt-${r.id}" type="text" inputmode="decimal" placeholder="$" value="${esc(cur.amount || '')}" data-bamount="${r.id}" />
+          </div>
+          <label class="note-label" for="brnote-${r.id}">Notes</label>
+          <textarea class="note-field" id="brnote-${r.id}" data-brnote="${r.id}" placeholder="Optional">${esc(cur.note)}</textarea>
+        </div>`;
+    }).join('');
+    return budgetHead() + `
       <div class="budget-list">${cards}</div>`;
   }
 
@@ -349,7 +400,7 @@
   function draftData() {
     return {
       client: state.client, selections: state.selections, notes: state.notes,
-      omitted: state.omitted, budget: state.budget, focusOn: state.focusOn, step: state.step,
+      omitted: state.omitted, budget: state.budget, budgetRooms: state.budgetRooms, focusOn: state.focusOn, step: state.step,
       _roundId: state._roundId || undefined
     };
   }
@@ -367,10 +418,18 @@
       });
       return { id: s.id, number: s.index, title: s.title, skipped: skipped, items: items };
     });
-    const budget = CFG.budget.categories.map((c) => {
-      const cur = state.budget[c.id] || {};
-      return { label: c.label, tier: (cur.tier != null ? c.tiers[cur.tier] : ''), note: cur.note || '' };
-    });
+    const budget = isRoomsBudget()
+      ? (CFG.budget.rooms || []).map((r) => {
+          const cur = state.budgetRooms[r.id] || {};
+          const list = roomTiers(r);
+          const tier = cur.tier != null ? (list[cur.tier] || '') : '';
+          const amount = (cur.amount || '').trim();
+          return { label: r.label, tier: amount || tier, note: cur.note || '' };
+        })
+      : CFG.budget.categories.map((c) => {
+          const cur = state.budget[c.id] || {};
+          return { label: c.label, tier: (cur.tier != null ? c.tiers[cur.tier] : ''), note: cur.note || '' };
+        });
     return {
       business: CFG.business,
       formTitle: CFG.formTitle,
@@ -567,6 +626,48 @@
       });
     });
 
+    // Budget-by-room: range pick
+    content.querySelectorAll('[data-broom]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.broom;
+        const tier = parseInt(btn.dataset.tier, 10);
+        const cur = state.budgetRooms[id] || { tier: null, amount: '', note: '' };
+        cur.tier = (cur.tier === tier) ? null : tier;
+        if (cur.tier != null) cur.amount = ''; // range and custom amount are either/or
+        state.budgetRooms[id] = cur;
+        save();
+        renderBudgetInPlace(id);
+        renderSidebar();
+        updateNav();
+      });
+    });
+
+    // Budget-by-room: custom amount
+    content.querySelectorAll('[data-bamount]').forEach((inp) => {
+      inp.addEventListener('input', () => {
+        const id = inp.dataset.bamount;
+        const cur = state.budgetRooms[id] || { tier: null, amount: '', note: '' };
+        cur.amount = inp.value;
+        if (inp.value.trim()) cur.tier = null; // typing an amount clears the range
+        state.budgetRooms[id] = cur;
+        save();
+        renderBudgetInPlace(id);
+        renderSidebar();
+        updateNav();
+      });
+    });
+
+    // Budget-by-room: notes
+    content.querySelectorAll('[data-brnote]').forEach((ta) => {
+      ta.addEventListener('input', () => {
+        const id = ta.dataset.brnote;
+        const cur = state.budgetRooms[id] || { tier: null, amount: '', note: '' };
+        cur.note = ta.value;
+        state.budgetRooms[id] = cur;
+        save();
+      });
+    });
+
     // Omit toggle
     content.querySelectorAll('[data-omit]').forEach((cb) => {
       cb.addEventListener('change', () => {
@@ -590,9 +691,19 @@
   }
 
   function renderBudgetInPlace(id) {
+    if (isRoomsBudget()) {
+      const rcard = document.querySelector(`[data-broom-card="${id}"]`);
+      if (!rcard) return;
+      const rcur = state.budgetRooms[id] || { tier: null, amount: '', note: '' };
+      rcard.querySelectorAll('.tier').forEach((t, i) => t.classList.toggle('selected', rcur.tier === i));
+      const amt = rcard.querySelector('[data-bamount]');
+      // Don't fight the user while they're typing in the amount field.
+      if (amt && document.activeElement !== amt && amt.value !== (rcur.amount || '')) amt.value = rcur.amount || '';
+      save();
+      return;
+    }
     const card = document.querySelector(`[data-budget-card="${id}"]`);
     if (!card) return;
-    const b = CFG.budget.categories.find((c) => c.id === id);
     const cur = state.budget[id] || { tier: null, note: '' };
     const tiers = card.querySelectorAll('.tier');
     tiers.forEach((t, i) => t.classList.toggle('selected', cur.tier === i));
@@ -670,14 +781,26 @@
 
     // Budget
     const bParts = [];
-    CFG.budget.categories.forEach((c) => {
-      const cur = state.budget[c.id];
-      if (!cur) return;
-      const tier = cur.tier != null ? c.tiers[cur.tier] : null;
-      if (tier) bParts.push(`<div class="sum-item"><span>${esc(c.label)}: <strong>${esc(tier)}</strong></span></div>`);
-      if (cur.note) bParts.push(`<div class="sum-note"><strong>${esc(c.label)} note:</strong><br>${esc(cur.note)}</div>`);
-    });
-    if (bParts.length) parts.push(`<div class="sum-section"><h3><span class="sum-num">${CFG.budget.index}</span> ${esc(CFG.budget.title)}</h3>${bParts.join('')}</div>`);
+    if (isRoomsBudget()) {
+      (CFG.budget.rooms || []).forEach((r) => {
+        const cur = state.budgetRooms[r.id];
+        if (!cur) return;
+        const list = roomTiers(r);
+        const amount = (cur.amount || '').trim();
+        const val = amount || (cur.tier != null ? (list[cur.tier] || '') : '');
+        if (val) bParts.push(`<div class="sum-item"><span>${esc(r.label)}: <strong>${esc(val)}</strong></span></div>`);
+        if (cur.note) bParts.push(`<div class="sum-note"><strong>${esc(r.label)} note:</strong><br>${esc(cur.note)}</div>`);
+      });
+    } else {
+      CFG.budget.categories.forEach((c) => {
+        const cur = state.budget[c.id];
+        if (!cur) return;
+        const tier = cur.tier != null ? c.tiers[cur.tier] : null;
+        if (tier) bParts.push(`<div class="sum-item"><span>${esc(c.label)}: <strong>${esc(tier)}</strong></span></div>`);
+        if (cur.note) bParts.push(`<div class="sum-note"><strong>${esc(c.label)} note:</strong><br>${esc(cur.note)}</div>`);
+      });
+    }
+    if (bParts.length) parts.push(`<div class="sum-section"><h3><span class="sum-num">${CFG.budget.index}</span> ${esc(budgetTitle())}</h3>${bParts.join('')}</div>`);
 
     const head = `
       <div class="sum-section">

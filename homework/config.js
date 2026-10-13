@@ -758,8 +758,14 @@ window.DESIGN_HOMEWORK_CONFIG = {
 
   budget: {
     index: '16',
-    title: 'Budget Definition',
+    // 'rooms' = budget by room (below) | 'tiers' = the original per-item page.
+    // Set this back to 'tiers' to restore the original page exactly.
+    mode: 'rooms',
+    title: 'Budget by Room',
+    originalTitle: 'Budget Definition',
     intro: '',
+
+    // ── Original page (mode: 'tiers') — left untouched for easy revert ────
     categories: [
       { id: 'plumbing-kitchen', label: 'Plumbing Fixture - Kitchen / Pantry', tiers: ['$500-$1,500', '$1,500-$3,000', '$3,000-$7,000+'] },
       { id: 'plumbing-baths', label: 'Plumbing Fixture - Bathrooms Throughout', tiers: ['$300-$600', '$600-$2,000', '$2,000-$7,000+'] },
@@ -773,6 +779,32 @@ window.DESIGN_HOMEWORK_CONFIG = {
       { id: 'wood-flooring', label: 'Wood Flooring, Price per Sqft', tiers: ['$3-$7', '$7-$12', '$12-$15+'] },
       { id: 'tile', label: 'Tile, Price per Sqft', tiers: ['$5-$15', '$15-$25', '$25+'] },
       { id: 'stone-slab', label: 'Stone, per Slab', tiers: ['$1,500-$3,000', '$3,000-$8,000', '$8,000+'] }
+    ],
+
+    // ── Budget by room (mode: 'rooms') ──────────────────────────────────
+    // Ranges offered for every room — EDIT THESE to your real ranges. A room
+    // can override them by giving that room its own `tiers: [...]`.
+    roomTiers: ['Under $10K', '$10K-$25K', '$25K-$50K', '$50K-$100K', '$100K+'],
+
+    // Rooms to budget. A client picks a range above, or types their own amount.
+    // Any room can override the shared list with its own `tiers: [...]`.
+    rooms: [
+      { id: 'kitchen', label: 'Kitchen' },
+      { id: 'mess-kitchen', label: 'Mess Kitchen' },
+      { id: 'pantry', label: 'Pantry' },
+      { id: 'appliance-package', label: 'Appliance Package', tiers: ['Mid Level ($15K-$30K)', 'High Level ($30K-$75K+)'] },
+      { id: 'living', label: 'Living Room' },
+      { id: 'dining', label: 'Dining Room' },
+      { id: 'family', label: 'Family Room' },
+      { id: 'primary', label: 'Primary Bedroom' },
+      { id: 'primary-bath', label: 'Primary Bath' },
+      { id: 'secondary', label: 'Secondary Bedroom' },
+      { id: 'secondary-bath', label: 'Secondary Bath' },
+      { id: 'powder-bath', label: 'Powder Bath', tiers: ['Under $5K', '$5K-$10K', '$10K-$20K', '$20K+'] },
+      { id: 'laundry', label: 'Laundry' },
+      { id: 'office', label: 'Office / Study' },
+      { id: 'exterior', label: 'Exterior / Outdoor' },
+      { id: 'whole-home', label: 'Whole Home / Other' }
     ]
   }
 };
