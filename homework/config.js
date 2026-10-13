@@ -796,7 +796,12 @@ window.DESIGN_HOMEWORK_CONFIG = {
       { id: 'secondary-bath', label: 'Secondary Bath' },
       { id: 'powder-bath', label: 'Powder Bath', tiers: ['Under $5K', '$5K-$10K', '$10K-$20K', '$20K+'] },
       { id: 'laundry', label: 'Laundry', tiers: ['$25K-$50K', '$50K-$100K', '$100K+'] },
-      { id: 'other', label: 'Other' }
+      { id: 'other', label: 'Other' },
+      // Furniture — separate budget lines at the end.
+      { id: 'living-furniture', label: 'Living Room Furniture', tiers: ['Under $25K', '$25K-$50K', '$50K-$100K', '$100K-$200K', '$200K+'] },
+      { id: 'dining-furniture', label: 'Dining Room Furniture', tiers: ['Under $15K', '$15K-$30K', '$30K-$60K', '$60K-$100K', '$100K+'] },
+      { id: 'family-furniture', label: 'Family Room Furniture', tiers: ['Under $25K', '$25K-$50K', '$50K-$100K', '$100K-$200K', '$200K+'] },
+      { id: 'bedroom-furniture', label: 'Bedroom Furniture', tiers: ['Under $15K', '$15K-$30K', '$30K-$60K', '$60K-$100K', '$100K+'] }
     ]
   }
 };
