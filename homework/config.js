@@ -801,7 +801,8 @@ window.DESIGN_HOMEWORK_CONFIG = {
       { id: 'living-furniture', label: 'Living Room Furniture', tiers: ['Under $25K', '$25K-$50K', '$50K-$100K', '$100K-$200K', '$200K+'] },
       { id: 'dining-furniture', label: 'Dining Room Furniture', tiers: ['Under $15K', '$15K-$30K', '$30K-$60K', '$60K-$100K', '$100K+'] },
       { id: 'family-furniture', label: 'Family Room Furniture', tiers: ['Under $25K', '$25K-$50K', '$50K-$100K', '$100K-$200K', '$200K+'] },
-      { id: 'bedroom-furniture', label: 'Bedroom Furniture', tiers: ['Under $15K', '$15K-$30K', '$30K-$60K', '$60K-$100K', '$100K+'] }
+      { id: 'primary-bedroom-furniture', label: 'Primary Bedroom Furniture', tiers: ['Under $15K', '$15K-$30K', '$30K-$60K', '$60K-$100K', '$100K+'] },
+      { id: 'secondary-bedroom-furniture', label: 'Secondary Bedroom Furniture', tiers: ['Under $10K', '$10K-$25K', '$25K-$50K', '$50K-$100K', '$100K+'] }
     ]
   }
 };
