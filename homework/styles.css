@@ -440,6 +440,29 @@ body {
   background: var(--stone-50);
 }
 .amount-field:focus { outline: none; border-color: var(--olive); background: #fff; }
+.budget-total {
+  margin-top: 20px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  background: var(--stone-50);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.budget-total__label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--stone-600);
+}
+.budget-total__value {
+  font-family: var(--serif);
+  font-size: 1.4rem;
+  color: var(--ink);
+}
 
 /* ── Footer nav ─────────────────────────────────────────────────────────── */
 .steps-footer {

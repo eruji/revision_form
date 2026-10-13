@@ -79,6 +79,74 @@
     return (r && r.tiers) || (CFG.budget && CFG.budget.roomTiers) || [];
   }
 
+  // ── Budget total ────────────────────────────────────────────────────────
+  // Reads the chosen range/amount for each room and adds them up. Ranges
+  // contribute their low and high ends; typed amounts count exactly.
+  function parseMoneyTokens(s) {
+    const out = [];
+    const re = /\$\s*([\d,]+(?:\.\d+)?)\s*([KkMm])?(\+)?/g;
+    let m;
+    while ((m = re.exec(String(s || ''))) !== null) {
+      const n = parseFloat(m[1].replace(/,/g, ''));
+      if (isNaN(n)) continue;
+      out.push({ value: n * (m[2] ? (m[2].toLowerCase() === 'm' ? 1000000 : 1000) : 1), open: !!m[3] });
+    }
+    return out;
+  }
+  function tierRange(label) {
+    const nums = parseMoneyTokens(label);
+    if (!nums.length) return null;
+    if (nums.length === 1) {
+      if (/^\s*(under|less than|up to)/i.test(String(label))) return { low: 0, high: nums[0].value };
+      return { low: nums[0].value, high: nums[0].open ? null : nums[0].value };
+    }
+    return { low: nums[0].value, high: nums[1].open ? null : nums[1].value };
+  }
+  function amountValue(s) {
+    const m = String(s || '').match(/([\d,]+(?:\.\d+)?)\s*([KkMm])?/);
+    if (!m) return null;
+    const n = parseFloat(m[1].replace(/,/g, ''));
+    if (isNaN(n)) return null;
+    return n * (m[2] ? (m[2].toLowerCase() === 'm' ? 1000000 : 1000) : 1);
+  }
+  function fmtMoney(n) {
+    return '$' + Math.round(n).toLocaleString('en-US');
+  }
+  function budgetTotalParts() {
+    let low = 0, high = 0, open = false, any = false;
+    (CFG.budget.rooms || []).forEach((r) => {
+      const cur = state.budgetRooms[r.id];
+      if (!cur) return;
+      const amt = (cur.amount || '').trim();
+      if (amt) {
+        const v = amountValue(amt);
+        if (v == null) return;
+        low += v; high += v; any = true;
+        return;
+      }
+      if (cur.tier != null) {
+        const range = tierRange(roomTiers(r)[cur.tier]);
+        if (!range) return;
+        low += range.low;
+        // Open-ended ("$100K+"): count the low end toward both and flag it.
+        if (range.high == null) { high += range.low; open = true; } else high += range.high;
+        any = true;
+      }
+    });
+    return { low, high, open, any };
+  }
+  function budgetTotalLabel() {
+    const t = budgetTotalParts();
+    if (!t.any) return '—';
+    if (t.low === 0 && t.high > 0 && !t.open) return 'Up to ' + fmtMoney(t.high);
+    if (t.low === t.high) return fmtMoney(t.low) + (t.open ? '+' : '');
+    return fmtMoney(t.low) + ' \u2013 ' + fmtMoney(t.high) + (t.open ? '+' : '');
+  }
+  function updateBudgetTotal() {
+    const el = document.querySelector('[data-budget-total]');
+    if (el) el.textContent = budgetTotalLabel();
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────
   function render() {
     renderSidebar();
@@ -352,7 +420,11 @@
         </div>`;
     }).join('');
     return budgetHead() + `
-      <div class="budget-list">${cards}</div>`;
+      <div class="budget-list">${cards}</div>
+      <div class="budget-total">
+        <span class="budget-total__label">Estimated total budget</span>
+        <span class="budget-total__value" data-budget-total>${esc(budgetTotalLabel())}</span>
+      </div>`;
   }
 
   function clientDetailsCard() {
@@ -699,6 +771,7 @@
       const amt = rcard.querySelector('[data-bamount]');
       // Don't fight the user while they're typing in the amount field.
       if (amt && document.activeElement !== amt && amt.value !== (rcur.amount || '')) amt.value = rcur.amount || '';
+      updateBudgetTotal();
       save();
       return;
     }

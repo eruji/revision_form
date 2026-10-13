@@ -804,7 +804,7 @@ window.DESIGN_HOMEWORK_CONFIG = {
       { id: 'laundry', label: 'Laundry' },
       { id: 'office', label: 'Office / Study' },
       { id: 'exterior', label: 'Exterior / Outdoor' },
-      { id: 'whole-home', label: 'Whole Home / Other' }
+      { id: 'other', label: 'Other' }
     ]
   }
 };
