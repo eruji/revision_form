@@ -905,30 +905,42 @@
     if (url) window.open(url, '_blank');
   }
 
+  function homeworkSubmissionCard(s, isArchived) {
+    const name = s.clientName || '—';
+    return h('div', { class: 'sub' + (isArchived ? ' sub--archived' : '') },
+      h('div', { class: 'sub__head' },
+        h('strong', { text: name + (s.projectName ? ' · ' + s.projectName : '') }),
+        isArchived ? h('span', { class: 'badge', text: 'archived' }) : null,
+        h('span', { text: fmtDate(s.submittedAt) }),
+        h('span', { class: 'badge', text: (s.selectionCount || 0) + ' selections' })
+      ),
+      s.email ? h('div', { class: 'sub__item' }, h('small', { text: s.email })) : null,
+      h('div', { class: 'sub__actions' },
+        h('button', { type: 'button', class: 'btn btn--ghost', text: 'Private view', onclick: () => homeworkPrivateViewPrompt() }),
+        h('a', { class: 'btn btn--ghost', href: '/api/homework-admin?format=csv&key=' + encodeURIComponent(s.key), text: 'CSV' }),
+        h('button', { type: 'button', class: 'btn btn--ghost', text: isArchived ? 'Unarchive' : 'Archive', onclick: () => archiveHomeworkSubmission(s.id, !isArchived) }),
+        h('button', { type: 'button', class: 'btn btn--danger', text: 'Delete', onclick: () => deleteHomeworkSubmission(s.id, name) })
+      )
+    );
+  }
+
   function renderHomework(data) {
     const subs = data.submissions || [];
     const drafts = data.drafts || [];
+    const active = subs.filter((s) => !s.archived);
+    const archived = subs.filter((s) => s.archived);
     const list = $('#homeworkList');
     const draftsEl = $('#homeworkDrafts');
     const count = $('#homeworkCount');
-    if (count) count.textContent = subs.length ? '(' + subs.length + ')' : '';
+    if (count) count.textContent = subs.length ? '(' + active.length + (archived.length ? ' · ' + archived.length + ' archived' : '') + ')' : '';
 
     list.innerHTML = '';
     if (!subs.length) list.append(h('p', { class: 'admin-empty', text: 'No homework submissions yet.' }));
-    subs.forEach((s) => {
-      list.append(h('div', { class: 'sub' },
-        h('div', { class: 'sub__head' },
-          h('strong', { text: (s.clientName || '—') + (s.projectName ? ' · ' + s.projectName : '') }),
-          h('span', { text: fmtDate(s.submittedAt) }),
-          h('span', { class: 'badge', text: (s.selectionCount || 0) + ' selections' })
-        ),
-        s.email ? h('div', { class: 'sub__item' }, h('small', { text: s.email })) : null,
-        h('div', { class: 'sub__actions' },
-          h('button', { type: 'button', class: 'btn btn--ghost', text: 'Private view', onclick: () => homeworkPrivateViewPrompt() }),
-          h('a', { class: 'btn btn--ghost', href: '/api/homework-admin?format=csv&key=' + encodeURIComponent(s.key), text: 'CSV' })
-        )
-      ));
-    });
+    active.forEach((s) => { list.append(homeworkSubmissionCard(s, false)); });
+    if (archived.length) {
+      list.append(h('h3', { class: 'admin-heading', style: 'margin-top:18px;', text: 'Archived' }));
+      archived.forEach((s) => { list.append(homeworkSubmissionCard(s, true)); });
+    }
 
     draftsEl.innerHTML = '';
     if (!drafts.length) draftsEl.append(h('p', { class: 'admin-empty', text: 'No saved homework drafts.' }));
@@ -940,10 +952,56 @@
           h('span', { text: 'saved ' + fmtDate(d.savedAt) + ' · expires ' + fmtDateOnly(d.expiresAt) })
         ),
         h('div', { class: 'sub__actions' },
-          h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy resume link', onclick: (e) => copyText(resumeLink, e.currentTarget) })
+          h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy resume link', onclick: (e) => copyText(resumeLink, e.currentTarget) }),
+          h('button', { type: 'button', class: 'btn btn--danger', text: 'Delete', onclick: () => deleteHomeworkDraft(d.code, d.clientName || '—') })
         )
       ));
     });
+  }
+
+  async function archiveHomeworkSubmission(id, archive) {
+    try {
+      const res = await fetch('/api/homework-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': getKey() },
+        body: JSON.stringify({ action: archive ? 'archive' : 'unarchive', id: id })
+      });
+      if (!res.ok) throw new Error('archive failed');
+      toast(archive ? 'Homework archived' : 'Homework restored');
+      loadHomework(getKey());
+    } catch (e) {
+      toast('Could not update the homework');
+    }
+  }
+
+  async function deleteHomeworkSubmission(id, name) {
+    if (!window.confirm('Permanently delete the homework for ' + (name || 'this client') + '? This cannot be undone.')) return;
+    try {
+      const res = await fetch('/api/homework-admin?submission=' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: { 'x-admin-key': getKey() }
+      });
+      if (!res.ok) throw new Error('delete failed');
+      toast('Homework deleted');
+      loadHomework(getKey());
+    } catch (e) {
+      toast('Could not delete the homework');
+    }
+  }
+
+  async function deleteHomeworkDraft(code, name) {
+    if (!window.confirm('Delete the saved homework draft for ' + (name || 'this client') + '? This cannot be undone.')) return;
+    try {
+      const res = await fetch('/api/homework-admin?draft=' + encodeURIComponent(code), {
+        method: 'DELETE',
+        headers: { 'x-admin-key': getKey() }
+      });
+      if (!res.ok) throw new Error('delete failed');
+      toast('Draft deleted');
+      loadHomework(getKey());
+    } catch (e) {
+      toast('Could not delete the draft');
+    }
   }
 
   function homeworkRoundLink(id) { return location.origin + '/homework/?r=' + id; }

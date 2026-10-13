@@ -115,6 +115,68 @@ exports.handler = async (event) => {
   const draftStore = openStore('homework-drafts');
   const qs = event.queryStringParameters || {};
 
+  // ── Archive / unarchive a homework submission (keeps the data, hides it) ──
+  if (event.httpMethod === 'POST') {
+    let body;
+    try { body = JSON.parse(event.body || '{}'); } catch (e) { return json(400, { ok: false, error: 'Invalid body' }); }
+    if (body.action === 'archive' || body.action === 'unarchive') {
+      const id = String(body.id || '');
+      const archive = body.action === 'archive';
+      if (!id) return json(400, { ok: false, error: 'Missing id' });
+      try {
+        let list = [];
+        try { list = (await store.get('__index__', { type: 'json' })) || []; } catch (e) { list = []; }
+        const entry = list.find((e) => e && (e.id === id || e.key === id));
+        if (!entry) return json(404, { ok: false, error: 'Not found' });
+        const rec = await store.get(entry.key, { type: 'json' });
+        if (rec) {
+          rec.archived = archive;
+          rec.archivedAt = archive ? new Date().toISOString() : null;
+          await store.setJSON(entry.key, rec);
+        }
+        entry.archived = archive;
+        entry.archivedAt = archive ? new Date().toISOString() : null;
+        await store.setJSON('__index__', list);
+        return json(200, { ok: true, archived: archive });
+      } catch (e) {
+        return json(500, { ok: false, error: 'Could not update the homework submission' });
+      }
+    }
+    return json(400, { ok: false, error: 'Nothing to update' });
+  }
+
+  // ── Delete a submitted homework or a saved draft (office cleanup) ──
+  if (event.httpMethod === 'DELETE') {
+    if (qs.submission) {
+      const id = String(qs.submission);
+      try {
+        let list = [];
+        try { list = (await store.get('__index__', { type: 'json' })) || []; } catch (e) { list = []; }
+        const entry = list.find((e) => e && (e.id === id || e.key === id));
+        if (!entry) return json(404, { ok: false, error: 'Not found' });
+        await store.delete(entry.key);
+        await store.setJSON('__index__', list.filter((e) => e !== entry));
+        return json(200, { ok: true });
+      } catch (e) {
+        return json(500, { ok: false, error: 'Could not delete the homework submission' });
+      }
+    }
+    if (qs.draft) {
+      const code = String(qs.draft).trim().toUpperCase();
+      if (!/^[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code)) return json(400, { ok: false, error: 'Invalid code' });
+      try {
+        await draftStore.delete('draft_' + crypto.createHash('sha256').update(code).digest('hex'));
+        let list = [];
+        try { list = (await draftStore.get('__draft_index__', { type: 'json' })) || []; } catch (e) { list = []; }
+        await draftStore.setJSON('__draft_index__', list.filter((e) => e && e.code !== code));
+        return json(200, { ok: true });
+      } catch (e) {
+        return json(500, { ok: false, error: 'Could not delete draft' });
+      }
+    }
+    return json(400, { ok: false, error: 'Nothing to delete' });
+  }
+
   let index = [];
   try { index = (await store.get('__index__', { type: 'json' })) || []; } catch (e) { index = []; }
 
