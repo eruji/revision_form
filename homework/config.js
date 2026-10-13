@@ -789,21 +789,13 @@ window.DESIGN_HOMEWORK_CONFIG = {
     // Rooms to budget. A client picks a range above, or types their own amount.
     // Any room can override the shared list with its own `tiers: [...]`.
     rooms: [
-      { id: 'kitchen', label: 'Kitchen' },
-      { id: 'mess-kitchen', label: 'Mess Kitchen' },
-      { id: 'pantry', label: 'Pantry' },
+      { id: 'kitchen', label: 'Kitchen', tiers: ['$100K-$150K', '$150K-$200K', '$200K+'] },
+      { id: 'mess-kitchen', label: 'Mess Kitchen', tiers: ['$50K-$100K', '$100K-$150K', '$150K+'] },
       { id: 'appliance-package', label: 'Appliance Package', tiers: ['Mid Level ($15K-$30K)', 'High Level ($30K-$75K+)'] },
-      { id: 'living', label: 'Living Room' },
-      { id: 'dining', label: 'Dining Room' },
-      { id: 'family', label: 'Family Room' },
-      { id: 'primary', label: 'Primary Bedroom' },
       { id: 'primary-bath', label: 'Primary Bath' },
-      { id: 'secondary', label: 'Secondary Bedroom' },
       { id: 'secondary-bath', label: 'Secondary Bath' },
       { id: 'powder-bath', label: 'Powder Bath', tiers: ['Under $5K', '$5K-$10K', '$10K-$20K', '$20K+'] },
-      { id: 'laundry', label: 'Laundry' },
-      { id: 'office', label: 'Office / Study' },
-      { id: 'exterior', label: 'Exterior / Outdoor' },
+      { id: 'laundry', label: 'Laundry', tiers: ['$25K-$50K', '$50K-$100K', '$100K+'] },
       { id: 'other', label: 'Other' }
     ]
   }
