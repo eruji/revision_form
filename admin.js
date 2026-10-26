@@ -1,7 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Office dashboard — password-protected list of submitted revision requests.
-   Talks to /api/admin, sending the team password in the x-admin-key header.
-   The password is kept in sessionStorage for the tab only.
+   Office dashboard — password-protected lists for revision requests and
+   Design Homework. Talks to /api/admin and /api/homework-admin, sending the
+   team password in the x-admin-key header. The password is kept in
+   sessionStorage for the tab only.
    ═══════════════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -14,6 +15,8 @@
   let homeworkEmailFrom = '';
   let activeTab = 'revisions';
   let homeworkLoaded = false;
+  let homeworkRoundsById = {};
+  let lastHomeworkData = null;
 
   // Public domain for every client-facing link this dashboard builds. Keep it
   // in sync with the PUBLIC_BASE_URL env var. The previous subdomain stays live
@@ -412,12 +415,14 @@
   }
 
   let detailRecord = null;
+  let detailCopyFn = null;
 
-  function openDetail(rec) {
+  function openDetail(rec, builder, copyFn) {
     detailRecord = rec;
+    detailCopyFn = copyFn || null;
     const body = document.querySelector('#detailBody');
     body.innerHTML = '';
-    body.append(buildDetail(rec));
+    body.append((builder || buildDetail)(rec));
     document.querySelector('#detailOverlay').hidden = false;
     document.body.classList.add('detail-open');
   }
@@ -426,6 +431,7 @@
     document.querySelector('#detailOverlay').hidden = true;
     document.body.classList.remove('detail-open');
     detailRecord = null;
+    detailCopyFn = null;
   }
 
   function copyForSheet(rec, btn) {
@@ -828,7 +834,7 @@
     list.innerHTML = '';
 
     if (!records.length) {
-      list.append(h('p', { class: 'admin-empty', text: isArchived ? 'Nothing archived.' : 'No revision requests yet.' }));
+      list.append(h('p', { class: 'admin-empty', text: isArchived ? 'Nothing archived.' : 'No active submissions.' }));
       return;
     }
 
@@ -840,7 +846,7 @@
       const name = nameId ? sub.about[nameId] : 'Client';
       const project = projId ? sub.about[projId] : '';
       // If this submission came from an office-issued link, offer Reopen here
-      // (the round link returns to the Request links list when reopened).
+      // (the round link returns to the Links list when reopened).
       const roundId = sub._roundId;
       const round = roundId ? roundsById[roundId] : null;
       const canReopen = round && round.status !== 'open';
@@ -909,13 +915,117 @@
     }
   }
 
-  function homeworkPrivateViewPrompt() {
-    const url = window.prompt("Paste the client's private read-only link (from the submission email), or leave blank.");
-    if (url) window.open(url, '_blank');
+  function buildHomeworkDetail(rec) {
+    const sub = rec.submission || {};
+    const c = sub.client || {};
+    const submittedAt = rec.submittedAt || sub.submittedAt;
+    const wrap = h('article', { class: 'detail' });
+    wrap.append(h('header', { class: 'view-head' },
+      h('p', { class: 'eyebrow', text: sub.business || 'Pepper & Olive Interiors' }),
+      h('h1', { text: 'Client Design Homework' }),
+      h('p', { class: 'view-head__meta', text: [c.name, c.project, c.email, 'Submitted ' + fmtDate(submittedAt)].filter(Boolean).join(' · ') })
+    ));
+
+    const about = h('section', { class: 'card' },
+      h('div', { class: 'card__head' }, h('div', {}, h('h2', { text: 'About this homework' }))));
+    const aboutDl = h('dl', { class: 'kv' });
+    [['Client', c.name], ['Project', c.project], ['Email', c.email]].forEach(([label, value]) => {
+      if (!value) return;
+      aboutDl.append(h('div', { class: 'kv__row' }, h('dt', { text: label }), linkified('dd', null, value)));
+    });
+    about.append(aboutDl);
+    wrap.append(about);
+
+    const sectionCard = h('section', { class: 'card' },
+      h('div', { class: 'card__head' }, h('div', {}, h('h2', { text: 'Selections' }))));
+    let any = false;
+    (Array.isArray(sub.sections) ? sub.sections : []).forEach((s) => {
+      const title = (s.number ? s.number + ' · ' : '') + (s.title || 'Section');
+      sectionCard.append(h('div', { class: 'view-room__head' },
+        h('h3', { class: 'view-room__name', text: title }),
+        s.skipped ? h('span', { class: 'view-room__badge is-revise', text: 'Skipped' }) : null
+      ));
+      if (s.skipped) {
+        any = true;
+        sectionCard.append(h('p', { class: 'view-room__note', text: 'Not applicable.' }));
+        return;
+      }
+      (s.items || []).forEach((it) => {
+        const options = (it.options || []).join(', ');
+        if (!options && !it.note) return;
+        any = true;
+        const item = h('div', { class: 'view-item' },
+          h('div', { class: 'view-item__head' }, h('strong', { text: it.category || 'Selection' })));
+        if (options) item.append(h('div', { class: 'view-item__field' },
+          h('span', { class: 'view-item__label', text: 'Selection' }),
+          h('p', { class: 'view-item__value', text: options })));
+        if (it.note) item.append(h('div', { class: 'view-item__field' },
+          h('span', { class: 'view-item__label', text: 'Note' }),
+          linkified('p', 'view-item__value', it.note)));
+        sectionCard.append(item);
+      });
+    });
+    if (!any) sectionCard.append(h('p', { class: 'admin-empty', text: 'No selections recorded.' }));
+    wrap.append(sectionCard);
+
+    const budget = (sub.budget || []).filter((b) => b.tier || b.note);
+    if (budget.length) {
+      const card = h('section', { class: 'card' },
+        h('div', { class: 'card__head' }, h('div', {}, h('h2', { text: 'Budget definition' }))));
+      const dl = h('dl', { class: 'kv' });
+      budget.forEach((b) => {
+        dl.append(h('div', { class: 'kv__row' },
+          h('dt', { text: b.label || 'Budget' }),
+          h('dd', {}, linkified('span', null, [b.tier, b.note].filter(Boolean).join(' — ')))));
+      });
+      card.append(dl);
+      wrap.append(card);
+    }
+    return wrap;
+  }
+
+  function homeworkTsv(rec) {
+    const sub = rec.submission || {};
+    const c = sub.client || {};
+    const submittedAt = rec.submittedAt || sub.submittedAt;
+    const rows = [['Submitted At', 'Client', 'Project', 'Email', 'Section', 'Category', 'Selection', 'Notes', 'Skipped']];
+    (sub.sections || []).forEach((s) => {
+      const title = (s.number ? s.number + ' · ' : '') + (s.title || 'Section');
+      if (s.skipped) { rows.push([submittedAt, c.name, c.project, c.email, title, '', '', '', 'yes']); return; }
+      (s.items || []).forEach((it) => {
+        const sel = (it.options || []).join(', ');
+        if (!sel && !it.note) return;
+        rows.push([submittedAt, c.name, c.project, c.email, title, it.category || '', sel, it.note || '', 'no']);
+      });
+    });
+    (sub.budget || []).forEach((b) => {
+      if (!b.tier && !b.note) return;
+      rows.push([submittedAt, c.name, c.project, c.email, 'Budget Definition', b.label || '', b.tier || '', b.note || '', 'no']);
+    });
+    const cell = (v) => String(v == null ? '' : v).replace(/[\t\r\n]+/g, ' ').trim();
+    return rows.map((r) => r.map(cell).join('\t')).join('\n');
+  }
+
+  async function openHomeworkDetail(s) {
+    try {
+      const res = await fetch('/api/homework-admin?key=' + encodeURIComponent(s.key), {
+        headers: { 'x-admin-key': getKey() }, cache: 'no-store'
+      });
+      if (res.status === 401) { setKey(''); showGate(true); return; }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load the homework');
+      openDetail(data.record, buildHomeworkDetail, (rec, btn) => copyText(homeworkTsv(rec), btn));
+    } catch (e) {
+      toast(e && e.message ? e.message : 'Could not load the homework');
+    }
   }
 
   function homeworkSubmissionCard(s, isArchived) {
     const name = s.clientName || '—';
+    const roundId = s.roundId || '';
+    const round = roundId ? homeworkRoundsById[roundId] : null;
+    const canReopen = !!(round && round.status !== 'open');
+    const driveUrl = (round && round.driveUrl) || '';
     return h('div', { class: 'sub' + (isArchived ? ' sub--archived' : '') },
       h('div', { class: 'sub__head' },
         h('strong', { text: name + (s.projectName ? ' · ' + s.projectName : '') }),
@@ -925,8 +1035,10 @@
       ),
       s.email ? h('div', { class: 'sub__item' }, h('small', { text: s.email })) : null,
       h('div', { class: 'sub__actions' },
-        h('button', { type: 'button', class: 'btn btn--ghost', text: 'Private view', onclick: () => homeworkPrivateViewPrompt() }),
+        h('button', { type: 'button', class: 'btn btn--ghost', text: 'View', onclick: () => openHomeworkDetail(s) }),
         h('a', { class: 'btn btn--ghost', href: '/api/homework-admin?format=csv&key=' + encodeURIComponent(s.key), text: 'CSV' }),
+        canReopen ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Reopen', onclick: () => reopenHomeworkRound(roundId) }) : null,
+        driveUrl ? h('a', { class: 'btn btn--ghost', href: driveUrl, target: '_blank', rel: 'noopener', text: 'Drive' }) : null,
         h('button', { type: 'button', class: 'btn btn--ghost', text: isArchived ? 'Unarchive' : 'Archive', onclick: () => archiveHomeworkSubmission(s.id, !isArchived) }),
         h('button', { type: 'button', class: 'btn btn--danger', text: 'Delete', onclick: () => deleteHomeworkSubmission(s.id, name) })
       )
@@ -934,22 +1046,28 @@
   }
 
   function renderHomework(data) {
+    lastHomeworkData = data;
     const subs = data.submissions || [];
     const drafts = data.drafts || [];
     const active = subs.filter((s) => !s.archived);
     const archived = subs.filter((s) => s.archived);
     const list = $('#homeworkList');
+    const archivedEl = $('#homeworkArchivedList');
     const draftsEl = $('#homeworkDrafts');
     const count = $('#homeworkCount');
+    const archivedCount = $('#homeworkArchivedCount');
+    const draftCount = $('#homeworkDraftCount');
     if (count) count.textContent = subs.length ? '(' + active.length + (archived.length ? ' · ' + archived.length + ' archived' : '') + ')' : '';
+    if (archivedCount) archivedCount.textContent = archived.length ? '(' + archived.length + ')' : '';
+    if (draftCount) draftCount.textContent = drafts.length ? '(' + drafts.length + ')' : '';
 
     list.innerHTML = '';
-    if (!subs.length) list.append(h('p', { class: 'admin-empty', text: 'No homework submissions yet.' }));
+    if (!active.length) list.append(h('p', { class: 'admin-empty', text: 'No active submissions.' }));
     active.forEach((s) => { list.append(homeworkSubmissionCard(s, false)); });
-    if (archived.length) {
-      list.append(h('h3', { class: 'admin-heading', style: 'margin-top:18px;', text: 'Archived' }));
-      archived.forEach((s) => { list.append(homeworkSubmissionCard(s, true)); });
-    }
+
+    archivedEl.innerHTML = '';
+    if (!archived.length) archivedEl.append(h('p', { class: 'admin-empty', text: 'Nothing archived.' }));
+    archived.forEach((s) => { archivedEl.append(homeworkSubmissionCard(s, true)); });
 
     draftsEl.innerHTML = '';
     if (!drafts.length) draftsEl.append(h('p', { class: 'admin-empty', text: 'No saved homework drafts.' }));
@@ -961,7 +1079,7 @@
           h('span', { text: 'saved ' + fmtDate(d.savedAt) + ' · expires ' + fmtDateOnly(d.expiresAt) })
         ),
         h('div', { class: 'sub__actions' },
-          h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy resume link', onclick: (e) => copyText(resumeLink, e.currentTarget) }),
+          h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy client link', onclick: (e) => copyText(resumeLink, e.currentTarget) }),
           h('button', { type: 'button', class: 'btn btn--danger', text: 'Delete', onclick: () => deleteHomeworkDraft(d.code, d.clientName || '—') })
         )
       ));
@@ -1017,19 +1135,25 @@
 
   async function loadHomeworkRounds(key) {
     const list = $('#homeworkRoundsList');
-    if (!list) return;
+    if (!list) return false;
     list.innerHTML = '';
     list.append(h('p', { class: 'admin-empty', text: 'Loading…' }));
     try {
       const res = await fetch('/api/homework-rounds', { headers: { 'x-admin-key': key }, cache: 'no-store' });
-      if (res.status === 401) { setKey(''); showGate(true); return; }
+      if (res.status === 401) { setKey(''); showGate(true); return false; }
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || 'Request failed');
       homeworkEmailFrom = data.emailFrom || '';
+      homeworkRoundsById = {};
+      (data.rounds || []).forEach((r) => { if (r && r.id) homeworkRoundsById[r.id] = r; });
       renderHomeworkRounds(data.rounds || []);
+      // Refresh submission cards so their Reopen button matches the new status.
+      if (lastHomeworkData) renderHomework(lastHomeworkData);
+      return true;
     } catch (e) {
       list.innerHTML = '';
       list.append(h('p', { class: 'admin-empty', text: 'Could not load homework links. ' + (e.message || '') }));
+      return false;
     }
   }
 
@@ -1037,36 +1161,39 @@
     const list = $('#homeworkRoundsList');
     if (!list) return;
     list.innerHTML = '';
-    if (!rounds.length) {
-      list.append(h('p', { class: 'admin-empty', text: 'No homework links yet.' }));
+    // Just like revision request links, a homework link leaves this list once
+    // the client submits. Reopen it from the matching submission card.
+    const open = rounds.filter((r) => r.status === 'open');
+    if (!open.length) {
+      list.append(h('p', { class: 'admin-empty', text: 'No open links. Create one above, or Reopen a submission.' }));
       return;
     }
 
-    const renderOne = (r) => {
+    open.forEach((r) => {
       const link = homeworkRoundLink(r.id);
-      const head = h('div', { class: 'sub__head' },
-        h('strong', { text: (r.clientName || '—') + (r.projectName ? ' · ' + r.projectName : '') }),
-        h('span', { class: 'badge', text: r.status === 'open' ? 'open' : 'submitted' }),
-        r.expiresAt ? h('span', { text: 'due ' + fmtDateOnly(r.expiresAt) }) : null
-      );
-      const meta = h('div', { class: 'sub__item' },
-        r.clientEmail ? h('small', { text: r.clientEmail }) : null,
-        r.submittedAt ? h('small', { text: 'submitted ' + fmtDate(r.submittedAt) + (r.selectionCount ? ' · ' + r.selectionCount + ' selections' : '') }) : null
-      );
-      const actions = h('div', { class: 'sub__actions' },
+      const actions = h('div', { class: 'round-card__actions' },
         h('button', { type: 'button', class: 'btn btn--ghost', text: 'Copy link', onclick: (e) => copyText(link, e.currentTarget) }),
-        r.status === 'open' && r.clientEmail ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Send email', onclick: () => showHomeworkCreated(r, homeworkEmailFrom, { title: 'Send homework link', intro: 'Send this link to the client by email.' }) }) : null,
-        r.status === 'open' ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Edit', onclick: () => openHomeworkEdit(r) }) : null,
-        r.status === 'open' ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Delete', onclick: () => deleteHomeworkRound(r.id, r.clientName) }) : null,
-        r.status !== 'open' ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Reopen', onclick: () => reopenHomeworkRound(r.id) }) : null,
-        r.status !== 'open' ? h('button', { type: 'button', class: 'btn btn--danger', text: 'Delete', onclick: () => deleteHomeworkRound(r.id, r.clientName) }) : null
+        h('a', { class: 'btn btn--ghost', href: link, target: '_blank', rel: 'noopener', text: 'Open' }),
+        r.clientEmail ? h('button', { type: 'button', class: 'btn btn--ghost', text: 'Send email', onclick: () => showHomeworkCreated(r, homeworkEmailFrom, { title: 'Send homework link', intro: 'Send this link to the client by email.' }) }) : null,
+        h('button', { type: 'button', class: 'btn btn--ghost', text: 'Edit', onclick: () => openHomeworkEdit(r) }),
+        r.driveUrl ? h('a', { class: 'btn btn--ghost', href: r.driveUrl, target: '_blank', rel: 'noopener', text: 'Drive' }) : null,
+        h('button', { type: 'button', class: 'btn btn--danger', text: 'Delete', onclick: () => deleteHomeworkRound(r.id, r.clientName) })
       );
-      return h('div', { class: 'sub' }, head, meta, actions);
-    };
-
-    const open = rounds.filter((r) => r.status === 'open');
-    const done = rounds.filter((r) => r.status !== 'open');
-    open.concat(done).forEach((r) => list.append(renderOne(r)));
+      list.append(h('div', { class: 'round-card' },
+        h('div', { class: 'round-card__head' },
+          h('strong', { text: (r.clientName ? r.clientName + ' · ' : '') + r.projectName }),
+          h('span', { class: 'badge badge--open', text: 'Open' })
+        ),
+        h('div', { class: 'round-card__meta' },
+          r.clientEmail ? h('span', { text: r.clientEmail }) : null,
+          h('span', { text: 'Created ' + fmtDate(r.createdAt) }),
+          r.expiresAt ? h('span', { text: 'Expires ' + fmtDate(r.expiresAt) }) : null,
+          h('code', { class: 'code-chip', text: r.id })
+        ),
+        h('div', { class: 'round-card__link' }, h('input', { type: 'text', readonly: true, value: link })),
+        actions
+      ));
+    });
   }
 
   async function createHomeworkRound() {
@@ -1213,7 +1340,6 @@
   }
 
   async function reopenHomeworkRound(id) {
-    if (!window.confirm('Reopen this homework link for another round?')) return;
     try {
       const res = await fetch('/api/homework-rounds', {
         method: 'POST',
@@ -1222,8 +1348,8 @@
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || 'Could not reopen');
-      toast('Homework link reopened');
-      loadHomeworkRounds(getKey());
+      toast('Homework link reopened — send the same link again');
+      loadHomework(getKey());
     } catch (e) { toast('Could not reopen: ' + (e.message || '')); }
   }
 
@@ -1312,9 +1438,13 @@
 
   async function loadHomework(key) {
     const list = $('#homeworkList');
+    const archivedEl = $('#homeworkArchivedList');
     list.innerHTML = '';
     list.append(h('p', { class: 'admin-empty', text: 'Loading…' }));
-    loadHomeworkRounds(key);
+    if (archivedEl) archivedEl.innerHTML = '';
+    // Load links first so each submission card can offer Reopen when its
+    // office-issued link is already in the submitted state.
+    await loadHomeworkRounds(key);
     try {
       const res = await fetch('/api/homework-admin', { headers: { 'x-admin-key': key }, cache: 'no-store' });
       if (res.status === 401) { setKey(''); showGate(true); return; }
@@ -1363,7 +1493,10 @@
     $('#detailCloseBtn').addEventListener('click', closeDetail);
     $('#detailOverlay').addEventListener('click', (e) => { if (e.target && e.target.id === 'detailOverlay') closeDetail(); });
     $('#detailPrintBtn').addEventListener('click', () => window.print());
-    $('#detailSheetBtn').addEventListener('click', (e) => { if (detailRecord) copyForSheet(detailRecord, e.currentTarget); });
+    $('#detailSheetBtn').addEventListener('click', (e) => {
+      if (detailCopyFn) detailCopyFn(detailRecord, e.currentTarget);
+      else if (detailRecord) copyForSheet(detailRecord, e.currentTarget);
+    });
 
     // Round-created confirmation overlay
     $('#roundCreatedCloseBtn').addEventListener('click', closeRoundCreated);

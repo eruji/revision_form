@@ -125,6 +125,7 @@ exports.handler = async (event) => {
       clientName: client.name || '',
       projectName: client.project || '',
       email: client.email || '',
+      roundId: sub._roundId || '',
       selectionCount: flatRows(sub).filter((r) => r.selection && r.selection.indexOf('skipped') === -1).length
     });
     await store.setJSON('__index__', index);

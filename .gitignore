@@ -11,3 +11,6 @@ Thumbs.db
 
 # Local Netlify staging for manual deploys
 .deploy/
+
+# Local backup of source PDFs (large, not deployed)
+backup/

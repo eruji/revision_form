@@ -98,17 +98,19 @@ form.
 - **Google Sheet work queue (currently hidden):** the dashboard has a card to
   paste the spreadsheet URL and Save, which adds **Sheet** links. It is hidden
   for now; the code remains for when Sheet sync is enabled.
-- Shows **submitted requests** and **saved drafts**.
-  - Each **submitted request** has **View** (full read-only detail) and **CSV**
-    export, plus **Print / Save as PDF** from the detail view.
-  - Submitted requests can be **Archived** (hidden from the main list but kept in
+- Both tabs (Revision requests and Design Homework) use the same four sections,
+  in the same order: **Links**, **Submissions**, **Drafts**, **Archived**.
+  - **Links** contains only open links. Once the client submits, the link leaves
+    this section and the completed form appears under **Submissions**.
+  - Each **submission** has **View** (full read-only detail where available) and
+    an export action, plus **Print / Save as PDF** from the detail view.
+  - Submitted forms can be **Archived** (hidden from the main list but kept in
     full) and restored with **Unarchive**, or permanently **Delete**d (with a
-    confirmation prompt). Archived requests live in their own
-    **Archived requests** section and are still available in a per-request CSV export.
-  - For each **draft** you can **View** it read-only (`/clients/view.html?draft=CODE`),
-    **Copy client link** (the resume link to send back to the client), or
-    **Delete** it. Drafts expire automatically after 30 days (a daily scheduled
-    job purges them).
+    confirmation prompt). Archived forms live in their own **Archived** section
+    and are still available in a per-request export.
+  - For each **draft** you can **View** it read-only where available, **Copy
+    client link** (the resume link to send back to the client), or **Delete** it.
+    Drafts expire automatically after 30 days (a daily scheduled job purges them).
 - **Access:** the dashboard and the office APIs (`/api/admin`, `/api/rounds`)
   are protected by **Cloudflare Access** (Zero Trust). No shared password —
   members sign in with the team IdP. The Netlify functions verify Cloudflare's
@@ -120,6 +122,10 @@ form.
 - **Netlify Functions + Netlify Blobs** — no extra account, data stays in this
   Netlify site.
 - Office endpoints (behind Access): `/api/admin`, `/api/rounds`.
+- Both form types share one round lifecycle in
+  `netlify/functions/lib/rounds.js`; adding a future form type means adding a
+  thin function with its own `storeName`, `linkPath`, and notification hook.
+  Office auth and Blobs access are shared in `lib/auth.js` and `lib/store.js`.
 - Public client endpoints: `/clients/api/submit`, `/clients/api/get`,
   `/clients/api/draft`, `/clients/api/round`, `/clients/api/upload`,
   `/clients/api/file`.
@@ -177,11 +183,13 @@ export adds **Room / Area** and **Decision** columns (approved areas are one row
 with no revision; revised areas are one row per revision).
 
 ### Reopening a request for one-off items
-In the **Request links** list, click **Reopen** on a submitted round and send the
-same link again. The client sees their previously submitted items in a
-read-only panel and adds only the new ones. Each submission is recorded
-separately, and the Sheet receives the new rows. Reopening resets the round's
-expiration date (+14 days by default) and its reminder cycle.
+Open the **Submissions** section and click **Reopen** on the submitted form, then
+send the same link again. This works the same way for revision requests and
+Design Homework: the link returns to **Links**. For revisions, the client sees
+their previously submitted items in a read-only panel and adds only the new
+ones. Each submission is recorded separately, and the Sheet receives the new
+rows. Reopening resets the round's expiration date (+14 days by default) and its
+reminder cycle.
 
 ---
 

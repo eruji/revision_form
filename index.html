@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
-  <title>Revision Requests — Office Dashboard</title>
+  <title>Client Forms — Office Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -20,12 +20,12 @@
       <div class="topbar__brand">
         <img class="topbar__logo topbar__logo--long" src="/clients/logo-long.svg" alt="Pepper &amp; Olive Interiors" />
         <img class="topbar__logo topbar__logo--short" src="/clients/logo-short.svg" alt="Pepper &amp; Olive Interiors" />
-        <span class="topbar__sub">Revision requests — office dashboard</span>
+        <span class="topbar__sub">Client forms — office dashboard</span>
       </div>
       <div class="topbar__actions">
         <nav class="topbar__tabs" id="tabNav" hidden aria-label="Dashboard section">
-          <button type="button" class="btn btn--ghost is-active" id="tabRevisions" data-tab="revisions">Revision requests</button>
-          <button type="button" class="btn btn--ghost" id="tabHomework" data-tab="homework">Design homework</button>
+          <button type="button" class="btn btn--ghost is-active" id="tabRevisions" data-tab="revisions">Revisions</button>
+          <button type="button" class="btn btn--ghost" id="tabHomework" data-tab="homework">Homework</button>
         </nav>
         <a class="btn btn--ghost" id="sheetBtn" href="#" target="_blank" rel="noopener" hidden>Work queue sheet</a>
         <button type="button" class="btn btn--ghost" id="teamSetupBtn">Setup</button>
@@ -41,7 +41,7 @@
         <span class="step">🔒</span>
         <div>
           <h2>Office access</h2>
-          <p>Enter the team password to read submitted revision requests.</p>
+          <p>Enter the team password to open the office dashboard.</p>
         </div>
       </div>
       <form id="gateForm">
@@ -113,20 +113,21 @@
         </div>
       </section>
 
-      <h2 class="admin-heading">Request links</h2>
-      <p class="admin-hint">Send a link to start a round. A link disappears once the client submits — use <b>Reopen</b> on their submitted request to bring it back.</p>
+      <h2 class="admin-heading">Links</h2>
+      <p class="admin-hint">Send a link to start a round. It moves to <b>Submissions</b> once the client submits — use <b>Reopen</b> on the submission to bring it back.</p>
       <div id="roundsList"></div>
 
       <div class="admin-summary" id="adminSummary"></div>
-      <h2 class="admin-heading">Submitted revision requests</h2>
+      <h2 class="admin-heading">Submissions</h2>
+      <p class="admin-hint">Completed forms. Use the actions on a submission to read or export it.</p>
       <div id="adminList"></div>
-      <h2 class="admin-heading">Saved drafts <span class="admin-heading__note" id="draftCount"></span></h2>
-      <p class="admin-hint">Drafts are still in progress. Use <b>View</b> to read one, or
-        <b>Copy client link</b> to send the client back to continue editing.</p>
+
+      <h2 class="admin-heading">Drafts <span class="admin-heading__note" id="draftCount"></span></h2>
+      <p class="admin-hint">Drafts are still in progress. Copy the client link to send them back to finish.</p>
       <div id="draftList"></div>
 
-      <h2 class="admin-heading">Archived requests <span class="admin-heading__note" id="archivedCount"></span></h2>
-      <p class="admin-hint">Archived requests are hidden from the main list but kept in full. <b>Unarchive</b> to restore, or <b>Delete</b> to remove permanently.</p>
+      <h2 class="admin-heading">Archived <span class="admin-heading__note" id="archivedCount"></span></h2>
+      <p class="admin-hint">Archived forms are hidden from the main list but kept in full. <b>Unarchive</b> to restore, or <b>Delete</b> to remove permanently.</p>
       <div id="archivedList"></div>
     </section>
 
@@ -166,16 +167,21 @@
         </div>
       </section>
 
-      <h2 class="admin-heading">Homework links</h2>
-      <p class="admin-hint">Send a link to start a client's homework. A link disappears from the open list once submitted — use <b>Reopen</b> to bring it back.</p>
+      <h2 class="admin-heading">Links</h2>
+      <p class="admin-hint">Send a link to start a round. It moves to <b>Submissions</b> once the client submits — use <b>Reopen</b> on the submission to bring it back.</p>
       <div id="homeworkRoundsList"></div>
 
-      <h2 class="admin-heading">Design homework submissions <span class="admin-heading__note" id="homeworkCount"></span></h2>
-      <p class="admin-hint">Completed homework forms. Use <b>CSV</b> to export, or open the client's private link from the submission email.</p>
+      <h2 class="admin-heading">Submissions <span class="admin-heading__note" id="homeworkCount"></span></h2>
+      <p class="admin-hint">Completed forms. Use the actions on a submission to read or export it.</p>
       <div id="homeworkList"></div>
-      <h2 class="admin-heading">Saved homework drafts</h2>
-      <p class="admin-hint">Drafts are still in progress. <b>Copy resume link</b> to send the client back to finish.</p>
+
+      <h2 class="admin-heading">Drafts <span class="admin-heading__note" id="homeworkDraftCount"></span></h2>
+      <p class="admin-hint">Drafts are still in progress. Copy the client link to send them back to finish.</p>
       <div id="homeworkDrafts"></div>
+
+      <h2 class="admin-heading">Archived <span class="admin-heading__note" id="homeworkArchivedCount"></span></h2>
+      <p class="admin-hint">Archived forms are hidden from the main list but kept in full. <b>Unarchive</b> to restore, or <b>Delete</b> to remove permanently.</p>
+      <div id="homeworkArchivedList"></div>
     </section>
   </main>
 
